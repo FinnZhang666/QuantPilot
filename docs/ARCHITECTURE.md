@@ -15,3 +15,9 @@
 连接链路为 Python 3.9 应用 → `moomoo-api` → 本机 OpenD → Moomoo 服务。`MoomooConnectionManager` 仅在脚本或手工 API 请求时建立 Quote/US Trade Context，所有 Context 在一次检查结束后关闭。FastAPI 启动默认不连接 OpenD。
 
 能力报告只保存安全布尔状态、版本、错误/警告和一次性行情能力；数据库不保存完整账户 ID、余额、持仓或凭据。Sprint 01 没有订单提交接口。
+
+## Sprint 02历史数据层
+
+`MoomooHistoricalDataProvider`负责SDK映射、分页、限速、重试、标准化和Context关闭，不修改数据库。`HistoricalDataSyncService`负责同步任务、增量重叠、校验、批量upsert与错误隔离。其他模块只依赖统一的`MarketBarData`，不直接依赖Moomoo DataFrame字段。
+
+SQLite按标的、周期、UTC时间、复权方式和数据源建立唯一键。同步服务使用单任务事务与有限批次，不逐根提交。

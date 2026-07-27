@@ -7,8 +7,11 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     JSON,
+    BigInteger,
+    Numeric,
     String,
     Text,
     UniqueConstraint,
@@ -170,3 +173,100 @@ class MoomooConnectionCheck(Base):
     warnings_json: Mapped[list] = mapped_column(JSON, default=list)
     status_code: Mapped[str] = mapped_column(String(32), default="not_checked")
     status_message_zh: Mapped[str] = mapped_column(String(255), default="尚未检查")
+
+
+class Instrument(TimestampMixin, Base):
+    __tablename__ = "instruments"
+    __table_args__ = (UniqueConstraint("market", "code", name="uq_instrument_market_code"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    market: Mapped[str] = mapped_column(String(16), index=True)
+    code: Mapped[str] = mapped_column(String(32))
+    display_name: Mapped[str] = mapped_column(String(128), default="")
+    alias: Mapped[Optional[str]] = mapped_column(String(64), index=True)
+    security_type: Mapped[str] = mapped_column(String(32), default="UNKNOWN")
+    currency: Mapped[str] = mapped_column(String(8), default="USD")
+    lot_size: Mapped[int] = mapped_column(Integer, default=1)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_supported: Mapped[bool] = mapped_column(Boolean, default=False)
+    support_status: Mapped[str] = mapped_column(String(32), default="PENDING")
+    support_message: Mapped[str] = mapped_column(String(255), default="待确认")
+
+
+class MarketBar(TimestampMixin, Base):
+    __tablename__ = "market_bars"
+    __table_args__ = (
+        UniqueConstraint(
+            "symbol",
+            "interval",
+            "timestamp_utc",
+            "adjustment_type",
+            "data_source",
+            name="uq_market_bar_identity",
+        ),
+        Index("ix_market_bars_symbol_interval_time", "symbol", "interval", "timestamp_utc"),
+        Index("ix_market_bars_instrument_interval_time", "instrument_id", "interval", "timestamp_utc"),
+        Index("ix_market_bars_trading_date", "trading_date"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id"))
+    symbol: Mapped[str] = mapped_column(String(32))
+    interval: Mapped[str] = mapped_column(String(8))
+    timestamp_utc: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    timestamp_market: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    trading_date: Mapped[str] = mapped_column(String(10))
+    open: Mapped[object] = mapped_column(Numeric(24, 8))
+    high: Mapped[object] = mapped_column(Numeric(24, 8))
+    low: Mapped[object] = mapped_column(Numeric(24, 8))
+    close: Mapped[object] = mapped_column(Numeric(24, 8))
+    volume: Mapped[int] = mapped_column(BigInteger)
+    turnover: Mapped[Optional[object]] = mapped_column(Numeric(28, 8))
+    change_rate: Mapped[Optional[object]] = mapped_column(Numeric(18, 8))
+    last_close: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    is_blank: Mapped[bool] = mapped_column(Boolean, default=False)
+    market_session: Mapped[str] = mapped_column(String(32))
+    adjustment_type: Mapped[str] = mapped_column(String(16))
+    data_source: Mapped[str] = mapped_column(String(32), default="MOOMOO")
+
+
+class HistorySyncJob(Base):
+    __tablename__ = "history_sync_jobs"
+    __table_args__ = (Index("ix_history_jobs_symbol_interval", "symbol", "interval"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    job_id: Mapped[str] = mapped_column(String(36), unique=True, index=True)
+    symbol: Mapped[str] = mapped_column(String(32))
+    interval: Mapped[str] = mapped_column(String(8))
+    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    adjustment_type: Mapped[str] = mapped_column(String(16))
+    status: Mapped[str] = mapped_column(String(16), default="PENDING", index=True)
+    requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    rows_received: Mapped[int] = mapped_column(Integer, default=0)
+    rows_inserted: Mapped[int] = mapped_column(Integer, default=0)
+    rows_updated: Mapped[int] = mapped_column(Integer, default=0)
+    rows_skipped: Mapped[int] = mapped_column(Integer, default=0)
+    pages_requested: Mapped[int] = mapped_column(Integer, default=0)
+    error_code: Mapped[Optional[str]] = mapped_column(String(32))
+    error_message: Mapped[Optional[str]] = mapped_column(Text)
+    metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class HistoryDataIssue(Base):
+    __tablename__ = "history_data_issues"
+    __table_args__ = (
+        Index("ix_history_issues_symbol_interval", "symbol", "interval"),
+        Index("ix_history_issues_issue_type", "issue_type"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(32))
+    interval: Mapped[str] = mapped_column(String(8))
+    timestamp_utc: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    issue_type: Mapped[str] = mapped_column(String(32))
+    severity: Mapped[str] = mapped_column(String(16), default="WARNING")
+    message: Mapped[str] = mapped_column(Text)
+    payload_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))

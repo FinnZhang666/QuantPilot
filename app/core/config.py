@@ -29,6 +29,16 @@ class Settings(BaseSettings):
     moomoo_allow_order_submission: bool = False
     moomoo_security_firm: str = ""
     moomoo_preferred_market: str = "US"
+    history_daily_years: int = Field(default=5, ge=1, le=20)
+    history_60m_years: int = Field(default=2, ge=1, le=10)
+    history_15m_days: int = Field(default=365, ge=1, le=3650)
+    history_5m_days: int = Field(default=180, ge=1, le=1825)
+    history_1m_days: int = Field(default=60, ge=1, le=365)
+    history_adjustment_type: str = "FORWARD"
+    moomoo_history_max_retries: int = Field(default=3, ge=0, le=10)
+    moomoo_history_retry_delay_seconds: float = Field(default=2.0, ge=0, le=60)
+    moomoo_history_request_interval_seconds: float = Field(default=0.3, ge=0, le=10)
+    moomoo_history_max_pages: int = Field(default=500, ge=1, le=5000)
     telegram_enabled: bool = False
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
@@ -46,6 +56,8 @@ class Settings(BaseSettings):
             raise ValueError("Moomoo实盘交易在V1中永久禁用。")
         if self.moomoo_allow_order_submission:
             raise ValueError("Sprint 01禁止提交Moomoo订单。")
+        if self.history_adjustment_type not in {"NONE", "FORWARD", "BACKWARD"}:
+            raise ValueError("HISTORY_ADJUSTMENT_TYPE必须是NONE、FORWARD或BACKWARD。")
         if self.telegram_enabled and (not self.telegram_bot_token or not self.telegram_chat_id):
             raise ValueError("Telegram is enabled but TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is missing.")
         if self.trading_mode == TradingMode.MOOMOO_PAPER and not self.enable_moomoo_paper:

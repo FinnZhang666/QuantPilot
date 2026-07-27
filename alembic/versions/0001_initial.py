@@ -15,7 +15,13 @@ def upgrade():
     tables = [
         table
         for table in Base.metadata.sorted_tables
-        if table.name != "moomoo_connection_checks"
+        if table.name not in {
+            "moomoo_connection_checks",
+            "instruments",
+            "market_bars",
+            "history_sync_jobs",
+            "history_data_issues",
+        }
     ]
     Base.metadata.create_all(bind=bind, tables=tables)
 
@@ -25,6 +31,12 @@ def downgrade():
     tables = [
         table
         for table in Base.metadata.sorted_tables
-        if table.name != "moomoo_connection_checks"
+        if table.name not in {
+            "moomoo_connection_checks",
+            "instruments",
+            "market_bars",
+            "history_sync_jobs",
+            "history_data_issues",
+        }
     ]
     Base.metadata.drop_all(bind=bind, tables=tables)

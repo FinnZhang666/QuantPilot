@@ -26,3 +26,6 @@ packages = ["app"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+  "live_moomoo: requires a manually logged-in local OpenD and performs read-only quote calls",
+]

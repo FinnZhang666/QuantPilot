@@ -8,6 +8,10 @@ from app.database.models.entities import (
     StrategyRecord,
     SystemEvent,
     Trade,
+    Instrument,
+    MarketBar,
+    HistorySyncJob,
+    HistoryDataIssue,
 )
 
 __all__ = [
@@ -20,4 +24,8 @@ __all__ = [
     "StrategyRecord",
     "SystemEvent",
     "Trade",
+    "Instrument",
+    "MarketBar",
+    "HistorySyncJob",
+    "HistoryDataIssue",
 ]

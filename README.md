@@ -1,6 +1,6 @@
 # Moomoo Quant
 
-美股量化研究与安全模拟交易底座。Sprint 01 固定本机运行基线，并提供 Moomoo OpenD 只读能力检查。
+美股量化研究与安全模拟交易底座。Sprint 02 增加历史行情采集、增量更新、质量检查和SQLite本地数据仓库。
 
 ## V1 安全边界
 
@@ -46,6 +46,8 @@ uvicorn app.main:app --reload
 
 接口新增：`GET /moomoo/status`、`POST /moomoo/check`、`GET /moomoo/capabilities`。检查接口只执行一次性只读检查，不订阅、不解锁、不下单。
 
+历史行情接口：`GET /instruments`、`GET /history/bars`、`GET /history/summary`、`GET /history/jobs`、`GET /history/issues`、`POST /history/sync`。详细规则见 `docs/HISTORICAL_DATA.md`。
+
 ## 测试
 
 ```bash
@@ -75,6 +77,17 @@ python scripts/check_moomoo_connection.py --symbols US.QQQ US.SOXL
 - Moomoo 模拟下单：未启用，订单提交配置永久为 false
 - Moomoo 实盘下单：V1 永久禁用
 - Telegram 交易控制：不存在
+
+## 历史行情
+
+```bash
+python scripts/init_instruments.py
+python scripts/sync_history.py --symbols US.QQQ US.SOXL --intervals 1d 60m 15m 5m 1m
+python scripts/check_history_data.py --symbols US.QQQ US.SOXL
+python scripts/show_history_summary.py
+```
+
+支持1m、5m、15m、30m、60m和1d，默认前复权。主时间为UTC，并提供美东及北京时间。历史数据不保证包含完整夜盘，具体覆盖以Moomoo权限和接口返回为准。
 
 ## Telegram
 

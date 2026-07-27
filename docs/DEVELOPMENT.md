@@ -26,6 +26,8 @@ V1 正式基线为 macOS、Python 3.9.6、pip 和 venv。`pyproject.toml` 必须
 
 Moomoo 模块测试必须使用 Mock，不依赖真实 OpenD。新增 SDK 调用时必须验证 Context 关闭，并扫描确认没有解锁或订单相关调用。
 
+历史行情新增周期或数据源时，必须先扩展统一枚举和映射，禁止将SDK常量散布到业务层。价格使用`Decimal`/数据库`Numeric`；datetime必须带时区。默认测试不得连接OpenD，真实检查应标记为`live_moomoo`并单独运行。
+
 ## Git 提交
 
 保持小而明确的提交，使用 Conventional Commits，例如 `feat: initialize safe paper trading platform foundation`。提交前检查 `.env`、数据库和日志均未进入暂存区。
