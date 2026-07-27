@@ -19,8 +19,16 @@ class Settings(BaseSettings):
     trading_mode: TradingMode = TradingMode.INTERNAL_PAPER
     enable_moomoo_paper: bool = False
     enable_internal_paper: bool = True
+    moomoo_enabled: bool = False
     moomoo_opend_host: str = "127.0.0.1"
     moomoo_opend_port: int = 11111
+    moomoo_connection_timeout_seconds: float = Field(default=10.0, gt=0, le=60)
+    moomoo_quote_enabled: bool = True
+    moomoo_paper_account_discovery: bool = True
+    moomoo_live_trading_enabled: bool = False
+    moomoo_allow_order_submission: bool = False
+    moomoo_security_firm: str = ""
+    moomoo_preferred_market: str = "US"
     telegram_enabled: bool = False
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
@@ -34,6 +42,10 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_safety(self) -> "Settings":
         enforce_safe_trading_mode(self.trading_mode)
+        if self.moomoo_live_trading_enabled:
+            raise ValueError("Moomoo实盘交易在V1中永久禁用。")
+        if self.moomoo_allow_order_submission:
+            raise ValueError("Sprint 01禁止提交Moomoo订单。")
         if self.telegram_enabled and (not self.telegram_bot_token or not self.telegram_chat_id):
             raise ValueError("Telegram is enabled but TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is missing.")
         if self.trading_mode == TradingMode.MOOMOO_PAPER and not self.enable_moomoo_paper:
@@ -50,8 +62,14 @@ class Settings(BaseSettings):
             "trading_mode": self.trading_mode.value,
             "enable_moomoo_paper": self.enable_moomoo_paper,
             "enable_internal_paper": self.enable_internal_paper,
+            "moomoo_enabled": self.moomoo_enabled,
             "moomoo_opend_host": self.moomoo_opend_host,
             "moomoo_opend_port": self.moomoo_opend_port,
+            "moomoo_quote_enabled": self.moomoo_quote_enabled,
+            "moomoo_paper_account_discovery": self.moomoo_paper_account_discovery,
+            "moomoo_live_trading_enabled": False,
+            "moomoo_allow_order_submission": False,
+            "moomoo_preferred_market": self.moomoo_preferred_market,
             "telegram_enabled": self.telegram_enabled,
             "default_timezone": self.default_timezone,
             "display_timezone": self.display_timezone,

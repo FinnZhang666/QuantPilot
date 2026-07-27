@@ -1,5 +1,9 @@
 # Development
 
+## 运行基线
+
+V1 正式基线为 macOS、Python 3.9.6、pip 和 venv。`pyproject.toml` 必须保持 `>=3.9,<3.10`，不得引入 `str | None`、结构化模式匹配或其他 Python 3.10+ 语法。Docker 可选且当前未验证，uv 不是默认安装工具。
+
 ## 代码规范
 
 保持 Data → Feature → Strategy → Decision → Execution 依赖方向。新增外部集成应实现抽象接口，并以超时、失败记录和最小权限为默认行为。
@@ -19,6 +23,8 @@
 3. 外部 I/O 设置超时与有限重试。
 4. 交易模块只允许 `INTERNAL_PAPER` 或 `MOOMOO_PAPER`。
 5. 添加单元、集成及安全回归测试。
+
+Moomoo 模块测试必须使用 Mock，不依赖真实 OpenD。新增 SDK 调用时必须验证 Context 关闭，并扫描确认没有解锁或订单相关调用。
 
 ## Git 提交
 

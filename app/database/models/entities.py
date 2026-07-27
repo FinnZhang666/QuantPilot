@@ -153,3 +153,20 @@ class SystemEvent(Base):
     message: Mapped[str] = mapped_column(Text)
     payload_json: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class MoomooConnectionCheck(Base):
+    __tablename__ = "moomoo_connection_checks"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    checked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    opend_reachable: Mapped[bool] = mapped_column(Boolean, default=False)
+    opend_logged_in: Mapped[bool] = mapped_column(Boolean, default=False)
+    sdk_version: Mapped[str] = mapped_column(String(32), default="")
+    opend_version: Mapped[str] = mapped_column(String(32), default="")
+    quote_capabilities_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    paper_account_found: Mapped[bool] = mapped_column(Boolean, default=False)
+    live_account_found: Mapped[bool] = mapped_column(Boolean, default=False)
+    errors_json: Mapped[list] = mapped_column(JSON, default=list)
+    warnings_json: Mapped[list] = mapped_column(JSON, default=list)
+    status_code: Mapped[str] = mapped_column(String(32), default="not_checked")
+    status_message_zh: Mapped[str] = mapped_column(String(255), default="尚未检查")

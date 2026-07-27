@@ -1,5 +1,6 @@
 from app.database.models.entities import (
     Notification,
+    MoomooConnectionCheck,
     PaperOrder,
     PaperPosition,
     Portfolio,
@@ -11,6 +12,7 @@ from app.database.models.entities import (
 
 __all__ = [
     "Notification",
+    "MoomooConnectionCheck",
     "PaperOrder",
     "PaperPosition",
     "Portfolio",

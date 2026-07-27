@@ -17,6 +17,9 @@ def clean_settings_cache(monkeypatch):
         "TELEGRAM_BOT_TOKEN",
         "TELEGRAM_CHAT_ID",
         "DATABASE_URL",
+        "MOOMOO_LIVE_TRADING_ENABLED",
+        "MOOMOO_ALLOW_ORDER_SUBMISSION",
+        "MOOMOO_ENABLED",
     ):
         monkeypatch.delenv(key, raising=False)
     get_settings.cache_clear()

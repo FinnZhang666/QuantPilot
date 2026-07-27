@@ -9,3 +9,10 @@
 - 连接检查发现真实账户时仅报告存在性，绝不输出完整账户信息或启用交易。
 - 内部成交必须标为 `INTERNAL_PAPER`，Moomoo 模拟成交必须标为 `MOOMOO_PAPER`。
 - 安全配置 API 使用白名单，不依赖通用序列化或事后删除字段。
+- `MOOMOO_LIVE_TRADING_ENABLED=true` 或 `MOOMOO_ALLOW_ORDER_SUBMISSION=true` 会导致配置启动失败。
+- Sprint 01 只调用全局状态、行情快照、市场状态、少量历史 K 线和账户列表接口。
+- 禁止调用 `unlock_trade`、`place_order`、`modify_order` 或 `cancel_order`。
+- 用户必须亲自处理 OpenD 登录、验证码、设备确认及协议确认；不得索取、读取或保存密码。
+- 真实账户只报告“发现”，账户标识最多显示最后四位，实盘交易仍永久禁用。
+
+当前交易状态：内部虚拟成交代码保留但不运行策略；Moomoo 模拟下单未启用；实盘永久禁用；Telegram 交易控制不存在。

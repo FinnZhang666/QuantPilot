@@ -12,9 +12,19 @@ depends_on = None
 
 def upgrade():
     bind = op.get_bind()
-    Base.metadata.create_all(bind=bind)
+    tables = [
+        table
+        for table in Base.metadata.sorted_tables
+        if table.name != "moomoo_connection_checks"
+    ]
+    Base.metadata.create_all(bind=bind, tables=tables)
 
 
 def downgrade():
     bind = op.get_bind()
-    Base.metadata.drop_all(bind=bind)
+    tables = [
+        table
+        for table in Base.metadata.sorted_tables
+        if table.name != "moomoo_connection_checks"
+    ]
+    Base.metadata.drop_all(bind=bind, tables=tables)

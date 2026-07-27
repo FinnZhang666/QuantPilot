@@ -1,6 +1,6 @@
 # Moomoo Quant
 
-美股量化研究与安全模拟交易底座。Sprint 00 仅覆盖行情适配接口、数据库、内部虚拟成交、Moomoo OpenD 只读连接检查、单向 Telegram 通知和 FastAPI 基础接口。
+美股量化研究与安全模拟交易底座。Sprint 01 固定本机运行基线，并提供 Moomoo OpenD 只读能力检查。
 
 ## V1 安全边界
 
@@ -10,24 +10,27 @@
 - `.env` 永不提交；日志和 API 不输出 Secret。
 - Moomoo 网页登录与 OpenD API 登录相互独立，OpenD 必须由用户本人安装并登录。
 
-## 环境与安装
+## 当前运行基线
 
-目标环境为 Python 3.12。代码也可在 Python 3.9+ 开发环境运行。
+- macOS 本机运行
+- Python 3.9.6（项目要求 `>=3.9,<3.10`）
+- pip + venv
+- Docker 可选；当前开发机未安装、未验证，不是 V1 运行前提
+- 不要求 uv
+
+## 默认安装方法
 
 ```bash
+git clone https://github.com/FinnZhang666/moomoo-quant.git
+cd moomoo-quant
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e ".[dev]"
+python -m pip install --upgrade pip
+python -m pip install -r requirements-dev.txt
 cp .env.example .env
 ```
 
-如需执行完整 OpenD API 权限检查，再安装可选依赖：
-
-```bash
-python -m pip install -e ".[moomoo]"
-```
-
-也可使用 `uv sync --extra dev`。
+`requirements.txt` 包含 Python 3.9 兼容的运行依赖和 `moomoo-api`；不得混用系统 Python 与项目虚拟环境。
 
 ## 配置、数据库与启动
 
@@ -41,23 +44,37 @@ python scripts/smoke_test.py
 uvicorn app.main:app --reload
 ```
 
-接口：`/health`、`/system/config`、`/portfolios`、`/signals`、`/orders`、`/events`。
+接口新增：`GET /moomoo/status`、`POST /moomoo/check`、`GET /moomoo/capabilities`。检查接口只执行一次性只读检查，不订阅、不解锁、不下单。
 
 ## 测试
 
 ```bash
-pytest
+python -m pip check
+python -m pytest
 ```
 
 ## Moomoo OpenD
 
-Moomoo 网页已登录不代表 OpenD 可用。请自行安装、启动并登录 OpenD，然后运行：
+官方连接链路为：Python 程序 → Moomoo Python SDK → 本机 OpenD → Moomoo 服务。Moomoo 网页登录不代表 OpenD 可用。
+
+用户必须亲自完成 OpenD 的登录、验证码、设备确认、用户协议和行情协议确认。Codex 不读取浏览器密码，不保存账号密码，也不自动确认任何实盘授权。
+
+启动并登录 OpenD 后运行：
 
 ```bash
 python scripts/check_moomoo_connection.py
+python scripts/check_moomoo_connection.py --json
+python scripts/check_moomoo_connection.py --symbols US.QQQ US.SOXL
 ```
 
-脚本只检查连通性、行情权限及账户类型；发现真实账户时仍显示 `Live trading enabled: NO`，不会执行任何交易。Sprint 00 不自动订阅行情，也不发送模拟订单。
+默认地址为 `127.0.0.1:11111`，可通过 `.env` 修改。脚本检查 Socket、SDK/OpenD 版本、登录状态、市场状态、QQQ/SOXL 快照、最近一根 K 线和美股账户类型。账户 ID 仅显示最后四位。权限不足会单独报告，不会误报成系统故障。
+
+当前交易状态：
+
+- 内部虚拟交易：代码存在，但 Sprint 01 不运行策略
+- Moomoo 模拟下单：未启用，订单提交配置永久为 false
+- Moomoo 实盘下单：V1 永久禁用
+- Telegram 交易控制：不存在
 
 ## Telegram
 
@@ -67,14 +84,14 @@ python scripts/check_moomoo_connection.py
 python scripts/test_telegram.py
 ```
 
-## Docker
+## Docker（可选、未验证）
 
 ```bash
 docker compose up --build
 ```
 
-OpenD 不在容器中运行；容器通过 `MOOMOO_OPEND_HOST` 与 `MOOMOO_OPEND_PORT` 连接宿主机。
+当前开发机未安装 Docker，这不是 V1 前提。Docker 文件仅作为可选部署基础，OpenD 不在容器中运行。
 
 ## 已知限制
 
-本 Sprint 不含完整策略、特征计算、历史回测、实时订阅、Moomoo 模拟下单、前端、新闻/LLM 或任何实盘能力。SQLite 适合第一阶段单进程研究，后续可迁移 PostgreSQL。
+本 Sprint 不含持续行情订阅、历史行情入库、Moomoo 模拟下单、策略、回测、前端或真实 Telegram 信号通知。行情与账户能力取决于用户 OpenD 登录状态和已开通的 Quote Card/市场权限。
