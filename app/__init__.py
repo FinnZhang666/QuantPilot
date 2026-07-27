@@ -1,0 +1,1 @@
+"""Moomoo Quant application package."""

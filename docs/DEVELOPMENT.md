@@ -1,0 +1,25 @@
+# Development
+
+## 代码规范
+
+保持 Data → Feature → Strategy → Decision → Execution 依赖方向。新增外部集成应实现抽象接口，并以超时、失败记录和最小权限为默认行为。
+
+## 测试规范
+
+每个安全边界必须有负向测试。修复缺陷时先添加复现测试；提交前运行 `pytest`、环境检查和 smoke test。测试不得访问真实 Telegram、OpenD 或交易账户。
+
+## 数据库迁移
+
+模型变更必须新增 Alembic revision，不得改写已发布迁移。开发环境执行 `alembic upgrade head`；迁移需同时验证全新数据库。
+
+## 新模块接入
+
+1. 定义清晰接口和输入输出模型。
+2. 配置通过 `Settings` 注入，禁止模块直接读取 Secret 并打印。
+3. 外部 I/O 设置超时与有限重试。
+4. 交易模块只允许 `INTERNAL_PAPER` 或 `MOOMOO_PAPER`。
+5. 添加单元、集成及安全回归测试。
+
+## Git 提交
+
+保持小而明确的提交，使用 Conventional Commits，例如 `feat: initialize safe paper trading platform foundation`。提交前检查 `.env`、数据库和日志均未进入暂存区。
