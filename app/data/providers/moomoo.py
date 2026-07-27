@@ -1,5 +1,6 @@
 import importlib
 import importlib.metadata
+import logging
 import socket
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
@@ -88,7 +89,11 @@ class MoomooConnectionManager:
             return ConnectionCheckResult(False, "unreachable", "OpenD不可达", type(exc).__name__)
 
     def _sdk(self):
-        return self._sdk_loader()
+        sdk = self._sdk_loader()
+        sdk_logger = getattr(sdk, "logger", None)
+        if sdk_logger is not None and hasattr(sdk_logger, "console_level"):
+            sdk_logger.console_level = logging.WARNING
+        return sdk
 
     def open_quote_context(self):
         sdk = self._sdk()

@@ -85,6 +85,10 @@ class FakeSdk:
         return self.trade
 
 
+class FakeSdkLogger:
+    console_level = 20
+
+
 def reachable(*args, **kwargs):
     return FakeSocket()
 
@@ -115,6 +119,14 @@ def test_contexts_are_always_closed():
     assert report.status_code == "connected"
     assert sdk.quote.closed is True
     assert sdk.trade.closed is True
+
+
+def test_sdk_console_info_logs_are_suppressed():
+    sdk = FakeSdk()
+    sdk.logger = FakeSdkLogger()
+    manager = MoomooConnectionManager(sdk_loader=lambda: sdk, socket_connector=reachable)
+    manager.inspect(["US.QQQ"])
+    assert sdk.logger.console_level == 30
 
 
 def test_permission_denied_is_not_connection_failure():
