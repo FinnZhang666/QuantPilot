@@ -17,6 +17,10 @@ from app.database.models.entities import (
     RealtimeBar,
     RealtimeServiceStatus,
     MarketSessionEvent,
+    FeatureDefinitionRecord,
+    FeatureValueRecord,
+    FeatureCalculationJob,
+    FeatureQualityIssue,
 )
 
 __all__ = [
@@ -38,4 +42,8 @@ __all__ = [
     "RealtimeBar",
     "RealtimeServiceStatus",
     "MarketSessionEvent",
+    "FeatureDefinitionRecord",
+    "FeatureValueRecord",
+    "FeatureCalculationJob",
+    "FeatureQualityIssue",
 ]

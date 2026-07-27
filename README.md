@@ -100,6 +100,18 @@ python scripts/cleanup_realtime_data.py --dry-run
 
 支持Quote、Ticker、实时1分钟K线和市场状态。数据经有界队列批量写入SQLite，只记录行情，不产生策略信号或订单。详见 `docs/REALTIME_DATA.md`。
 
+## Feature Engine
+
+```bash
+python scripts/init_feature_definitions.py
+python scripts/calculate_features.py --symbols US.QQQ US.SOXL --intervals 1d 60m
+python scripts/check_feature_quality.py --symbols US.QQQ US.SOXL
+python scripts/show_feature_summary.py
+python scripts/compare_feature_calculation.py --symbol US.QQQ --interval 1d
+```
+
+Feature Engine提供带版本、参数Hash和质量状态的批量、增量及修复计算，只读取历史K线或已闭合实时1分钟K线。它不产生策略评分、交易信号或订单。接口为`/features/definitions`、`/features/latest`、`/features/values`、`/features/summary`、`/features/jobs`、`/features/issues`和`POST /features/calculate`。详细规则见`docs/FEATURE_ENGINE.md`和`docs/FEATURE_CATALOG.md`。
+
 ## Telegram
 
 在 `.env` 中手工设置 `TELEGRAM_ENABLED=true`、`TELEGRAM_BOT_TOKEN` 与 `TELEGRAM_CHAT_ID`。开启但缺少配置时应用拒绝启动。真实发送测试必须由用户主动运行：

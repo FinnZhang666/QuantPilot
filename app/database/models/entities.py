@@ -383,3 +383,91 @@ class MarketSessionEvent(Base):
     reason: Mapped[str] = mapped_column(Text)
     metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class FeatureDefinitionRecord(TimestampMixin, Base):
+    __tablename__ = "feature_definitions"
+    __table_args__ = (UniqueConstraint("feature_name", "version", name="uq_feature_definition_version"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    feature_name: Mapped[str] = mapped_column(String(96))
+    display_name_zh: Mapped[str] = mapped_column(String(128))
+    category: Mapped[str] = mapped_column(String(32))
+    description: Mapped[str] = mapped_column(Text)
+    value_type: Mapped[str] = mapped_column(String(16))
+    default_parameters_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    required_bars: Mapped[int] = mapped_column(Integer)
+    supported_intervals_json: Mapped[list] = mapped_column(JSON, default=list)
+    requires_reference_symbol: Mapped[bool] = mapped_column(Boolean, default=False)
+    reference_symbol: Mapped[Optional[str]] = mapped_column(String(32))
+    version: Mapped[str] = mapped_column(String(16), default="1.0.0")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class FeatureValueRecord(TimestampMixin, Base):
+    __tablename__ = "feature_values"
+    __table_args__ = (
+        UniqueConstraint("symbol", "interval", "timestamp_utc", "feature_name", "feature_version", "parameters_hash", "data_source", name="uq_feature_value_identity"),
+        Index("ix_feature_values_symbol_interval_time", "symbol", "interval", "timestamp_utc"),
+        Index("ix_feature_values_name_time", "feature_name", "timestamp_utc"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id"))
+    symbol: Mapped[str] = mapped_column(String(32))
+    interval: Mapped[str] = mapped_column(String(8))
+    timestamp_utc: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    feature_name: Mapped[str] = mapped_column(String(96))
+    feature_version: Mapped[str] = mapped_column(String(16))
+    parameters_hash: Mapped[str] = mapped_column(String(64))
+    value_decimal: Mapped[Optional[object]] = mapped_column(Numeric(30, 12))
+    value_integer: Mapped[Optional[int]] = mapped_column(BigInteger)
+    value_boolean: Mapped[Optional[bool]] = mapped_column(Boolean)
+    value_text: Mapped[Optional[str]] = mapped_column(String(128))
+    quality_status: Mapped[str] = mapped_column(String(16))
+    quality_message: Mapped[Optional[str]] = mapped_column(Text)
+    source_bar_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    data_source: Mapped[str] = mapped_column(String(32))
+    calculated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class FeatureCalculationJob(Base):
+    __tablename__ = "feature_calculation_jobs"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    job_id: Mapped[str] = mapped_column(String(36), unique=True, index=True)
+    job_type: Mapped[str] = mapped_column(String(16))
+    symbols_json: Mapped[list] = mapped_column(JSON, default=list)
+    intervals_json: Mapped[list] = mapped_column(JSON, default=list)
+    feature_names_json: Mapped[list] = mapped_column(JSON, default=list)
+    start_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    end_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(16), index=True)
+    requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    input_rows: Mapped[int] = mapped_column(Integer, default=0)
+    output_rows: Mapped[int] = mapped_column(Integer, default=0)
+    inserted_rows: Mapped[int] = mapped_column(Integer, default=0)
+    updated_rows: Mapped[int] = mapped_column(Integer, default=0)
+    skipped_rows: Mapped[int] = mapped_column(Integer, default=0)
+    failed_features: Mapped[int] = mapped_column(Integer, default=0)
+    error_code: Mapped[Optional[str]] = mapped_column(String(64))
+    error_message: Mapped[Optional[str]] = mapped_column(Text)
+    metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class FeatureQualityIssue(Base):
+    __tablename__ = "feature_quality_issues"
+    __table_args__ = (Index("ix_feature_issues_symbol_name", "symbol", "feature_name"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(32))
+    interval: Mapped[str] = mapped_column(String(8))
+    timestamp_utc: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    feature_name: Mapped[str] = mapped_column(String(96))
+    feature_version: Mapped[str] = mapped_column(String(16))
+    issue_type: Mapped[str] = mapped_column(String(48))
+    severity: Mapped[str] = mapped_column(String(16))
+    message: Mapped[str] = mapped_column(Text)
+    payload_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

@@ -6,6 +6,7 @@ from app.api.health import router as health_router
 from app.api.moomoo import router as moomoo_router
 from app.api.history import router as history_router
 from app.api.realtime import router as realtime_router
+from app.api.features import router as features_router
 from app.api.routes import router as api_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
@@ -34,3 +35,4 @@ app.include_router(api_router)
 app.include_router(moomoo_router)
 app.include_router(history_router)
 app.include_router(realtime_router)
+app.include_router(features_router)

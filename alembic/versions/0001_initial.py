@@ -26,6 +26,10 @@ def upgrade():
             "realtime_bars",
             "realtime_service_status",
             "market_session_events",
+            "feature_definitions",
+            "feature_values",
+            "feature_calculation_jobs",
+            "feature_quality_issues",
         }
     ]
     Base.metadata.create_all(bind=bind, tables=tables)
@@ -47,6 +51,10 @@ def downgrade():
             "realtime_bars",
             "realtime_service_status",
             "market_session_events",
+            "feature_definitions",
+            "feature_values",
+            "feature_calculation_jobs",
+            "feature_quality_issues",
         }
     ]
     Base.metadata.drop_all(bind=bind, tables=tables)

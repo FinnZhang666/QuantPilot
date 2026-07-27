@@ -30,6 +30,8 @@ Moomoo 模块测试必须使用 Mock，不依赖真实 OpenD。新增 SDK 调用
 
 实时行情默认测试使用Mock Provider，不依赖OpenD。回调禁止执行数据库事务，只允许轻量标准化和有界队列入队。真实只读验收可运行 `python scripts/start_realtime.py --symbols US.QQQ US.SOXL --duration 60`；夜盘和扩展时段无成交不视为代码失败。
 
+Feature新增或修改公式时必须提升版本或参数Hash，并增加独立预期值、未来数据不变性及全量/增量一致性测试。禁止`bfill`、居中滚动窗口和跨标的最近邻未来匹配。默认测试使用隔离SQLite，不连接OpenD；真实计算只读本地行情库。
+
 ## Git 提交
 
 保持小而明确的提交，使用 Conventional Commits，例如 `feat: initialize safe paper trading platform foundation`。提交前检查 `.env`、数据库和日志均未进入暂存区。

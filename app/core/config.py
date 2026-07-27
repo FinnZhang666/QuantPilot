@@ -54,6 +54,9 @@ class Settings(BaseSettings):
     realtime_ticker_retention_days: int = Field(default=30, ge=1, le=3650)
     realtime_quote_retention_days: int = Field(default=90, ge=1, le=3650)
     realtime_bar_retention_days: int = Field(default=365, ge=1, le=3650)
+    feature_read_chunk_size: int = Field(default=10000, ge=100, le=100000)
+    feature_write_batch_size: int = Field(default=1000, ge=100, le=5000)
+    feature_max_workers: int = Field(default=1, ge=1, le=4)
     telegram_enabled: bool = False
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""

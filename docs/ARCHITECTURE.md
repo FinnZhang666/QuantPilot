@@ -25,3 +25,9 @@ SQLite按标的、周期、UTC时间、复权方式和数据源建立唯一键�
 ## Sprint 03实时行情层
 
 `app/realtime/`按职责拆分Provider、Normalizer、订阅管理器、状态机、Repository和Reconciler。SDK回调仅标准化并非阻塞入队，后台单写入线程批量保存SQLite。订阅管理器负责幂等启动、停止、有限重连和恢复订阅，不依赖策略、组合或订单模块。
+
+## Sprint 04特征层
+
+`FeatureRegistry`保存稳定定义和版本，`FeatureCalculator`仅执行确定性的向后看数学计算，`FeatureCalculationService`负责读取、预热、跨标的精确对齐、任务隔离和批量Upsert，`FeatureRepository`封装SQLite。原始行情与特征表完全分离。
+
+历史特征只读取前复权`market_bars`，实时特征只读取已闭合`realtime_bars`。递归指标增量更新会回读完整必要上下文，不在实时回调线程计算。Feature层没有Strategy、Decision或Execution依赖。

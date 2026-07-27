@@ -1,8 +1,5 @@
-from abc import ABC, abstractmethod
-from typing import Any
+"""Feature calculator compatibility export."""
 
+from app.features.calculator import FeatureCalculator
 
-class FeatureCalculator(ABC):
-    @abstractmethod
-    async def calculate(self, market_data: Any) -> Any:
-        raise NotImplementedError
+__all__ = ["FeatureCalculator"]

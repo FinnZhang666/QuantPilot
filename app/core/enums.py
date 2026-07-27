@@ -72,6 +72,28 @@ class RealtimeServiceState(str, Enum):
     FAILED = "FAILED"
 
 
+class FeatureValueType(str, Enum):
+    DECIMAL = "DECIMAL"
+    INTEGER = "INTEGER"
+    BOOLEAN = "BOOLEAN"
+    TEXT = "TEXT"
+
+
+class FeatureQualityStatus(str, Enum):
+    VALID = "VALID"
+    WARMUP = "WARMUP"
+    DEGRADED = "DEGRADED"
+    INVALID = "INVALID"
+    MISSING = "MISSING"
+
+
+class FeatureJobType(str, Enum):
+    FULL = "FULL"
+    INCREMENTAL = "INCREMENTAL"
+    REPAIR = "REPAIR"
+    REALTIME = "REALTIME"
+
+
 class OrderSide(str, Enum):
     BUY = "BUY"
     SELL = "SELL"
