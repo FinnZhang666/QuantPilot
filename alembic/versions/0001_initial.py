@@ -21,6 +21,11 @@ def upgrade():
             "market_bars",
             "history_sync_jobs",
             "history_data_issues",
+            "realtime_quotes",
+            "realtime_tickers",
+            "realtime_bars",
+            "realtime_service_status",
+            "market_session_events",
         }
     ]
     Base.metadata.create_all(bind=bind, tables=tables)
@@ -37,6 +42,11 @@ def downgrade():
             "market_bars",
             "history_sync_jobs",
             "history_data_issues",
+            "realtime_quotes",
+            "realtime_tickers",
+            "realtime_bars",
+            "realtime_service_status",
+            "market_session_events",
         }
     ]
     Base.metadata.drop_all(bind=bind, tables=tables)

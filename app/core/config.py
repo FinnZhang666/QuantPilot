@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -39,6 +39,21 @@ class Settings(BaseSettings):
     moomoo_history_retry_delay_seconds: float = Field(default=2.0, ge=0, le=60)
     moomoo_history_request_interval_seconds: float = Field(default=0.3, ge=0, le=10)
     moomoo_history_max_pages: int = Field(default=500, ge=1, le=5000)
+    realtime_symbols: str = (
+        "US.SOXL,US.MULL,US.TQQQ,US.NVDL,US.RAM,US.QQQ,"
+        "US.SPY,US.SMH,US.SOXX,US.NVDA,US.AMD,US.MU"
+    )
+    realtime_batch_size: int = Field(default=200, ge=1, le=5000)
+    realtime_flush_interval_seconds: float = Field(default=1.0, gt=0, le=60)
+    realtime_queue_max_size: int = Field(default=10000, ge=100, le=1000000)
+    realtime_stale_seconds_regular: int = Field(default=30, ge=5, le=3600)
+    realtime_stale_seconds_extended: int = Field(default=120, ge=10, le=7200)
+    realtime_reconnect_max_attempts: int = Field(default=5, ge=0, le=20)
+    realtime_reconnect_delay_seconds: float = Field(default=5.0, ge=0, le=300)
+    realtime_health_check_interval_seconds: float = Field(default=10.0, ge=1, le=300)
+    realtime_ticker_retention_days: int = Field(default=30, ge=1, le=3650)
+    realtime_quote_retention_days: int = Field(default=90, ge=1, le=3650)
+    realtime_bar_retention_days: int = Field(default=365, ge=1, le=3650)
     telegram_enabled: bool = False
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
@@ -87,6 +102,13 @@ class Settings(BaseSettings):
             "display_timezone": self.display_timezone,
             "default_slippage_bps": self.default_slippage_bps,
         }
+
+    def realtime_symbol_list(self) -> List[str]:
+        return list(dict.fromkeys(
+            value.strip().upper()
+            for value in self.realtime_symbols.split(",")
+            if value.strip()
+        ))
 
 
 @lru_cache

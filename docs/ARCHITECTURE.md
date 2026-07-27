@@ -21,3 +21,7 @@
 `MoomooHistoricalDataProvider`负责SDK映射、分页、限速、重试、标准化和Context关闭，不修改数据库。`HistoricalDataSyncService`负责同步任务、增量重叠、校验、批量upsert与错误隔离。其他模块只依赖统一的`MarketBarData`，不直接依赖Moomoo DataFrame字段。
 
 SQLite按标的、周期、UTC时间、复权方式和数据源建立唯一键。同步服务使用单任务事务与有限批次，不逐根提交。
+
+## Sprint 03实时行情层
+
+`app/realtime/`按职责拆分Provider、Normalizer、订阅管理器、状态机、Repository和Reconciler。SDK回调仅标准化并非阻塞入队，后台单写入线程批量保存SQLite。订阅管理器负责幂等启动、停止、有限重连和恢复订阅，不依赖策略、组合或订单模块。

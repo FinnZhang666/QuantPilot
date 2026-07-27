@@ -56,6 +56,22 @@ class HistoryErrorCode(str, Enum):
     UNKNOWN_ERROR = "UNKNOWN_ERROR"
 
 
+class RealtimeDataType(str, Enum):
+    QUOTE = "QUOTE"
+    TICKER = "TICKER"
+    KLINE_1M = "KLINE_1M"
+    MARKET_STATE = "MARKET_STATE"
+
+
+class RealtimeServiceState(str, Enum):
+    STOPPED = "STOPPED"
+    STARTING = "STARTING"
+    CONNECTED = "CONNECTED"
+    DEGRADED = "DEGRADED"
+    RECONNECTING = "RECONNECTING"
+    FAILED = "FAILED"
+
+
 class OrderSide(str, Enum):
     BUY = "BUY"
     SELL = "SELL"

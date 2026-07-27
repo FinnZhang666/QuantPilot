@@ -89,6 +89,17 @@ python scripts/show_history_summary.py
 
 支持1m、5m、15m、30m、60m和1d，默认前复权。主时间为UTC，并提供美东及北京时间。历史数据不保证包含完整夜盘，具体覆盖以Moomoo权限和接口返回为准。
 
+## 实时行情
+
+```bash
+python scripts/start_realtime.py --symbols US.QQQ US.SOXL --duration 60
+python scripts/check_realtime_status.py
+python scripts/stop_realtime.py
+python scripts/cleanup_realtime_data.py --dry-run
+```
+
+支持Quote、Ticker、实时1分钟K线和市场状态。数据经有界队列批量写入SQLite，只记录行情，不产生策略信号或订单。详见 `docs/REALTIME_DATA.md`。
+
 ## Telegram
 
 在 `.env` 中手工设置 `TELEGRAM_ENABLED=true`、`TELEGRAM_BOT_TOKEN` 与 `TELEGRAM_CHAT_ID`。开启但缺少配置时应用拒绝启动。真实发送测试必须由用户主动运行：
@@ -107,4 +118,4 @@ docker compose up --build
 
 ## 已知限制
 
-本 Sprint 不含持续行情订阅、历史行情入库、Moomoo 模拟下单、策略、回测、前端或真实 Telegram 信号通知。行情与账户能力取决于用户 OpenD 登录状态和已开通的 Quote Card/市场权限。
+当前不含Moomoo模拟下单、策略、回测、前端或真实Telegram信号通知。实时行情和历史行情能力取决于OpenD登录状态及市场权限。

@@ -270,3 +270,116 @@ class HistoryDataIssue(Base):
     payload_json: Mapped[dict] = mapped_column(JSON, default=dict)
     detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+
+
+class RealtimeQuote(TimestampMixin, Base):
+    __tablename__ = "realtime_quotes"
+    __table_args__ = (
+        UniqueConstraint("symbol", "timestamp_utc", "data_source", name="uq_realtime_quote_identity"),
+        Index("ix_realtime_quotes_symbol_time", "symbol", "timestamp_utc"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id"))
+    symbol: Mapped[str] = mapped_column(String(32))
+    timestamp_utc: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    timestamp_market: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    timestamp_beijing: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    last_price: Mapped[object] = mapped_column(Numeric(24, 8))
+    open_price: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    high_price: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    low_price: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    prev_close: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    volume: Mapped[Optional[int]] = mapped_column(BigInteger)
+    turnover: Mapped[Optional[object]] = mapped_column(Numeric(28, 8))
+    amplitude: Mapped[Optional[object]] = mapped_column(Numeric(18, 8))
+    turnover_rate: Mapped[Optional[object]] = mapped_column(Numeric(18, 8))
+    bid_price: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    ask_price: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    bid_volume: Mapped[Optional[int]] = mapped_column(BigInteger)
+    ask_volume: Mapped[Optional[int]] = mapped_column(BigInteger)
+    market_session: Mapped[str] = mapped_column(String(32))
+    market_status: Mapped[Optional[str]] = mapped_column(String(64))
+    data_source: Mapped[str] = mapped_column(String(32), default="MOOMOO")
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class RealtimeTicker(Base):
+    __tablename__ = "realtime_tickers"
+    __table_args__ = (
+        UniqueConstraint("symbol", "sequence", "ticker_time_utc", "data_source", name="uq_realtime_ticker_identity"),
+        Index("ix_realtime_tickers_symbol_time", "symbol", "ticker_time_utc"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id"))
+    symbol: Mapped[str] = mapped_column(String(32))
+    ticker_time_utc: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    ticker_time_market: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    price: Mapped[object] = mapped_column(Numeric(24, 8))
+    volume: Mapped[int] = mapped_column(BigInteger)
+    turnover: Mapped[Optional[object]] = mapped_column(Numeric(28, 8))
+    direction: Mapped[Optional[str]] = mapped_column(String(32))
+    sequence: Mapped[str] = mapped_column(String(96))
+    market_session: Mapped[str] = mapped_column(String(32))
+    data_source: Mapped[str] = mapped_column(String(32), default="MOOMOO")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class RealtimeBar(TimestampMixin, Base):
+    __tablename__ = "realtime_bars"
+    __table_args__ = (
+        UniqueConstraint("symbol", "interval", "timestamp_utc", "data_source", name="uq_realtime_bar_identity"),
+        Index("ix_realtime_bars_symbol_interval_time", "symbol", "interval", "timestamp_utc"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id"))
+    symbol: Mapped[str] = mapped_column(String(32))
+    interval: Mapped[str] = mapped_column(String(8), default="1m")
+    timestamp_utc: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    timestamp_market: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    trading_date: Mapped[str] = mapped_column(String(10))
+    open: Mapped[object] = mapped_column(Numeric(24, 8))
+    high: Mapped[object] = mapped_column(Numeric(24, 8))
+    low: Mapped[object] = mapped_column(Numeric(24, 8))
+    close: Mapped[object] = mapped_column(Numeric(24, 8))
+    volume: Mapped[int] = mapped_column(BigInteger)
+    turnover: Mapped[Optional[object]] = mapped_column(Numeric(28, 8))
+    is_closed: Mapped[bool] = mapped_column(Boolean, default=False)
+    market_session: Mapped[str] = mapped_column(String(32))
+    data_source: Mapped[str] = mapped_column(String(32), default="MOOMOO")
+
+
+class RealtimeServiceStatus(TimestampMixin, Base):
+    __tablename__ = "realtime_service_status"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    service_name: Mapped[str] = mapped_column(String(64), unique=True, default="moomoo_realtime")
+    status: Mapped[str] = mapped_column(String(32), default="STOPPED")
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    stopped_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_connected_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_disconnected_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_message_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_quote_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_ticker_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_bar_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    connection_count: Mapped[int] = mapped_column(Integer, default=0)
+    reconnect_count: Mapped[int] = mapped_column(Integer, default=0)
+    subscribed_symbols_json: Mapped[list] = mapped_column(JSON, default=list)
+    subscribed_types_json: Mapped[list] = mapped_column(JSON, default=list)
+    error_code: Mapped[Optional[str]] = mapped_column(String(64))
+    error_message: Mapped[Optional[str]] = mapped_column(Text)
+    metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class MarketSessionEvent(Base):
+    __tablename__ = "market_session_events"
+    __table_args__ = (Index("ix_market_session_events_market_time", "market", "event_time_utc"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    market: Mapped[str] = mapped_column(String(16), default="US")
+    previous_session: Mapped[str] = mapped_column(String(32))
+    current_session: Mapped[str] = mapped_column(String(32))
+    source_status: Mapped[Optional[str]] = mapped_column(String(64))
+    event_time_utc: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    event_time_market: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    reason: Mapped[str] = mapped_column(Text)
+    metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

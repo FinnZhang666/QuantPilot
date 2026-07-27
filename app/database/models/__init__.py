@@ -12,6 +12,11 @@ from app.database.models.entities import (
     MarketBar,
     HistorySyncJob,
     HistoryDataIssue,
+    RealtimeQuote,
+    RealtimeTicker,
+    RealtimeBar,
+    RealtimeServiceStatus,
+    MarketSessionEvent,
 )
 
 __all__ = [
@@ -28,4 +33,9 @@ __all__ = [
     "MarketBar",
     "HistorySyncJob",
     "HistoryDataIssue",
+    "RealtimeQuote",
+    "RealtimeTicker",
+    "RealtimeBar",
+    "RealtimeServiceStatus",
+    "MarketSessionEvent",
 ]
