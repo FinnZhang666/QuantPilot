@@ -471,3 +471,116 @@ class FeatureQualityIssue(Base):
     detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class WatchlistItem(TimestampMixin, Base):
+    __tablename__ = "watchlist_items"
+    __table_args__ = (
+        UniqueConstraint("symbol", "market", name="uq_watchlist_symbol_market"),
+        Index("ix_watchlist_enabled", "enabled"),
+        Index("ix_watchlist_role", "role"),
+        Index("ix_watchlist_validation", "validation_status"),
+        Index("ix_watchlist_benchmark", "benchmark_symbol"),
+        Index("ix_watchlist_classification", "classification_source"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(32))
+    market: Mapped[str] = mapped_column(String(16), default="US")
+    display_name: Mapped[str] = mapped_column(String(128), default="")
+    asset_type: Mapped[str] = mapped_column(String(32), default="UNKNOWN")
+    sector: Mapped[str] = mapped_column(String(64), default="unknown")
+    role: Mapped[str] = mapped_column(String(32))
+    benchmark_symbol: Mapped[Optional[str]] = mapped_column(String(32))
+    strategy_template: Mapped[str] = mapped_column(String(48))
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    validation_status: Mapped[str] = mapped_column(String(32), default="PENDING_VALIDATION")
+    validation_message: Mapped[str] = mapped_column(Text, default="")
+    classification_source: Mapped[str] = mapped_column(String(16), default="AUTO")
+    notes: Mapped[Optional[str]] = mapped_column(Text)
+
+
+class WatchlistTimeframe(TimestampMixin, Base):
+    __tablename__ = "watchlist_timeframes"
+    __table_args__ = (
+        UniqueConstraint("watchlist_item_id", "timeframe", name="uq_watchlist_timeframe"),
+        Index("ix_watchlist_timeframe_enabled", "watchlist_item_id", "enabled"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    watchlist_item_id: Mapped[int] = mapped_column(ForeignKey("watchlist_items.id"))
+    timeframe: Mapped[str] = mapped_column(String(8))
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class StrategyParameterSet(TimestampMixin, Base):
+    __tablename__ = "strategy_parameter_sets"
+    __table_args__ = (
+        UniqueConstraint("watchlist_item_id", "strategy_name", "strategy_version", name="uq_strategy_parameter_set"),
+        Index("ix_strategy_parameter_enabled", "watchlist_item_id", "enabled"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    watchlist_item_id: Mapped[int] = mapped_column(ForeignKey("watchlist_items.id"))
+    strategy_name: Mapped[str] = mapped_column(String(64))
+    strategy_version: Mapped[str] = mapped_column(String(16))
+    parameters_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    parameters_hash: Mapped[str] = mapped_column(String(64))
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class CandidateSignal(TimestampMixin, Base):
+    __tablename__ = "candidate_signals"
+    __table_args__ = (
+        UniqueConstraint(
+            "symbol", "market", "timeframe", "bar_timestamp", "strategy_name",
+            "strategy_version", "parameters_hash", name="uq_candidate_signal_identity",
+        ),
+        Index("ix_candidate_signal_symbol_time", "symbol", "timeframe", "bar_timestamp"),
+        Index("ix_candidate_signal_type", "signal_type"),
+        Index("ix_candidate_signal_score", "score"),
+        Index("ix_candidate_signal_confidence", "confidence"),
+        Index("ix_candidate_signal_created", "created_at"),
+        CheckConstraint("score >= 0 AND score <= 100", name="ck_candidate_signal_score"),
+        CheckConstraint("confidence >= 0 AND confidence <= 100", name="ck_candidate_signal_confidence"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(32))
+    market: Mapped[str] = mapped_column(String(16), default="US")
+    timeframe: Mapped[str] = mapped_column(String(8))
+    bar_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    strategy_name: Mapped[str] = mapped_column(String(64))
+    strategy_version: Mapped[str] = mapped_column(String(16))
+    parameters_hash: Mapped[str] = mapped_column(String(64))
+    signal_type: Mapped[str] = mapped_column(String(32))
+    score: Mapped[int] = mapped_column(Integer)
+    confidence: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(32))
+    summary_zh: Mapped[str] = mapped_column(Text)
+    reasons_json: Mapped[list] = mapped_column(JSON, default=list)
+    risks_json: Mapped[list] = mapped_column(JSON, default=list)
+    feature_refs_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    components_json: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class StrategyRun(TimestampMixin, Base):
+    __tablename__ = "strategy_runs"
+    __table_args__ = (
+        Index("ix_strategy_runs_status", "status"),
+        Index("ix_strategy_runs_type", "run_type"),
+        Index("ix_strategy_runs_started", "started_at"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    run_id: Mapped[str] = mapped_column(String(36), unique=True, index=True)
+    run_type: Mapped[str] = mapped_column(String(16))
+    strategy_name: Mapped[str] = mapped_column(String(64))
+    strategy_version: Mapped[str] = mapped_column(String(16))
+    symbols_json: Mapped[list] = mapped_column(JSON, default=list)
+    timeframes_json: Mapped[list] = mapped_column(JSON, default=list)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(32), default="RUNNING")
+    bars_evaluated: Mapped[int] = mapped_column(Integer, default=0)
+    signals_written: Mapped[int] = mapped_column(Integer, default=0)
+    signals_skipped: Mapped[int] = mapped_column(Integer, default=0)
+    errors_count: Mapped[int] = mapped_column(Integer, default=0)
+    elapsed_seconds: Mapped[float] = mapped_column(Float, default=0)
+    free_disk_gb: Mapped[float] = mapped_column(Float, default=0)
+    error_summary: Mapped[dict] = mapped_column(JSON, default=dict)

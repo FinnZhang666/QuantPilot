@@ -31,3 +31,9 @@ SQLite按标的、周期、UTC时间、复权方式和数据源建立唯一键�
 `FeatureRegistry`保存稳定定义和版本，`FeatureCalculator`仅执行确定性的向后看数学计算，`FeatureCalculationService`负责读取、预热、跨标的精确对齐、任务隔离和批量Upsert，`FeatureRepository`封装SQLite。原始行情与特征表完全分离。
 
 历史特征只读取前复权`market_bars`，实时特征只读取已闭合`realtime_bars`。递归指标增量更新会回读完整必要上下文，不在实时回调线程计算。Feature层没有Strategy、Decision或Execution依赖。
+
+## Sprint 05轻量策略层
+
+`app/strategy/`依赖Feature Registry和Feature Repository，通过Dependency Resolver精确读取目标标的、周期、UTC时间和版本。策略本身是纯评分逻辑，不查询数据库。Runner负责编排Watchlist、按需补算、时间分块、故障隔离、Signal Upsert及Run统计。
+
+Candidate Signal持久化在独立的`candidate_signals`表，不写入早期`signals`、Portfolio、Position、PaperOrder或Trade。Strategy层不依赖Execution和Broker。

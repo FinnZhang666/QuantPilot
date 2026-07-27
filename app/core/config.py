@@ -57,6 +57,11 @@ class Settings(BaseSettings):
     feature_read_chunk_size: int = Field(default=10000, ge=100, le=100000)
     feature_write_batch_size: int = Field(default=1000, ge=100, le=5000)
     feature_max_workers: int = Field(default=1, ge=1, le=4)
+    moomoo_strategy_auto_calculate_features: bool = True
+    moomoo_warn_free_disk_gb: float = Field(default=15.0, ge=0)
+    moomoo_min_free_disk_gb: float = Field(default=10.0, ge=0)
+    strategy_read_chunk_size: int = Field(default=5000, ge=100, le=20000)
+    strategy_max_estimated_bars: int = Field(default=100000, ge=1000)
     telegram_enabled: bool = False
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""

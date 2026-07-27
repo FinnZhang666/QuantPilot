@@ -21,6 +21,11 @@ from app.database.models.entities import (
     FeatureValueRecord,
     FeatureCalculationJob,
     FeatureQualityIssue,
+    WatchlistItem,
+    WatchlistTimeframe,
+    StrategyParameterSet,
+    CandidateSignal,
+    StrategyRun,
 )
 
 __all__ = [
@@ -46,4 +51,9 @@ __all__ = [
     "FeatureValueRecord",
     "FeatureCalculationJob",
     "FeatureQualityIssue",
+    "WatchlistItem",
+    "WatchlistTimeframe",
+    "StrategyParameterSet",
+    "CandidateSignal",
+    "StrategyRun",
 ]

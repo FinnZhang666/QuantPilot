@@ -22,3 +22,5 @@ Sprint 02仅使用行情快照、证券基本信息和历史K线接口。历史�
 Sprint 03实时API只能启动、停止和调整只读行情订阅。不得增加买入、卖出、下单、改单、撤单、解锁交易、账户控制或Telegram命令。PID停止脚本同时验证PID命令行和当前项目路径，拒绝终止无关Python进程。
 
 Sprint 04 Feature Engine只能读取行情并写入`feature_*`表。它不得写入signals、paper_orders、trades或paper_positions，也不得输出买卖、仓位或止损建议。特征计算API要求显式标的、周期、特征和有限范围；返回配置使用白名单，不暴露OpenD或Telegram敏感信息。
+
+Sprint 05只写Watchlist、参数、Candidate Signal和Strategy Run。Candidate Buy/Reduce/Exit不是订单，不进入Execution、Broker、Portfolio或Position流程。Strategy代码禁止导入订单模块或调用任何下单方法；实盘和Moomoo订单提交开关继续永久关闭。

@@ -32,6 +32,8 @@ Moomoo 模块测试必须使用 Mock，不依赖真实 OpenD。新增 SDK 调用
 
 Feature新增或修改公式时必须提升版本或参数Hash，并增加独立预期值、未来数据不变性及全量/增量一致性测试。禁止`bfill`、居中滚动窗口和跨标的最近邻未来匹配。默认测试使用隔离SQLite，不连接OpenD；真实计算只读本地行情库。
 
+Strategy新增依赖时必须先在Feature Registry映射稳定英文名称，不得在策略层重算指标。只读取闭合K线及同一UTC时间的Feature；FULL/RANGE测试必须限定范围。策略参数变化应生成新Hash，历史Candidate Signal保持原Hash。
+
 ## Git 提交
 
 保持小而明确的提交，使用 Conventional Commits，例如 `feat: initialize safe paper trading platform foundation`。提交前检查 `.env`、数据库和日志均未进入暂存区。

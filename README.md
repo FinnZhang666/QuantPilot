@@ -112,6 +112,18 @@ python scripts/compare_feature_calculation.py --symbol US.QQQ --interval 1d
 
 Feature Engine提供带版本、参数Hash和质量状态的批量、增量及修复计算，只读取历史K线或已闭合实时1分钟K线。它不产生策略评分、交易信号或订单。接口为`/features/definitions`、`/features/latest`、`/features/values`、`/features/summary`、`/features/jobs`、`/features/issues`和`POST /features/calculate`。详细规则见`docs/FEATURE_ENGINE.md`和`docs/FEATURE_CATALOG.md`。
 
+## Watchlist与候选信号
+
+```bash
+python scripts/init_watchlist.py
+python scripts/add_watchlist_symbol.py PLTR
+python scripts/calculate_strategy_signals.py --symbols SOXL --timeframes 1d --mode incremental
+python scripts/show_latest_signals.py --symbol SOXL
+python scripts/check_strategy_quality.py
+```
+
+Sprint 05只实现一套“趋势回撤后重新转强”策略。它按需读取Sprint 04 Feature并生成Candidate Signal，不下单、不模拟成交、不确认持仓。Score表示条件满足程度，Confidence表示数据可信度。所有模板均为尚未回测的默认参数。完整说明见`docs/STRATEGY_SIGNALS.md`。
+
 ## Telegram
 
 在 `.env` 中手工设置 `TELEGRAM_ENABLED=true`、`TELEGRAM_BOT_TOKEN` 与 `TELEGRAM_CHAT_ID`。开启但缺少配置时应用拒绝启动。真实发送测试必须由用户主动运行：
