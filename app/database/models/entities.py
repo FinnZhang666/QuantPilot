@@ -779,3 +779,26 @@ class RuntimeStatus(TimestampMixin, Base):
     last_error_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     last_error_message: Mapped[Optional[str]] = mapped_column(Text)
     metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class DevelopmentIssue(TimestampMixin, Base):
+    __tablename__ = "development_issues"
+    __table_args__ = (
+        Index("ix_development_issues_status", "status"),
+        Index("ix_development_issues_source", "source_type"),
+        Index("ix_development_issues_priority", "priority"),
+        Index("ix_development_issues_created", "created_at"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(255))
+    description: Mapped[str] = mapped_column(Text)
+    source_type: Mapped[str] = mapped_column(String(32))
+    source_reference: Mapped[Optional[str]] = mapped_column(String(255))
+    category: Mapped[str] = mapped_column(String(64))
+    priority: Mapped[str] = mapped_column(String(16))
+    status: Mapped[str] = mapped_column(String(32), default="INBOX")
+    evidence_json: Mapped[Optional[dict]] = mapped_column(JSON)
+    ai_recommendation: Mapped[Optional[str]] = mapped_column(Text)
+    codex_prompt: Mapped[Optional[str]] = mapped_column(Text)
+    created_by: Mapped[Optional[str]] = mapped_column(String(128))
+    approved_by: Mapped[Optional[str]] = mapped_column(String(128))

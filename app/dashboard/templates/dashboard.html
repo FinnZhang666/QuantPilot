@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Moomoo Quant · 公司工作台</title><link rel="stylesheet" href="/dashboard/static/dashboard.css"></head>
+<body data-page="__PAGE__">
+<aside class="sidebar"><div class="brand"><span>MQ</span><div><b>Moomoo Quant</b><small>公司工作台</small></div></div>
+<nav>
+<a href="/dashboard" data-nav="home">工作台</a><a href="/dashboard/opportunities" data-nav="opportunities">交易机会</a>
+<a href="/dashboard/runtime" data-nav="runtime">运行状态</a><a href="/dashboard/strategies" data-nav="strategies">策略观察</a>
+<a href="/dashboard/data-quality" data-nav="data-quality">数据质量</a><a href="/dashboard/reports" data-nav="reports">历史报告</a>
+<a href="/dashboard/development" data-nav="development">开发看板</a></nav>
+<form action="/dashboard/logout" method="post"><button class="ghost">退出</button></form></aside>
+<main class="workspace"><header><div><p class="eyebrow">INTERNAL OPERATIONS</p><h1 id="page-title">工作台</h1></div>
+<button class="ghost" onclick="location.reload()">刷新</button></header>
+<div id="flash"></div><section id="content"><div class="loading">正在读取本地数据…</div></section></main>
+<script src="/dashboard/static/dashboard.js"></script></body></html>

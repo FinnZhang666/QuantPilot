@@ -64,12 +64,14 @@ class RealtimeOpportunityRuntime:
             if not self.thread or not self.thread.is_alive():
                 self.status = "STOPPED"
                 self._save_state()
+                self._save_pipeline_stopped()
                 return self.snapshot(idempotent=True)
             self.stop_event.set()
         self.thread.join(timeout=max(5.0, self.settings.runtime_poll_interval_seconds * 3))
         self.telegram_poller.stop()
         self.status = "STOPPED"
         self._save_state()
+        self._save_pipeline_stopped()
         return self.snapshot()
 
     def process_once(self) -> Dict[str, object]:
@@ -188,6 +190,13 @@ class RealtimeOpportunityRuntime:
                 },
                 error=error, success=success,
             )
+        finally:
+            db.close()
+
+    def _save_pipeline_stopped(self):
+        db = self.session_factory()
+        try:
+            RuntimeStateRepository(db).update("opportunity_pipeline", "STOPPED")
         finally:
             db.close()
 

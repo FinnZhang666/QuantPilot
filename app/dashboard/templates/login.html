@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>登录 · Moomoo Quant</title>
+<link rel="stylesheet" href="/dashboard/static/dashboard.css"></head>
+<body class="login-body"><main class="login-card">
+<div class="brand-mark">MQ</div><p class="eyebrow">MOOMOO QUANT</p>
+<h1>公司工作台</h1><p class="muted">本地只读研究与运行观察界面</p>
+<!--ERROR-->
+<form method="post" action="/dashboard/login"><label>管理员 Token<input name="token" type="password" required autocomplete="current-password"></label>
+<button type="submit">进入工作台</button></form>
+<p class="fine">Token仅用于本地鉴权，不会显示在页面或API中。</p>
+</main></body></html>

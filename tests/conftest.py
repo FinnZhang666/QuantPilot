@@ -20,6 +20,8 @@ def clean_settings_cache(monkeypatch):
         "MOOMOO_LIVE_TRADING_ENABLED",
         "MOOMOO_ALLOW_ORDER_SUBMISSION",
         "MOOMOO_ENABLED",
+        "DASHBOARD_ADMIN_TOKEN",
+        "DASHBOARD_READONLY_PUBLIC",
     ):
         monkeypatch.delenv(key, raising=False)
     get_settings.cache_clear()

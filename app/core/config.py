@@ -67,6 +67,8 @@ class Settings(BaseSettings):
     opportunity_min_score: int = Field(default=70, ge=0, le=100)
     opportunity_default_expiry_bars: int = Field(default=3, ge=1, le=100)
     runtime_poll_interval_seconds: float = Field(default=2.0, ge=0.1, le=60)
+    dashboard_admin_token: str = ""
+    dashboard_readonly_public: bool = False
     telegram_enabled: bool = False
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""

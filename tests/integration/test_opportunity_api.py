@@ -41,6 +41,8 @@ class FakeRuntime:
 
 def client(monkeypatch, tmp_path):
     monkeypatch.setenv("DATABASE_URL", "sqlite:///" + str(tmp_path / "opportunity-api.db"))
+    monkeypatch.setenv("DASHBOARD_READONLY_PUBLIC", "true")
+    monkeypatch.setenv("DASHBOARD_ADMIN_TOKEN", "test-admin")
     get_settings.cache_clear()
     get_engine.cache_clear()
     runtime = FakeRuntime()
@@ -78,12 +80,13 @@ def test_opportunity_api_and_limit(monkeypatch, tmp_path):
 def test_runtime_api_start_stop_idempotent(monkeypatch, tmp_path):
     api, runtime = client(monkeypatch, tmp_path)
     try:
-        first = api.post("/api/runtime/start").json()
-        second = api.post("/api/runtime/start").json()
+        headers = {"X-Dashboard-Token": "test-admin"}
+        first = api.post("/api/runtime/start", headers=headers).json()
+        second = api.post("/api/runtime/start", headers=headers).json()
         assert first["status"] == "RUNNING" and second["idempotent"]
         assert runtime.started == 1
-        api.post("/api/runtime/stop")
-        stopped = api.post("/api/runtime/stop").json()
+        api.post("/api/runtime/stop", headers=headers)
+        stopped = api.post("/api/runtime/stop", headers=headers).json()
         assert stopped["idempotent"] and runtime.stopped == 1
         status = api.get("/api/runtime/status")
         assert status.status_code == 200

@@ -62,6 +62,20 @@ python -m app.cli telegram test
 
 API：`GET /api/opportunities`、`GET /api/opportunities/{id}`、`GET /api/opportunities/symbol/{symbol}`、`GET /api/runtime/status`、`POST /api/runtime/start`、`POST /api/runtime/stop`。详细配置与Windows部署注意事项见 `docs/SPRINT_07_RUNTIME.md`。
 
+## Sprint 08：公司工作台
+
+本地Dashboard用于观察运行状态、交易机会、策略、数据质量、历史摘要和开发Issue，不是交易终端。
+
+```bash
+alembic upgrade head
+# 在.env中设置DASHBOARD_ADMIN_TOKEN
+uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+浏览器访问：`http://127.0.0.1:8000/dashboard`
+
+默认`DASHBOARD_READONLY_PUBLIC=false`，只读页面也需要管理员Token。Runtime启停、创建Issue和修改Issue状态始终要求管理员鉴权。详细说明见`docs/SPRINT_08_DASHBOARD.md`。
+
 ## 测试
 
 ```bash

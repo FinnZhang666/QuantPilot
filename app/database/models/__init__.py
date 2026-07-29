@@ -32,6 +32,7 @@ from app.database.models.entities import (
     BacktestPendingAction,
     Opportunity,
     RuntimeStatus,
+    DevelopmentIssue,
 )
 
 __all__ = [
@@ -68,4 +69,5 @@ __all__ = [
     "BacktestPendingAction",
     "Opportunity",
     "RuntimeStatus",
+    "DevelopmentIssue",
 ]

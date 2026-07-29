@@ -3,6 +3,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 from app.api.health import router as health_router
 from app.api.moomoo import router as moomoo_router
@@ -14,6 +16,9 @@ from app.api.strategy import router as strategy_router
 from app.api.backtest import router as backtest_router
 from app.api.opportunities import router as opportunities_router
 from app.api.runtime import router as runtime_router
+from app.api.dashboard import router as dashboard_api_router
+from app.api.development import router as development_router
+from app.dashboard.routes import router as dashboard_router
 from app.api.routes import router as api_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
@@ -59,3 +64,11 @@ app.include_router(strategy_router)
 app.include_router(backtest_router)
 app.include_router(opportunities_router)
 app.include_router(runtime_router)
+app.include_router(dashboard_api_router)
+app.include_router(development_router)
+app.include_router(dashboard_router)
+app.mount(
+    "/dashboard/static",
+    StaticFiles(directory=str(Path(__file__).resolve().parent / "dashboard" / "static")),
+    name="dashboard-static",
+)

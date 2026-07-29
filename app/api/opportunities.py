@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -6,13 +7,20 @@ from sqlalchemy.orm import Session
 
 from app.database.models import Opportunity
 from app.database.session import get_db
+from app.dashboard.auth import require_read
 
-router = APIRouter(prefix="/api/opportunities", tags=["实时机会"])
+router = APIRouter(
+    prefix="/api/opportunities", tags=["实时机会"],
+    dependencies=[Depends(require_read)],
+)
 
 
 @router.get("")
 def list_opportunities(
-    symbol: Optional[str] = None, status: Optional[str] = None,
+    symbol: Optional[str] = None, timeframe: Optional[str] = None,
+    direction: Optional[str] = None, status: Optional[str] = None,
+    strategy_name: Optional[str] = None, min_score: int = Query(0, ge=0, le=100),
+    start_time: Optional[datetime] = None, end_time: Optional[datetime] = None,
     limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
 ):
@@ -21,6 +29,17 @@ def list_opportunities(
         filters.append(Opportunity.symbol == symbol.upper().replace("US.", ""))
     if status:
         filters.append(Opportunity.status == status.upper())
+    if timeframe:
+        filters.append(Opportunity.timeframe == timeframe)
+    if direction:
+        filters.append(Opportunity.direction == direction.upper())
+    if strategy_name:
+        filters.append(Opportunity.strategy_name == strategy_name)
+    filters.append(Opportunity.score >= min_score)
+    if start_time:
+        filters.append(Opportunity.detected_at >= start_time)
+    if end_time:
+        filters.append(Opportunity.detected_at <= end_time)
     total = db.scalar(select(func.count()).select_from(Opportunity).where(*filters)) or 0
     rows = db.scalars(select(Opportunity).where(*filters).order_by(
         desc(Opportunity.detected_at),
