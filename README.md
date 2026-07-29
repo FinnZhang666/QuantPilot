@@ -6,7 +6,7 @@
 
 - 不支持真实账户下单，`LIVE` 在配置、Broker 与数据库层永久阻止。
 - 不采集、不保存 Moomoo 密码或交易解锁密码。
-- Telegram 仅允许单向通知，不包含 Webhook、监听、命令或交易控制。
+- Telegram支持机会与运行状态通知；查询命令仅允许管理员白名单，且不包含任何交易控制。
 - `.env` 永不提交；日志和 API 不输出 Secret。
 - Moomoo 网页登录与 OpenD API 登录相互独立，OpenD 必须由用户本人安装并登录。
 
@@ -47,6 +47,20 @@ uvicorn app.main:app --reload
 接口新增：`GET /moomoo/status`、`POST /moomoo/check`、`GET /moomoo/capabilities`。检查接口只执行一次性只读检查，不订阅、不解锁、不下单。
 
 历史行情接口：`GET /instruments`、`GET /history/bars`、`GET /history/summary`、`GET /history/jobs`、`GET /history/issues`、`POST /history/sync`。详细规则见 `docs/HISTORICAL_DATA.md`。
+
+## Sprint 07：Realtime Opportunity Runtime
+
+Runtime复用现有OpenD实时行情、Feature Engine与Strategy Engine，只在闭合K线后生成独立Opportunity。重要状态变化可通过Telegram通知，但不会创建订单或执行交易。
+
+```bash
+alembic upgrade head
+python -m app.cli runtime start
+python -m app.cli runtime status
+python -m app.cli opportunities list
+python -m app.cli telegram test
+```
+
+API：`GET /api/opportunities`、`GET /api/opportunities/{id}`、`GET /api/opportunities/symbol/{symbol}`、`GET /api/runtime/status`、`POST /api/runtime/start`、`POST /api/runtime/stop`。详细配置与Windows部署注意事项见 `docs/SPRINT_07_RUNTIME.md`。
 
 ## 测试
 

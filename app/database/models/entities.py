@@ -726,3 +726,56 @@ class BacktestPendingAction(TimestampMixin, Base):
     execution_timestamp: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     status: Mapped[str] = mapped_column(String(32), default="PENDING")
     failure_reason: Mapped[Optional[str]] = mapped_column(Text)
+
+
+class Opportunity(TimestampMixin, Base):
+    __tablename__ = "opportunities"
+    __table_args__ = (
+        UniqueConstraint(
+            "symbol", "timeframe", "strategy_name", "strategy_version",
+            "direction", "bar_time", name="uq_opportunity_identity",
+        ),
+        Index("ix_opportunities_symbol_time", "symbol", "bar_time"),
+        Index("ix_opportunities_status_detected", "status", "detected_at"),
+        CheckConstraint("score >= 0 AND score <= 100", name="ck_opportunity_score"),
+        CheckConstraint(
+            "confidence IS NULL OR (confidence >= 0 AND confidence <= 100)",
+            name="ck_opportunity_confidence",
+        ),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(32))
+    timeframe: Mapped[str] = mapped_column(String(8))
+    direction: Mapped[str] = mapped_column(String(8))
+    opportunity_type: Mapped[str] = mapped_column(String(48))
+    strategy_name: Mapped[str] = mapped_column(String(64))
+    strategy_version: Mapped[str] = mapped_column(String(16))
+    signal_id: Mapped[Optional[int]] = mapped_column(ForeignKey("candidate_signals.id"))
+    market_regime: Mapped[Optional[str]] = mapped_column(String(48))
+    status: Mapped[str] = mapped_column(String(24), default="DETECTED")
+    score: Mapped[int] = mapped_column(Integer)
+    confidence: Mapped[Optional[int]] = mapped_column(Integer)
+    detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    bar_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    entry_reference_price: Mapped[object] = mapped_column(Numeric(24, 8))
+    stop_reference_price: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    target_reference_price: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    expiry_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    feature_snapshot_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    strategy_snapshot_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    decision_snapshot_json: Mapped[Optional[dict]] = mapped_column(JSON)
+    notification_status: Mapped[str] = mapped_column(String(24), default="PENDING")
+    notification_message_id: Mapped[Optional[str]] = mapped_column(String(64))
+
+
+class RuntimeStatus(TimestampMixin, Base):
+    __tablename__ = "runtime_status"
+    __table_args__ = (Index("ix_runtime_status_status", "status"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    service_name: Mapped[str] = mapped_column(String(64), unique=True)
+    status: Mapped[str] = mapped_column(String(24), default="STOPPED")
+    last_heartbeat_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_success_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_error_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_error_message: Mapped[Optional[str]] = mapped_column(Text)
+    metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)

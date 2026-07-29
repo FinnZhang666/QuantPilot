@@ -30,6 +30,8 @@ from app.database.models.entities import (
     BacktestTrade,
     BacktestEquityPoint,
     BacktestPendingAction,
+    Opportunity,
+    RuntimeStatus,
 )
 
 __all__ = [
@@ -64,4 +66,6 @@ __all__ = [
     "BacktestTrade",
     "BacktestEquityPoint",
     "BacktestPendingAction",
+    "Opportunity",
+    "RuntimeStatus",
 ]

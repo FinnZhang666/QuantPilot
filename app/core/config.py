@@ -62,9 +62,16 @@ class Settings(BaseSettings):
     moomoo_min_free_disk_gb: float = Field(default=10.0, ge=0)
     strategy_read_chunk_size: int = Field(default=5000, ge=100, le=20000)
     strategy_max_estimated_bars: int = Field(default=100000, ge=1000)
+    realtime_runtime_enabled: bool = False
+    realtime_timeframes: str = "1m"
+    opportunity_min_score: int = Field(default=70, ge=0, le=100)
+    opportunity_default_expiry_bars: int = Field(default=3, ge=1, le=100)
+    runtime_poll_interval_seconds: float = Field(default=2.0, ge=0.1, le=60)
     telegram_enabled: bool = False
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
+    telegram_chat_ids: str = ""
+    telegram_admin_ids: str = ""
     telegram_timeout_seconds: float = Field(default=10.0, gt=0)
     telegram_max_retries: int = Field(default=2, ge=0, le=5)
     default_timezone: str = "America/New_York"
@@ -81,8 +88,8 @@ class Settings(BaseSettings):
             raise ValueError("Sprint 01禁止提交Moomoo订单。")
         if self.history_adjustment_type not in {"NONE", "FORWARD", "BACKWARD"}:
             raise ValueError("HISTORY_ADJUSTMENT_TYPE必须是NONE、FORWARD或BACKWARD。")
-        if self.telegram_enabled and (not self.telegram_bot_token or not self.telegram_chat_id):
-            raise ValueError("Telegram is enabled but TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is missing.")
+        if self.telegram_enabled and (not self.telegram_bot_token or not self.telegram_chat_id_list()):
+            raise ValueError("Telegram已启用，但缺少TELEGRAM_BOT_TOKEN或TELEGRAM_CHAT_IDS。")
         if self.trading_mode == TradingMode.MOOMOO_PAPER and not self.enable_moomoo_paper:
             raise ValueError("TRADING_MODE=MOOMOO_PAPER requires ENABLE_MOOMOO_PAPER=true.")
         return self
@@ -117,6 +124,23 @@ class Settings(BaseSettings):
             for value in self.realtime_symbols.split(",")
             if value.strip()
         ))
+
+    def realtime_timeframe_list(self) -> List[str]:
+        allowed = {"1m", "5m", "15m", "30m", "60m", "1d"}
+        values = list(dict.fromkeys(
+            value.strip() for value in self.realtime_timeframes.split(",") if value.strip()
+        ))
+        invalid = [value for value in values if value not in allowed]
+        if invalid:
+            raise ValueError("REALTIME_TIMEFRAMES包含无效周期：" + "、".join(invalid))
+        return values
+
+    def telegram_chat_id_list(self) -> List[str]:
+        source = self.telegram_chat_ids or self.telegram_chat_id
+        return list(dict.fromkeys(value.strip() for value in source.split(",") if value.strip()))
+
+    def telegram_admin_id_set(self) -> set:
+        return {value.strip() for value in self.telegram_admin_ids.split(",") if value.strip()}
 
 
 @lru_cache

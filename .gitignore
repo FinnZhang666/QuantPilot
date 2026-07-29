@@ -7,5 +7,7 @@ __pycache__/
 htmlcov/
 data/*.db
 data/*.db-*
+data/*.csv
+data/*.pid
 logs/*.log*
 .DS_Store

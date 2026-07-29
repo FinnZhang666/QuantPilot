@@ -12,6 +12,8 @@ from app.api.features import router as features_router
 from app.api.watchlist import router as watchlist_router
 from app.api.strategy import router as strategy_router
 from app.api.backtest import router as backtest_router
+from app.api.opportunities import router as opportunities_router
+from app.api.runtime import router as runtime_router
 from app.api.routes import router as api_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
@@ -19,6 +21,7 @@ from app.database.init import create_schema
 from app.database.session import get_engine
 from app.realtime.factory import peek_realtime_manager
 from app.core.enums import RealtimeServiceState
+from app.runtime.realtime_runtime import get_runtime
 
 
 @asynccontextmanager
@@ -29,6 +32,9 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
+        runtime = get_runtime()
+        if runtime.status != "STOPPED":
+            runtime.stop()
         manager = peek_realtime_manager()
         if manager and manager.status != RealtimeServiceState.STOPPED:
             manager.stop()
@@ -51,3 +57,5 @@ app.include_router(features_router)
 app.include_router(watchlist_router)
 app.include_router(strategy_router)
 app.include_router(backtest_router)
+app.include_router(opportunities_router)
+app.include_router(runtime_router)
