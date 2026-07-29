@@ -68,6 +68,9 @@ Prompt 和 manifest 压缩为 ZIP。支持 7 份 Daily、4 份 Weekly 保留策�
 和 `/ai_review` 只读取该 Telegram ID 的股票范围。它只是研究数据隔离，不是完整
 多租户账号、认证或计费系统。
 
+管理员可通过 `TELEGRAM_ADMIN_IDS` 或 `TELEGRAM_ADMIN_USERNAMES` 配置。用户名
+匹配不区分大小写；个人研究池仍绑定 Telegram numeric user ID。
+
 ## Dashboard 与 API
 
 System 页面：`/dashboard/system`

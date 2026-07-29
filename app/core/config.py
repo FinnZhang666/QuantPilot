@@ -116,6 +116,7 @@ class Settings(BaseSettings):
     telegram_chat_id: str = ""
     telegram_chat_ids: str = ""
     telegram_admin_ids: str = ""
+    telegram_admin_usernames: str = ""
     telegram_timeout_seconds: float = Field(default=10.0, gt=0)
     telegram_max_retries: int = Field(default=2, ge=0, le=5)
     default_timezone: str = "America/New_York"
@@ -198,6 +199,13 @@ class Settings(BaseSettings):
 
     def telegram_admin_id_set(self) -> set:
         return {value.strip() for value in self.telegram_admin_ids.split(",") if value.strip()}
+
+    def telegram_admin_username_set(self) -> set:
+        return {
+            value.strip().lstrip("@").lower()
+            for value in self.telegram_admin_usernames.split(",")
+            if value.strip()
+        }
 
 
 @lru_cache

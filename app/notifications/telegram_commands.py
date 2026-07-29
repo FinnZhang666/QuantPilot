@@ -27,8 +27,14 @@ class TelegramCommandService:
         self.settings = settings
         self.user_id = ""
 
-    def handle(self, user_id: str, command: str) -> Tuple[bool, str]:
-        if str(user_id) not in self.settings.telegram_admin_id_set():
+    def handle(
+        self, user_id: str, command: str, username: Optional[str] = None,
+    ) -> Tuple[bool, str]:
+        username_value = (username or "").lstrip("@").lower()
+        if (
+            str(user_id) not in self.settings.telegram_admin_id_set()
+            and username_value not in self.settings.telegram_admin_username_set()
+        ):
             return False, "权限不足：该命令仅允许Telegram管理员使用。"
         self.user_id = str(user_id)
         parts = command.strip().split()
@@ -376,12 +382,15 @@ class TelegramCommandPoller:
         message = update.get("message") or {}
         text = message.get("text") or ""
         user_id = str((message.get("from") or {}).get("id", ""))
+        username = str((message.get("from") or {}).get("username", ""))
         chat_id = str((message.get("chat") or {}).get("id", ""))
         if not text.startswith("/") or not chat_id:
             return
         db = self.session_factory()
         try:
-            _, answer = TelegramCommandService(db, self.settings).handle(user_id, text)
+            _, answer = TelegramCommandService(db, self.settings).handle(
+                user_id, text, username=username,
+            )
             asyncio.run(TelegramNotificationProvider(self.settings, db).send_text(answer, [chat_id]))
         finally:
             db.close()

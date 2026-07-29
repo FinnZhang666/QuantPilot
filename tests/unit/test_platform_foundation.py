@@ -141,6 +141,16 @@ def test_telegram_non_admin_cannot_manage_scope(db):
     assert service.handle("2", "/watch add NVDA")[0] is False
 
 
+def test_telegram_admin_username_case_insensitive(db):
+    service = TelegramCommandService(
+        db, Settings(telegram_admin_usernames="adhd360,Kevinchou8"),
+    )
+    assert service.handle("100", "/watch add NVDA", username="ADHD360")[0]
+    assert service.handle("200", "/watch add AAPL", username="@kevinchou8")[0]
+    assert TelegramUserScopeService(db).symbols("100") == ["NVDA"]
+    assert TelegramUserScopeService(db).symbols("200") == ["AAPL"]
+
+
 def test_platform_config_safe_dict_excludes_secrets():
     value = Settings(
         telegram_bot_token="123456789:AAxxxxxxxxxxxxxxxx",
