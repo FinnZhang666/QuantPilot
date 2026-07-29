@@ -91,6 +91,19 @@ class Settings(BaseSettings):
     opportunity_review_windows_file: str = "config/review_windows_v1.yaml"
     opportunity_review_batch_size: int = Field(default=100, ge=1, le=1000)
     opportunity_review_poll_seconds: int = Field(default=300, ge=10, le=86400)
+    ai_review_enabled: bool = False
+    ai_review_provider: str = "mock"
+    ai_review_base_url: str = ""
+    ai_review_api_key: str = ""
+    ai_review_model: str = ""
+    ai_review_timeout_seconds: float = Field(default=60.0, gt=0, le=600)
+    ai_review_max_retries: int = Field(default=2, ge=0, le=10)
+    ai_review_batch_size: int = Field(default=20, ge=1, le=200)
+    ai_review_min_window: str = "1D"
+    ai_review_prompt_version: str = "v1"
+    ai_review_store_raw_response: bool = True
+    ai_review_auto_run: bool = False
+    ai_review_admin_only: bool = True
     telegram_enabled: bool = False
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
@@ -114,6 +127,11 @@ class Settings(BaseSettings):
             raise ValueError("HISTORY_ADJUSTMENT_TYPE必须是NONE、FORWARD或BACKWARD。")
         if self.telegram_enabled and (not self.telegram_bot_token or not self.telegram_chat_id_list()):
             raise ValueError("Telegram已启用，但缺少TELEGRAM_BOT_TOKEN或TELEGRAM_CHAT_IDS。")
+        if self.ai_review_provider not in {"mock", "openai_compatible", "local"}:
+            raise ValueError("AI_REVIEW_PROVIDER必须是mock、openai_compatible或local。")
+        if self.ai_review_enabled and self.ai_review_provider != "mock":
+            if not self.ai_review_base_url or not self.ai_review_model:
+                raise ValueError("AI Review已启用，但缺少Base URL或模型名称。")
         if self.trading_mode == TradingMode.MOOMOO_PAPER and not self.enable_moomoo_paper:
             raise ValueError("TRADING_MODE=MOOMOO_PAPER requires ENABLE_MOOMOO_PAPER=true.")
         return self
@@ -137,6 +155,9 @@ class Settings(BaseSettings):
             "moomoo_allow_order_submission": False,
             "moomoo_preferred_market": self.moomoo_preferred_market,
             "telegram_enabled": self.telegram_enabled,
+            "ai_review_enabled": self.ai_review_enabled,
+            "ai_review_provider": self.ai_review_provider,
+            "ai_review_model": self.ai_review_model,
             "default_timezone": self.default_timezone,
             "display_timezone": self.display_timezone,
             "default_slippage_bps": self.default_slippage_bps,

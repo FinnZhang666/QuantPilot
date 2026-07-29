@@ -13,6 +13,7 @@ from app.database.models import (
     CandidatePoolEntry, CandidateSignal, MarketRegime, Opportunity,
     RealtimeServiceStatus, RuntimeStatus,
     OpportunityReview,
+    AIReviewAnalysis,
 )
 from app.database.session import get_session_factory
 from app.notifications.telegram import TelegramNotificationProvider
@@ -34,6 +35,7 @@ class TelegramCommandService:
                 "可用命令：/status、/opportunities、/symbol TICKER、/why TICKER、"
                 "/regime、/candidates、/long、/short、/candidate TICKER、/help"
                 "、/review [TICKER|pending]"
+                "、/ai_review [TICKER|pending|failed|ID]"
             )
         if name == "/status":
             return True, self._status()
@@ -56,7 +58,54 @@ class TelegramCommandService:
         if name == "/review":
             argument = parts[1] if len(parts) > 1 else None
             return True, self._review(argument)
+        if name == "/ai_review":
+            argument = parts[1] if len(parts) > 1 else None
+            return True, self._ai_review(argument)
         return False, "未知命令。发送 /help 查看可用命令。"
+
+    def _ai_review(self, argument=None) -> str:
+        if argument and argument.lower() == "pending":
+            count = self.db.scalar(select(func.count()).select_from(AIReviewAnalysis).where(
+                AIReviewAnalysis.provider != "mock",
+                AIReviewAnalysis.status.in_(["PENDING", "RUNNING"]),
+            )) or 0
+            return "AI Review待处理：%s" % count
+        query = select(AIReviewAnalysis, OpportunityReview, Opportunity).join(
+            OpportunityReview, OpportunityReview.id == AIReviewAnalysis.opportunity_review_id,
+        ).join(
+            Opportunity, Opportunity.id == AIReviewAnalysis.opportunity_id,
+        ).where(AIReviewAnalysis.provider != "mock")
+        if argument and argument.lower() == "failed":
+            query = query.where(AIReviewAnalysis.status == "FAILED")
+        elif argument and argument.isdigit():
+            query = query.where(AIReviewAnalysis.id == int(argument))
+        elif argument:
+            query = query.where(Opportunity.symbol == argument.upper().replace("US.", ""))
+        else:
+            query = query.where(AIReviewAnalysis.status == "COMPLETED")
+        rows = list(self.db.execute(query.order_by(
+            desc(AIReviewAnalysis.created_at),
+        ).limit(5)))
+        if not rows:
+            return "暂无已完成的 AI Review 分析。"
+        lines = ["【AI Review Analyst】"]
+        for analysis, review, opportunity in rows:
+            historical = analysis.historical_comparison_json or {}
+            items = analysis.investigation_items_json or []
+            top = "；".join(item.get("title", "") for item in items[:2]) or "无"
+            lines.append(
+                "%s %s %s/%s\n收益%s%% MFE%s%% MAE%s%%\n分类：%s，可信度：%s\n"
+                "摘要：%s\n调查：%s" % (
+                    opportunity.symbol, opportunity.direction,
+                    opportunity.strategy_name, opportunity.timeframe,
+                    review.return_percent, review.mfe_percent, review.mae_percent,
+                    historical.get("outcome_classification", "UNKNOWN"),
+                    analysis.confidence_score if analysis.confidence_score is not None else "—",
+                    analysis.summary or "暂无", top,
+                )
+            )
+        lines.append("\nAI分析仅供研究与复盘，不构成投资建议。")
+        return "\n\n".join(lines)
 
     def _review(self, argument=None) -> str:
         if argument and argument.lower() == "pending":

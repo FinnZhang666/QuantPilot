@@ -38,6 +38,7 @@ from app.database.models.entities import (
     CandidatePoolRun,
     OpportunityReview,
     ReviewStatistic,
+    AIReviewAnalysis,
 )
 
 __all__ = [
@@ -80,4 +81,5 @@ __all__ = [
     "CandidatePoolRun",
     "OpportunityReview",
     "ReviewStatistic",
+    "AIReviewAnalysis",
 ]

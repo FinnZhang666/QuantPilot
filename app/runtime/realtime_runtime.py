@@ -16,6 +16,7 @@ from app.realtime.factory import get_realtime_manager
 from app.runtime.opportunity_pipeline import OpportunityPipeline
 from app.runtime.runtime_state import RuntimeStateRepository
 from app.review.scheduler import ReviewScheduler
+from app.ai.scheduler import AIReviewScheduler
 
 
 class RealtimeOpportunityRuntime:
@@ -38,6 +39,7 @@ class RealtimeOpportunityRuntime:
         self._last_opend_connected = None
         self.telegram_poller = TelegramCommandPoller(self.settings, self.session_factory)
         self.review_scheduler = ReviewScheduler(self.settings, self.session_factory)
+        self.ai_review_scheduler = AIReviewScheduler(self.settings, self.session_factory)
 
     def start(self) -> Dict[str, object]:
         with self.lock:
@@ -73,6 +75,7 @@ class RealtimeOpportunityRuntime:
         self.thread.join(timeout=max(5.0, self.settings.runtime_poll_interval_seconds * 3))
         self.telegram_poller.stop()
         self.review_scheduler.stop()
+        self.ai_review_scheduler.stop()
         self.status = "STOPPED"
         self._save_state()
         self._save_pipeline_stopped()
@@ -145,6 +148,7 @@ class RealtimeOpportunityRuntime:
             try:
                 self.process_once()
                 self.review_scheduler.trigger()
+                self.ai_review_scheduler.trigger()
             except Exception as exc:
                 self.error_count += 1
                 self.status = "DEGRADED"

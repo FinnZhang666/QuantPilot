@@ -206,3 +206,21 @@ Dashboard 页面：`/dashboard/reviews`。详细设计和安全边界见
 
 Opportunity、Outcome 与 Review 都是研究对象，不是交易订单；本模块不会调用
 Moomoo 下单接口。
+
+## Sprint 11：AI Review Analyst
+
+AI Review Analyst 对已经完成的 Opportunity Review 进行结构化复盘，输入包含
+Outcome、Feature Snapshot、Strategy Context、Market Regime、Candidate Pool
+以及历史同类统计。默认关闭；Mock Provider 仅用于测试且不计入真实统计。
+
+```bash
+python -m app.cli ai-review pending
+python -m app.cli ai-review run --limit 20
+python -m app.cli ai-review statistics
+```
+
+Dashboard：`/dashboard/ai-reviews`。详细配置、安全边界、API 和 Telegram 命令见
+[`docs/sprints/SPRINT_11_AI_REVIEW_ANALYST.md`](docs/sprints/SPRINT_11_AI_REVIEW_ANALYST.md)。
+
+AI 输出只供研究与复盘，不构成投资建议；AI 不会修改策略、参数或代码，不会调用
+Codex，也不会创建订单。

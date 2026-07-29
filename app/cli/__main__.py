@@ -16,6 +16,7 @@ from app.database.models import CandidatePoolEntry, CandidatePoolRun, MarketRegi
 from app.candidate_pool.service import CandidatePoolService
 from app.market_regime.service import MarketRegimeService
 from app.review.service import OpportunityReviewService
+from app.ai.service import AIReviewService
 from sqlalchemy import select
 
 PID_FILE = Path("data/opportunity_runtime.pid")
@@ -70,6 +71,20 @@ def build_parser():
     review_pending.add_argument("--symbol")
     review_show = review_actions.add_parser("show")
     review_show.add_argument("--id", type=int, required=True)
+    ai_review = group.add_parser("ai-review")
+    ai_actions = ai_review.add_subparsers(dest="action", required=True)
+    ai_pending = ai_actions.add_parser("pending")
+    ai_pending.add_argument("--limit", type=int, default=20)
+    ai_pending.add_argument("--symbol")
+    ai_run = ai_actions.add_parser("run")
+    ai_run.add_argument("--limit", type=int, default=20)
+    ai_run.add_argument("--review-id", type=int)
+    ai_run.add_argument("--symbol")
+    ai_show = ai_actions.add_parser("show")
+    ai_show.add_argument("--id", type=int, required=True)
+    ai_retry = ai_actions.add_parser("retry")
+    ai_retry.add_argument("--id", type=int, required=True)
+    ai_actions.add_parser("statistics")
     return parser
 
 
@@ -81,6 +96,8 @@ def main():
         return _candidates(args)
     if args.group == "review":
         return _review(args)
+    if args.group == "ai-review":
+        return _ai_review(args)
     if args.group == "runtime":
         if args.action == "start":
             return _runtime_foreground()
@@ -175,6 +192,56 @@ def _review(args):
         ))
         print("持有：%s根K线 / %s分钟" % (row.holding_bars, row.holding_minutes))
         print("原因：%s" % json.dumps(row.reason_json, ensure_ascii=False))
+    return 0
+
+
+def _ai_review(args):
+    with get_session_factory()() as db:
+        service = AIReviewService(db, get_settings())
+        if args.action == "pending":
+            rows = service.pending(limit=args.limit, symbol=args.symbol)
+            print("AI Review待分析：%s（功能%s）" % (
+                len(rows), "已启用" if service.settings.ai_review_enabled else "未启用",
+            ))
+            for review, opportunity in rows:
+                print("Review #%s %s %s %s" % (
+                    review.id, opportunity.symbol, opportunity.direction, opportunity.timeframe,
+                ))
+            return 0
+        if args.action == "run":
+            result = service.run(
+                limit=args.limit, review_id=args.review_id, symbol=args.symbol,
+            )
+            if not result["enabled"]:
+                print("AI Review Analyst当前未启用，未调用Provider，也未生成虚假分析。")
+                return 0
+            print("AI分析：扫描 %(scanned)s，完成 %(completed)s，失败 %(failed)s，"
+                  "跳过 %(skipped)s，数据不足 %(insufficient_data)s，已有 %(existing)s。" % result)
+            return 0 if result["failed"] == 0 else 1
+        if args.action == "statistics":
+            value = service.statistics()
+            print(json.dumps(value, ensure_ascii=False, indent=2, default=str))
+            return 0
+        if args.action == "retry":
+            try:
+                row = service.retry(args.id)
+            except ValueError as exc:
+                print(str(exc))
+                return 2
+            print("AI Analysis #%s 重试结果：%s" % (row.id, row.status))
+            return 0 if row.status == "COMPLETED" else 1
+        row = service.repository.get(args.id)
+        if row is None:
+            print("AI Review Analysis不存在。")
+            return 2
+        print("AI Analysis #%s：%s%s" % (
+            row.id, row.status, "（TEST / MOCK OUTPUT）" if row.provider == "mock" else "",
+        ))
+        print("Provider / Model：%s / %s" % (row.provider, row.model))
+        print("Summary：%s" % (row.summary or "暂无"))
+        print("Confidence：%s" % (row.confidence_score if row.confidence_score is not None else "—"))
+        if row.error_message:
+            print("错误：%s" % row.error_message)
     return 0
 
 

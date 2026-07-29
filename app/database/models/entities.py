@@ -948,3 +948,49 @@ class ReviewStatistic(TimestampMixin, Base):
     maximum_drawdown: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
     review_coverage_rate: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
     data_insufficient_count: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class AIReviewAnalysis(TimestampMixin, Base):
+    __tablename__ = "ai_review_analyses"
+    __table_args__ = (
+        UniqueConstraint(
+            "opportunity_review_id", "analysis_version", "provider", "model",
+            "input_hash", name="uq_ai_review_analysis_identity",
+        ),
+        Index("ix_ai_review_status_created", "status", "created_at"),
+        Index("ix_ai_review_opportunity", "opportunity_id"),
+        Index("ix_ai_review_review", "opportunity_review_id"),
+        Index("ix_ai_review_provider_model", "provider", "model"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    opportunity_id: Mapped[int] = mapped_column(ForeignKey("opportunities.id"))
+    opportunity_review_id: Mapped[int] = mapped_column(ForeignKey("opportunity_reviews.id"))
+    analysis_version: Mapped[str] = mapped_column(String(16), default="1.0.0")
+    provider: Mapped[str] = mapped_column(String(32))
+    model: Mapped[str] = mapped_column(String(128))
+    status: Mapped[str] = mapped_column(String(32), default="PENDING")
+    input_snapshot_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    input_hash: Mapped[str] = mapped_column(String(64))
+    prompt_version: Mapped[str] = mapped_column(String(16))
+    prompt_text_hash: Mapped[str] = mapped_column(String(64))
+    summary: Mapped[Optional[str]] = mapped_column(Text)
+    outcome_explanation: Mapped[Optional[str]] = mapped_column(Text)
+    positive_factors_json: Mapped[list] = mapped_column(JSON, default=list)
+    negative_factors_json: Mapped[list] = mapped_column(JSON, default=list)
+    risk_factors_json: Mapped[list] = mapped_column(JSON, default=list)
+    timing_analysis_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    market_regime_analysis_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    historical_comparison_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    investigation_items_json: Mapped[list] = mapped_column(JSON, default=list)
+    confidence_score: Mapped[Optional[int]] = mapped_column(Integer)
+    uncertainty_notes: Mapped[list] = mapped_column(JSON, default=list)
+    raw_response_json: Mapped[Optional[dict]] = mapped_column(JSON)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    latency_ms: Mapped[Optional[int]] = mapped_column(Integer)
+    token_input: Mapped[Optional[int]] = mapped_column(Integer)
+    token_output: Mapped[Optional[int]] = mapped_column(Integer)
+    estimated_cost: Mapped[Optional[object]] = mapped_column(Numeric(18, 8))
+    error_code: Mapped[Optional[str]] = mapped_column(String(64))
+    error_message: Mapped[Optional[str]] = mapped_column(Text)
+    retry_count: Mapped[int] = mapped_column(Integer, default=0)

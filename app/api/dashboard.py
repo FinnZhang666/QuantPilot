@@ -14,6 +14,7 @@ from app.database.models import (
     SystemEvent, WatchlistItem,
     MarketRegime, CandidatePoolEntry,
     OpportunityReview, ReviewStatistic,
+    AIReviewAnalysis,
 )
 from app.database.session import get_db, get_engine
 
@@ -61,6 +62,21 @@ def dashboard_summary(
     review_pending = db.scalar(select(func.count()).select_from(Opportunity).where(
         Opportunity.status.in_(["ACTIVE", "EXPIRED", "REVIEW_PENDING"]),
     )) or 0
+    ai_rows = list(db.scalars(select(AIReviewAnalysis).where(
+        AIReviewAnalysis.provider != "mock",
+    )))
+    ai_completed_today = sum(
+        row.status == "COMPLETED" and row.completed_at
+        and row.completed_at.date().isoformat() == day for row in ai_rows
+    )
+    ai_completed = [row for row in ai_rows if row.status == "COMPLETED"]
+    high_items = sum(
+        item.get("priority") == "HIGH"
+        for row in ai_completed for item in (row.investigation_items_json or [])
+    )
+    completed_reviews = db.scalar(select(func.count()).select_from(OpportunityReview).where(
+        OpportunityReview.review_status == "REVIEWED",
+    )) or 0
     return {
         "services": [_service(row) for row in services],
         "database": {
@@ -95,6 +111,19 @@ def dashboard_summary(
             "average_return": str(review_summary.average_return) if review_summary else "0",
             "average_mfe": str(review_summary.average_mfe) if review_summary else "0",
             "average_mae": str(review_summary.average_mae) if review_summary else "0",
+        },
+        "ai_review": {
+            "enabled": settings.ai_review_enabled,
+            "provider": settings.ai_review_provider,
+            "pending": sum(row.status in {"PENDING", "RUNNING"} for row in ai_rows),
+            "completed_today": ai_completed_today,
+            "failed": sum(row.status == "FAILED" for row in ai_rows),
+            "average_confidence": round(
+                sum(row.confidence_score or 0 for row in ai_completed) / len(ai_completed), 2,
+            ) if ai_completed else 0,
+            "high_priority_items": high_items,
+            "coverage_rate": round(len(ai_completed) / completed_reviews * 100, 2)
+            if completed_reviews else 0,
         },
     }
 
