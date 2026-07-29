@@ -1,1 +1,1 @@
-"""Moomoo Quant统一CLI。"""
+"""QuantPilot统一CLI。"""

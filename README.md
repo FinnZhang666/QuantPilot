@@ -1,4 +1,6 @@
-# Moomoo Quant
+# QuantPilot
+
+![QuantPilot Logo](app/dashboard/static/quantpilot-logo.png)
 
 美股量化研究、实时机会监控与本地公司工作台。Sprint 09 增加确定性 Market Regime 与 LONG/SHORT Candidate Pool。
 
@@ -21,8 +23,8 @@
 ## 默认安装方法
 
 ```bash
-git clone https://github.com/FinnZhang666/moomoo-quant.git
-cd moomoo-quant
+git clone https://github.com/FinnZhang666/QuantPilot.git
+cd QuantPilot
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
@@ -47,7 +49,7 @@ Regime 只是环境加权，Candidate Pool 只是进一步研究入口，均不�
 
 ## 配置、数据库与启动
 
-复制 `.env.example` 后只在本机填写配置。默认数据库为 `data/moomoo_quant.db`，默认模式为 `INTERNAL_PAPER`。
+复制 `.env.example` 后只在本机填写配置。默认数据库为 `data/quantpilot.db`，默认模式为 `INTERNAL_PAPER`。
 
 ```bash
 python scripts/check_environment.py

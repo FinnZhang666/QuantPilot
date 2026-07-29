@@ -26,7 +26,7 @@ def configure_logging(level: str = "INFO") -> None:
     Path("logs").mkdir(parents=True, exist_ok=True)
     root = logging.getLogger()
     root.setLevel(level.upper())
-    if getattr(root, "_moomoo_quant_configured", False):
+    if getattr(root, "_quantpilot_configured", False):
         return
     formatter = JsonFormatter()
     app_handler = RotatingFileHandler("logs/app.log", maxBytes=5_000_000, backupCount=5)
@@ -39,4 +39,4 @@ def configure_logging(level: str = "INFO") -> None:
     root.addHandler(app_handler)
     root.addHandler(error_handler)
     root.addHandler(console)
-    root._moomoo_quant_configured = True  # type: ignore[attr-defined]
+    root._quantpilot_configured = True  # type: ignore[attr-defined]

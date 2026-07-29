@@ -22,7 +22,7 @@ PID_FILE = Path("data/opportunity_runtime.pid")
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(prog="python -m app.cli", description="Moomoo Quant管理CLI")
+    parser = argparse.ArgumentParser(prog="python -m app.cli", description="QuantPilot管理CLI")
     group = parser.add_subparsers(dest="group", required=True)
     runtime = group.add_parser("runtime")
     runtime_actions = runtime.add_subparsers(dest="action", required=True)
@@ -115,7 +115,7 @@ def main():
         print("Telegram未启用，请先配置TELEGRAM_BOT_TOKEN和TELEGRAM_CHAT_IDS。")
         return 2
     result = asyncio.run(TelegramNotificationProvider(settings).send_text(
-        "【Moomoo Quant】Sprint 07 Telegram测试消息。"
+        "【QuantPilot】Telegram测试消息。"
     ))
     print("Telegram测试结果：%s" % result.status)
     return 0 if result.status == "sent" else 1

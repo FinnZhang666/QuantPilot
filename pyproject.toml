@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "moomoo-quant"
+name = "quantpilot"
 version = "0.1.0"
 description = "Safe US equity research and paper-trading foundation"
 requires-python = ">=3.9,<3.10"

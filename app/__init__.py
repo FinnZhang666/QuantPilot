@@ -1,1 +1,1 @@
-"""Moomoo Quant application package."""
+"""QuantPilot application package."""

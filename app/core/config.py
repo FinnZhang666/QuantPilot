@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     app_host: str = "127.0.0.1"
     app_port: int = 8000
     log_level: str = "INFO"
-    database_url: str = "sqlite:///./data/moomoo_quant.db"
+    database_url: str = "sqlite:///./data/quantpilot.db"
     trading_mode: TradingMode = TradingMode.INTERNAL_PAPER
     enable_moomoo_paper: bool = False
     enable_internal_paper: bool = True

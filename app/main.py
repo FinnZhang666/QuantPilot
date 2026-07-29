@@ -48,7 +48,7 @@ async def lifespan(app: FastAPI):
             manager.stop()
 
 
-app = FastAPI(title="Moomoo Quant", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="QuantPilot", version="0.1.0", lifespan=lifespan)
 
 
 @app.exception_handler(RequestValidationError)
