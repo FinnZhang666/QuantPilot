@@ -87,6 +87,10 @@ class Settings(BaseSettings):
     candidate_pool_daily_time: str = "08:00"
     candidate_pool_timezone: str = "America/New_York"
     candidate_pool_config_universe_file: str = "config/candidate_universe.yaml"
+    opportunity_review_enabled: bool = True
+    opportunity_review_windows_file: str = "config/review_windows_v1.yaml"
+    opportunity_review_batch_size: int = Field(default=100, ge=1, le=1000)
+    opportunity_review_poll_seconds: int = Field(default=300, ge=10, le=86400)
     telegram_enabled: bool = False
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""

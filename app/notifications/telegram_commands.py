@@ -12,6 +12,7 @@ from app.core.config import Settings
 from app.database.models import (
     CandidatePoolEntry, CandidateSignal, MarketRegime, Opportunity,
     RealtimeServiceStatus, RuntimeStatus,
+    OpportunityReview,
 )
 from app.database.session import get_session_factory
 from app.notifications.telegram import TelegramNotificationProvider
@@ -32,6 +33,7 @@ class TelegramCommandService:
             return True, (
                 "可用命令：/status、/opportunities、/symbol TICKER、/why TICKER、"
                 "/regime、/candidates、/long、/short、/candidate TICKER、/help"
+                "、/review [TICKER|pending]"
             )
         if name == "/status":
             return True, self._status()
@@ -51,7 +53,49 @@ class TelegramCommandService:
             if len(parts) != 2:
                 return False, "请提供Ticker，例如：/candidate SOXL"
             return True, self._candidate(parts[1].upper().replace("US.", ""))
+        if name == "/review":
+            argument = parts[1] if len(parts) > 1 else None
+            return True, self._review(argument)
         return False, "未知命令。发送 /help 查看可用命令。"
+
+    def _review(self, argument=None) -> str:
+        if argument and argument.lower() == "pending":
+            count = self.db.scalar(select(func.count()).select_from(Opportunity).where(
+                Opportunity.status.in_(["ACTIVE", "EXPIRED", "REVIEW_PENDING"]),
+            )) or 0
+            return "待复盘Opportunity：%s\nReview结果不构成交易建议。" % count
+        query = select(OpportunityReview, Opportunity).join(
+            Opportunity, Opportunity.id == OpportunityReview.opportunity_id,
+        )
+        if argument:
+            query = query.where(Opportunity.symbol == argument.upper().replace("US.", ""))
+        rows = self.db.execute(query.order_by(
+            desc(OpportunityReview.review_time),
+        ).limit(10)).all()
+        if not rows:
+            return "暂无%sReview记录。" % ((argument.upper() + " ") if argument else "")
+        completed = [
+            review for review, _ in rows
+            if review.review_status == "REVIEWED" and review.return_percent is not None
+        ]
+        average_return = sum(float(row.return_percent) for row in completed) / len(completed) if completed else 0
+        average_mfe = sum(float(row.mfe_percent) for row in completed) / len(completed) if completed else 0
+        average_mae = sum(float(row.mae_percent) for row in completed) / len(completed) if completed else 0
+        lines = [
+            "【最近Opportunity Review】",
+            "完成：%s\n平均收益：%.2f%%\n平均MFE：%.2f%%\n平均MAE：%.2f%%" % (
+                len(completed), average_return, average_mfe, average_mae,
+            ),
+            "",
+        ]
+        lines.extend("%s %s %s 收益%s%% MFE%s%% MAE%s%%" % (
+            opportunity.symbol, opportunity.timeframe, review.review_status,
+            review.return_percent if review.return_percent is not None else "—",
+            review.mfe_percent if review.mfe_percent is not None else "—",
+            review.mae_percent if review.mae_percent is not None else "—",
+        ) for review, opportunity in rows)
+        lines.append("\nReview结果不构成交易建议。")
+        return "\n".join(lines)
 
     def _status(self) -> str:
         runtime = self.db.scalar(select(RuntimeStatus).where(RuntimeStatus.service_name == "realtime_runtime"))

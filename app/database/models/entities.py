@@ -889,3 +889,62 @@ class CandidatePoolEntry(TimestampMixin, Base):
     first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class OpportunityReview(TimestampMixin, Base):
+    __tablename__ = "opportunity_reviews"
+    __table_args__ = (
+        UniqueConstraint("opportunity_id", name="uq_opportunity_review_final"),
+        Index("ix_opportunity_reviews_status_time", "review_status", "review_time"),
+        Index("ix_opportunity_reviews_window", "review_window"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    opportunity_id: Mapped[int] = mapped_column(ForeignKey("opportunities.id"))
+    review_status: Mapped[str] = mapped_column(String(24))
+    review_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    holding_bars: Mapped[int] = mapped_column(Integer, default=0)
+    holding_minutes: Mapped[int] = mapped_column(Integer, default=0)
+    holding_days: Mapped[object] = mapped_column(Numeric(16, 6), default=0)
+    entry_reference_price: Mapped[object] = mapped_column(Numeric(24, 8))
+    exit_reference_price: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    last_price: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    mfe_percent: Mapped[Optional[object]] = mapped_column(Numeric(18, 8))
+    mae_percent: Mapped[Optional[object]] = mapped_column(Numeric(18, 8))
+    return_percent: Mapped[Optional[object]] = mapped_column(Numeric(18, 8))
+    max_close_return: Mapped[Optional[object]] = mapped_column(Numeric(18, 8))
+    min_close_return: Mapped[Optional[object]] = mapped_column(Numeric(18, 8))
+    target_hit: Mapped[Optional[bool]] = mapped_column(Boolean)
+    stop_hit: Mapped[Optional[bool]] = mapped_column(Boolean)
+    expired: Mapped[bool] = mapped_column(Boolean, default=False)
+    review_window: Mapped[str] = mapped_column(String(16))
+    price_path_json: Mapped[list] = mapped_column(JSON, default=list)
+    statistics_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    reason_json: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class ReviewStatistic(TimestampMixin, Base):
+    __tablename__ = "review_statistics"
+    __table_args__ = (
+        UniqueConstraint(
+            "strategy_name", "strategy_version", "timeframe", "symbol",
+            name="uq_review_statistics_group",
+        ),
+        Index("ix_review_statistics_strategy", "strategy_name", "timeframe"),
+        Index("ix_review_statistics_symbol", "symbol"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    strategy_name: Mapped[str] = mapped_column(String(64))
+    strategy_version: Mapped[str] = mapped_column(String(16))
+    timeframe: Mapped[str] = mapped_column(String(8))
+    symbol: Mapped[str] = mapped_column(String(32))
+    total_reviews: Mapped[int] = mapped_column(Integer, default=0)
+    long_count: Mapped[int] = mapped_column(Integer, default=0)
+    short_count: Mapped[int] = mapped_column(Integer, default=0)
+    success_rate: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
+    average_return: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
+    average_mfe: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
+    average_mae: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
+    maximum_return: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
+    maximum_drawdown: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
+    review_coverage_rate: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
+    data_insufficient_count: Mapped[int] = mapped_column(Integer, default=0)

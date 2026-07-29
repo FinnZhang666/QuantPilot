@@ -1,0 +1,10 @@
+version: "1.0.0"
+description: "Opportunity Outcome首版复盘窗口"
+windows:
+  - 1h
+  - 4h
+  - 1d
+  - 3d
+  - 5d
+  - 10d
+  - 20d

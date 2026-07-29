@@ -113,3 +113,13 @@ def candidates(request: Request, settings: Settings = Depends(get_settings)):
 @router.get("/dashboard/candidates/{entry_id}")
 def candidate_detail(entry_id: int, request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "candidate-detail")
+
+
+@router.get("/dashboard/reviews")
+def reviews(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "reviews")
+
+
+@router.get("/dashboard/reviews/{review_id}")
+def review_detail(review_id: int, request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "review-detail")

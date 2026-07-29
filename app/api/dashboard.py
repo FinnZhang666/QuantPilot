@@ -13,6 +13,7 @@ from app.database.models import (
     MarketBar, Notification, Opportunity, RuntimeStatus, StrategyRun,
     SystemEvent, WatchlistItem,
     MarketRegime, CandidatePoolEntry,
+    OpportunityReview, ReviewStatistic,
 )
 from app.database.session import get_db, get_engine
 
@@ -49,6 +50,17 @@ def dashboard_summary(
     errors_today = db.scalar(select(func.count()).select_from(SystemEvent).where(
         func.date(SystemEvent.created_at) == day, SystemEvent.level == "ERROR",
     )) or 0
+    reviews_today = db.scalar(select(func.count()).select_from(OpportunityReview).where(
+        func.date(OpportunityReview.review_time) == day,
+        OpportunityReview.review_status == "REVIEWED",
+    )) or 0
+    review_summary = db.scalar(select(ReviewStatistic).where(
+        ReviewStatistic.strategy_name == "*", ReviewStatistic.timeframe == "*",
+        ReviewStatistic.symbol == "*",
+    ))
+    review_pending = db.scalar(select(func.count()).select_from(Opportunity).where(
+        Opportunity.status.in_(["ACTIVE", "EXPIRED", "REVIEW_PENDING"]),
+    )) or 0
     return {
         "services": [_service(row) for row in services],
         "database": {
@@ -67,6 +79,7 @@ def dashboard_summary(
             "opportunities": sum(opportunities.values()), "long": directions.get("LONG", 0),
             "short": directions.get("SHORT", 0), "status_counts": opportunities,
             "bars_processed": int(strategy_today), "errors": errors_today,
+            "reviews_completed": reviews_today,
         },
         "latest_opportunities": [_opportunity(row) for row in latest],
         "recent_errors": [
@@ -76,6 +89,13 @@ def dashboard_summary(
             MarketRegime.bar_time.desc(),
         ).limit(1))),
         "candidate_pool": _candidate_summary(db, day),
+        "review": {
+            "pending": review_pending,
+            "success_rate": str(review_summary.success_rate) if review_summary else "0",
+            "average_return": str(review_summary.average_return) if review_summary else "0",
+            "average_mfe": str(review_summary.average_mfe) if review_summary else "0",
+            "average_mae": str(review_summary.average_mae) if review_summary else "0",
+        },
     }
 
 

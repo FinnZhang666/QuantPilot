@@ -15,6 +15,7 @@ from app.database.models import RuntimeStatus
 from app.database.models import CandidatePoolEntry, CandidatePoolRun, MarketRegime
 from app.candidate_pool.service import CandidatePoolService
 from app.market_regime.service import MarketRegimeService
+from app.review.service import OpportunityReviewService
 from sqlalchemy import select
 
 PID_FILE = Path("data/opportunity_runtime.pid")
@@ -59,6 +60,16 @@ def build_parser():
     candidate_show.add_argument("--json", action="store_true")
     candidate_expire = candidate_actions.add_parser("expire")
     candidate_expire.add_argument("--id", type=int, required=True)
+    review = group.add_parser("review")
+    review_actions = review.add_subparsers(dest="action", required=True)
+    review_run = review_actions.add_parser("run")
+    review_run.add_argument("--limit", type=int, default=100)
+    review_run.add_argument("--symbol")
+    review_pending = review_actions.add_parser("pending")
+    review_pending.add_argument("--limit", type=int, default=100)
+    review_pending.add_argument("--symbol")
+    review_show = review_actions.add_parser("show")
+    review_show.add_argument("--id", type=int, required=True)
     return parser
 
 
@@ -68,6 +79,8 @@ def main():
         return _regime(args)
     if args.group == "candidates":
         return _candidates(args)
+    if args.group == "review":
+        return _review(args)
     if args.group == "runtime":
         if args.action == "start":
             return _runtime_foreground()
@@ -134,6 +147,34 @@ def _regime(args):
                 print("%s %s 可信度%s LONG/SHORT %s/%s" % (
                     row.bar_time, row.regime, row.confidence, row.long_bias, row.short_bias,
                 ))
+    return 0
+
+
+def _review(args):
+    with get_session_factory()() as db:
+        service = OpportunityReviewService(db, get_settings())
+        if args.action == "run":
+            result = service.run(limit=args.limit, symbol=args.symbol)
+            print("Opportunity复盘完成：扫描 %(scanned)s，完成 %(reviewed)s，待复盘 %(pending)s，失败 %(failed)s。" % result)
+            return 0 if result["failed"] == 0 else 1
+        if args.action == "pending":
+            rows = service.pending(limit=args.limit, symbol=args.symbol)
+            print("待复盘数量：%s" % len(rows))
+            for row in rows:
+                print("#%s %s %s %s %s" % (
+                    row.id, row.symbol, row.timeframe, row.direction, row.status,
+                ))
+            return 0
+        row = service.get(args.id)
+        if row is None:
+            print("Opportunity Review不存在。")
+            return 2
+        print("Review #%s：%s，窗口 %s" % (row.id, row.review_status, row.review_window))
+        print("收益：%s%%，MFE：%s%%，MAE：%s%%" % (
+            row.return_percent, row.mfe_percent, row.mae_percent,
+        ))
+        print("持有：%s根K线 / %s分钟" % (row.holding_bars, row.holding_minutes))
+        print("原因：%s" % json.dumps(row.reason_json, ensure_ascii=False))
     return 0
 
 

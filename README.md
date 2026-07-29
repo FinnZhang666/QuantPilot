@@ -187,3 +187,20 @@ docker compose up --build
 # Sprint 06：轻量历史回测
 
 Sprint 06 提供单标的、单策略、单周期的 Candidate Signal 历史回放与策略重算回测。默认在信号 K 线的下一根开盘成交，只做 `FLAT/LONG` 状态模拟，不连接券商、不创建订单。完整说明见 [docs/BACKTEST_ENGINE.md](docs/BACKTEST_ENGINE.md)。
+## Sprint 10：Opportunity Outcome 复盘
+
+Opportunity 现在会在配置窗口成熟后形成不可重复的最终 Review。Review 保存实际
+价格路径、方向化收益、MFE、MAE、Target/Stop 触达和物化聚合统计，并可通过
+Dashboard、管理员 API、CLI 与 Telegram 查询。
+
+```bash
+python -m app.cli review pending
+python -m app.cli review run --limit 100
+python -m app.cli review show --id 1
+```
+
+Dashboard 页面：`/dashboard/reviews`。详细设计和安全边界见
+[`docs/SPRINT_10_REVIEW_ENGINE.md`](docs/SPRINT_10_REVIEW_ENGINE.md)。
+
+Opportunity、Outcome 与 Review 都是研究对象，不是交易订单；本模块不会调用
+Moomoo 下单接口。
