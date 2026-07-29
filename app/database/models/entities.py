@@ -994,3 +994,21 @@ class AIReviewAnalysis(TimestampMixin, Base):
     error_code: Mapped[Optional[str]] = mapped_column(String(64))
     error_message: Mapped[Optional[str]] = mapped_column(Text)
     retry_count: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class TelegramUserSymbol(TimestampMixin, Base):
+    """Telegram用户自己的研究范围，不承载账号或交易权限。"""
+
+    __tablename__ = "telegram_user_symbols"
+    __table_args__ = (
+        UniqueConstraint("telegram_user_id", "symbol", "market", name="uq_telegram_user_symbol"),
+        Index("ix_telegram_user_symbols_user_enabled", "telegram_user_id", "enabled"),
+        Index("ix_telegram_user_symbols_symbol", "symbol"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    telegram_user_id: Mapped[str] = mapped_column(String(64))
+    symbol: Mapped[str] = mapped_column(String(32))
+    market: Mapped[str] = mapped_column(String(16), default="US")
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    source: Mapped[str] = mapped_column(String(24), default="TELEGRAM")
+    notes: Mapped[Optional[str]] = mapped_column(String(255))

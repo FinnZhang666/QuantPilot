@@ -10,4 +10,5 @@ data/*.db-*
 data/*.csv
 data/*.pid
 logs/*.log*
+backups/
 .DS_Store

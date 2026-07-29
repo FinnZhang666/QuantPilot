@@ -18,6 +18,10 @@ from app.market_regime.service import MarketRegimeService
 from app.review.service import OpportunityReviewService
 from app.ai.service import AIReviewService
 from sqlalchemy import select
+from app.backup import BackupService
+from app.platform.environment import validate_environment
+from app.platform.health import health_report
+from app.version import version_info
 
 PID_FILE = Path("data/opportunity_runtime.pid")
 
@@ -25,6 +29,16 @@ PID_FILE = Path("data/opportunity_runtime.pid")
 def build_parser():
     parser = argparse.ArgumentParser(prog="python -m app.cli", description="QuantPilot管理CLI")
     group = parser.add_subparsers(dest="group", required=True)
+    group.add_parser("health")
+    group.add_parser("config")
+    group.add_parser("version")
+    backup = group.add_parser("backup")
+    backup_actions = backup.add_subparsers(dest="action", required=True)
+    backup_create = backup_actions.add_parser("create")
+    backup_create.add_argument("--type", choices=["manual", "daily", "weekly"], default="manual")
+    backup_actions.add_parser("list")
+    backup_verify = backup_actions.add_parser("verify")
+    backup_verify.add_argument("--path")
     runtime = group.add_parser("runtime")
     runtime_actions = runtime.add_subparsers(dest="action", required=True)
     runtime_actions.add_parser("start")
@@ -37,7 +51,9 @@ def build_parser():
     show = op_actions.add_parser("show")
     show.add_argument("--symbol", required=True)
     telegram = group.add_parser("telegram")
-    telegram.add_subparsers(dest="action", required=True).add_parser("test")
+    telegram_actions = telegram.add_subparsers(dest="action", required=True)
+    telegram_actions.add_parser("test")
+    telegram_actions.add_parser("sync-commands")
     regime = group.add_parser("regime")
     regime_actions = regime.add_subparsers(dest="action", required=True)
     regime_actions.add_parser("evaluate")
@@ -90,6 +106,8 @@ def build_parser():
 
 def main():
     args = build_parser().parse_args()
+    if args.group in {"health", "config", "version", "backup"}:
+        return _platform(args)
     if args.group == "regime":
         return _regime(args)
     if args.group == "candidates":
@@ -131,10 +149,14 @@ def main():
     if not settings.telegram_enabled:
         print("Telegram未启用，请先配置TELEGRAM_BOT_TOKEN和TELEGRAM_CHAT_IDS。")
         return 2
-    result = asyncio.run(TelegramNotificationProvider(settings).send_text(
-        "【QuantPilot】Telegram测试消息。"
+    provider = TelegramNotificationProvider(settings)
+    result = asyncio.run(
+        provider.set_commands() if args.action == "sync-commands"
+        else provider.send_text("【QuantPilot】Telegram测试消息。")
+    )
+    print("Telegram%s结果：%s" % (
+        "命令菜单同步" if args.action == "sync-commands" else "测试", result.status,
     ))
-    print("Telegram测试结果：%s" % result.status)
     return 0 if result.status == "sent" else 1
 
 
@@ -165,6 +187,56 @@ def _regime(args):
                     row.bar_time, row.regime, row.confidence, row.long_bias, row.short_bias,
                 ))
     return 0
+
+
+def _platform(args):
+    settings = get_settings()
+    if args.group == "backup":
+        service = BackupService(settings)
+        try:
+            if args.action == "create":
+                row = service.create(args.type)
+                print("备份创建完成：%s（%s bytes）" % (row["path"], row["size_bytes"]))
+                return 0
+            if args.action == "list":
+                rows = service.list()
+                print("备份数量：%s" % len(rows))
+                for row in rows:
+                    print("%s %s %s" % (
+                        row["filename"], row["size_bytes"], "有效" if row["valid"] else "无效",
+                    ))
+                return 0
+            row = service.verify(args.path)
+            print("备份验证：%s，SHA-256：%s" % (
+                "通过" if row["valid"] else "失败", row["sha256"],
+            ))
+            return 0 if row["valid"] else 1
+        except (OSError, ValueError, FileNotFoundError) as exc:
+            print("备份操作失败：%s" % exc)
+            return 2
+    with get_session_factory()() as db:
+        if args.group == "version":
+            row = version_info(db)
+            print("%(product)s %(version)s\nSprint：%(sprint)s\nCommit：%(commit)s\n"
+                  "Migration：%(migration)s\nPython：%(python)s" % row)
+            return 0
+        if args.group == "config":
+            environment = validate_environment(settings, db)
+            print("QuantPilot配置（Secret已隐藏）")
+            for key, value in sorted(settings.safe_dict().items()):
+                print("%s=%s" % (key, value))
+            print("环境校验：%s" % environment["status"])
+            for item in environment["checks"]:
+                print("[%s] %s：%s" % (item["status"], item["name"], item["message"]))
+            return 1 if environment["status"] == "FAILED" else 0
+        row = health_report(db, settings)
+        print("QuantPilot Health：%s" % row["status"])
+        print("Database：%s" % row["database"]["status"])
+        print("Runtime：%s" % row["runtime"])
+        print("Telegram：%s" % row["telegram"])
+        print("AI：%s" % row["ai"])
+        print("Disk：%s GB free" % row["disk"]["free_gb"])
+        return 1 if row["status"] == "ERROR" else 0
 
 
 def _review(args):

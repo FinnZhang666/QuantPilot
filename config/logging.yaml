@@ -1,0 +1,12 @@
+version: 1
+format: json
+handlers:
+  console:
+    enabled: true
+  rolling_file:
+    enabled: true
+    filename: logs/app.log
+    max_bytes: 5000000
+    backup_count: 5
+levels:
+  allowed: [DEBUG, INFO, WARNING, ERROR, CRITICAL]

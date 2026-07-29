@@ -15,6 +15,13 @@ class Settings(BaseSettings):
     app_host: str = "127.0.0.1"
     app_port: int = 8000
     log_level: str = "INFO"
+    log_directory: str = "logs"
+    log_max_bytes: int = Field(default=5_000_000, ge=100_000)
+    log_backup_count: int = Field(default=5, ge=1, le=100)
+    log_json_enabled: bool = True
+    backup_directory: str = "backups"
+    backup_daily_retention: int = Field(default=7, ge=1, le=365)
+    backup_weekly_retention: int = Field(default=4, ge=1, le=52)
     database_url: str = "sqlite:///./data/quantpilot.db"
     trading_mode: TradingMode = TradingMode.INTERNAL_PAPER
     enable_moomoo_paper: bool = False
@@ -142,6 +149,11 @@ class Settings(BaseSettings):
             "app_host": self.app_host,
             "app_port": self.app_port,
             "log_level": self.log_level,
+            "log_directory": self.log_directory,
+            "log_json_enabled": self.log_json_enabled,
+            "backup_directory": self.backup_directory,
+            "backup_daily_retention": self.backup_daily_retention,
+            "backup_weekly_retention": self.backup_weekly_retention,
             "database_url": self.database_url,
             "trading_mode": self.trading_mode.value,
             "enable_moomoo_paper": self.enable_moomoo_paper,

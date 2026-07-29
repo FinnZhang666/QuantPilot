@@ -133,3 +133,8 @@ def ai_reviews(request: Request, settings: Settings = Depends(get_settings)):
 @router.get("/dashboard/ai-reviews/{analysis_id}")
 def ai_review_detail(analysis_id: int, request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "ai-review-detail")
+
+
+@router.get("/dashboard/system")
+def system(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "system")

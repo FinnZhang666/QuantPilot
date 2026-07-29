@@ -224,3 +224,32 @@ Dashboard：`/dashboard/ai-reviews`。详细配置、安全边界、API 和 Tele
 
 AI 输出只供研究与复盘，不构成投资建议；AI 不会修改策略、参数或代码，不会调用
 Codex，也不会创建订单。
+
+## Sprint 12：Platform Foundation
+
+QuantPilot 现在提供统一配置、环境校验、Secret Mask、结构化滚动日志、Health、
+Version、Runtime Diagnostics、SQLite ZIP Backup 和 System Dashboard。
+
+```bash
+python -m app.cli health
+python -m app.cli config
+python -m app.cli version
+python -m app.cli backup create
+python -m app.cli backup list
+python -m app.cli backup verify
+```
+
+平台接口为 `/health`、`/runtime` 与 `/api/platform/*`；System 页面为
+`/dashboard/system`。详细说明见
+[`docs/SPRINT_12_PLATFORM_FOUNDATION.md`](docs/SPRINT_12_PLATFORM_FOUNDATION.md)。
+
+Telegram 每个管理员 ID 使用独立研究池：
+
+```text
+/watch add NVDA
+/watch remove NVDA
+/watchlist
+```
+
+之后候选、Opportunity、策略原因与 Review 查询仅针对该用户的研究股票。此能力
+是轻量研究隔离，不是完整多租户账号系统。

@@ -22,16 +22,23 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(payload, default=str)
 
 
-def configure_logging(level: str = "INFO") -> None:
-    Path("logs").mkdir(parents=True, exist_ok=True)
+def configure_logging(
+    level: str = "INFO", directory: str = "logs",
+    max_bytes: int = 5_000_000, backup_count: int = 5,
+) -> None:
+    Path(directory).mkdir(parents=True, exist_ok=True)
     root = logging.getLogger()
     root.setLevel(level.upper())
     if getattr(root, "_quantpilot_configured", False):
         return
     formatter = JsonFormatter()
-    app_handler = RotatingFileHandler("logs/app.log", maxBytes=5_000_000, backupCount=5)
+    app_handler = RotatingFileHandler(
+        str(Path(directory) / "app.log"), maxBytes=max_bytes, backupCount=backup_count,
+    )
     app_handler.setFormatter(formatter)
-    error_handler = RotatingFileHandler("logs/error.log", maxBytes=5_000_000, backupCount=5)
+    error_handler = RotatingFileHandler(
+        str(Path(directory) / "error.log"), maxBytes=max_bytes, backupCount=backup_count,
+    )
     error_handler.setLevel(logging.ERROR)
     error_handler.setFormatter(formatter)
     console = logging.StreamHandler()

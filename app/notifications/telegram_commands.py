@@ -13,21 +13,24 @@ from app.database.models import (
     CandidatePoolEntry, CandidateSignal, MarketRegime, Opportunity,
     RealtimeServiceStatus, RuntimeStatus,
     OpportunityReview,
-    AIReviewAnalysis,
+    AIReviewAnalysis, TelegramUserSymbol,
 )
 from app.database.session import get_session_factory
 from app.notifications.telegram import TelegramNotificationProvider
 from app.runtime.runtime_state import RuntimeStateRepository
+from app.candidate_pool.user_scope import TelegramUserScopeService
 
 
 class TelegramCommandService:
     def __init__(self, db: Session, settings: Settings):
         self.db = db
         self.settings = settings
+        self.user_id = ""
 
     def handle(self, user_id: str, command: str) -> Tuple[bool, str]:
         if str(user_id) not in self.settings.telegram_admin_id_set():
             return False, "权限不足：该命令仅允许Telegram管理员使用。"
+        self.user_id = str(user_id)
         parts = command.strip().split()
         name = parts[0].lower() if parts else ""
         if name == "/help":
@@ -36,7 +39,14 @@ class TelegramCommandService:
                 "/regime、/candidates、/long、/short、/candidate TICKER、/help"
                 "、/review [TICKER|pending]"
                 "、/ai_review [TICKER|pending|failed|ID]"
+                "、/watchlist、/watch add TICKER、/watch remove TICKER"
             )
+        if name == "/watchlist":
+            return True, self._watchlist()
+        if name == "/watch":
+            if len(parts) != 3 or parts[1].lower() not in {"add", "remove"}:
+                return False, "用法：/watch add NVDA 或 /watch remove NVDA"
+            return True, self._watch(parts[1].lower(), parts[2])
         if name == "/status":
             return True, self._status()
         if name == "/opportunities":
@@ -64,17 +74,23 @@ class TelegramCommandService:
         return False, "未知命令。发送 /help 查看可用命令。"
 
     def _ai_review(self, argument=None) -> str:
+        allowed = self._user_symbols()
+        if not allowed:
+            return self._empty_scope()
         if argument and argument.lower() == "pending":
-            count = self.db.scalar(select(func.count()).select_from(AIReviewAnalysis).where(
+            count = self.db.scalar(select(func.count()).select_from(AIReviewAnalysis).join(
+                Opportunity, Opportunity.id == AIReviewAnalysis.opportunity_id,
+            ).where(
                 AIReviewAnalysis.provider != "mock",
                 AIReviewAnalysis.status.in_(["PENDING", "RUNNING"]),
+                Opportunity.symbol.in_(allowed),
             )) or 0
             return "AI Review待处理：%s" % count
         query = select(AIReviewAnalysis, OpportunityReview, Opportunity).join(
             OpportunityReview, OpportunityReview.id == AIReviewAnalysis.opportunity_review_id,
         ).join(
             Opportunity, Opportunity.id == AIReviewAnalysis.opportunity_id,
-        ).where(AIReviewAnalysis.provider != "mock")
+        ).where(AIReviewAnalysis.provider != "mock", Opportunity.symbol.in_(allowed))
         if argument and argument.lower() == "failed":
             query = query.where(AIReviewAnalysis.status == "FAILED")
         elif argument and argument.isdigit():
@@ -108,14 +124,18 @@ class TelegramCommandService:
         return "\n\n".join(lines)
 
     def _review(self, argument=None) -> str:
+        allowed = self._user_symbols()
+        if not allowed:
+            return self._empty_scope()
         if argument and argument.lower() == "pending":
             count = self.db.scalar(select(func.count()).select_from(Opportunity).where(
                 Opportunity.status.in_(["ACTIVE", "EXPIRED", "REVIEW_PENDING"]),
+                Opportunity.symbol.in_(allowed),
             )) or 0
             return "待复盘Opportunity：%s\nReview结果不构成交易建议。" % count
         query = select(OpportunityReview, Opportunity).join(
             Opportunity, Opportunity.id == OpportunityReview.opportunity_id,
-        )
+        ).where(Opportunity.symbol.in_(allowed))
         if argument:
             query = query.where(Opportunity.symbol == argument.upper().replace("US.", ""))
         rows = self.db.execute(query.order_by(
@@ -147,6 +167,7 @@ class TelegramCommandService:
         return "\n".join(lines)
 
     def _status(self) -> str:
+        allowed = self._user_symbols()
         runtime = self.db.scalar(select(RuntimeStatus).where(RuntimeStatus.service_name == "realtime_runtime"))
         opend = self.db.scalar(select(RealtimeServiceStatus).where(
             RealtimeServiceStatus.service_name == "moomoo_realtime",
@@ -154,6 +175,7 @@ class TelegramCommandService:
         today = datetime.now(timezone.utc).date()
         count = self.db.scalar(select(func.count()).select_from(Opportunity).where(
             Opportunity.detected_at >= datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc),
+            Opportunity.symbol.in_(allowed) if allowed else False,
         )) or 0
         metadata = runtime.metadata_json if runtime else {}
         return (
@@ -167,7 +189,12 @@ class TelegramCommandService:
         )
 
     def _opportunities(self) -> str:
-        rows = self.db.scalars(select(Opportunity).order_by(
+        allowed = self._user_symbols()
+        if not allowed:
+            return self._empty_scope()
+        rows = self.db.scalars(select(Opportunity).where(
+            Opportunity.symbol.in_(allowed),
+        ).order_by(
             desc(Opportunity.detected_at),
         ).limit(10)).all()
         if not rows:
@@ -179,6 +206,8 @@ class TelegramCommandService:
         )
 
     def _symbol(self, symbol: str) -> str:
+        if symbol not in self._user_symbols():
+            return "%s不在你的关注池中。使用 /watch add %s 添加。" % (symbol, symbol)
         row = self.db.scalar(select(Opportunity).where(
             Opportunity.symbol == symbol,
         ).order_by(desc(Opportunity.detected_at)).limit(1))
@@ -192,6 +221,8 @@ class TelegramCommandService:
         )
 
     def _why(self, symbol: str) -> str:
+        if symbol not in self._user_symbols():
+            return "%s不在你的关注池中。使用 /watch add %s 添加。" % (symbol, symbol)
         signal = self.db.scalar(select(CandidateSignal).where(
             CandidateSignal.symbol == symbol,
         ).order_by(desc(CandidateSignal.bar_timestamp), desc(CandidateSignal.id)).limit(1))
@@ -224,8 +255,12 @@ class TelegramCommandService:
         ) % (row.regime, row.confidence, row.long_bias, row.short_bias, reasons, risks)
 
     def _candidates(self, direction=None) -> str:
+        allowed = self._user_symbols()
+        if not allowed:
+            return self._empty_scope()
         query = select(CandidatePoolEntry).where(
             CandidatePoolEntry.status.in_(["CANDIDATE", "RESEARCHING", "QUALIFIED"]),
+            CandidatePoolEntry.symbol.in_(allowed),
         )
         if direction:
             query = query.where(CandidatePoolEntry.direction.in_([direction, "BOTH"]))
@@ -243,6 +278,8 @@ class TelegramCommandService:
         return "\n".join(lines)
 
     def _candidate(self, symbol: str) -> str:
+        if symbol not in self._user_symbols():
+            return "%s不在你的关注池中。使用 /watch add %s 添加。" % (symbol, symbol)
         row = self.db.scalar(select(CandidatePoolEntry).where(
             CandidatePoolEntry.symbol == symbol,
         ).order_by(desc(CandidatePoolEntry.pool_date), CandidatePoolEntry.rank).limit(1))
@@ -255,6 +292,42 @@ class TelegramCommandService:
             "%s候选详情\n方向：%s\nLONG/SHORT：%s/%s\n最终评分：%s\n"
             "原因：\n%s\n风险：\n%s\n\n不构成交易指令。"
         ) % (symbol, row.direction, row.long_score, row.short_score, row.final_score, reasons, risks)
+
+    def _user_symbols(self):
+        service = TelegramUserScopeService(self.db)
+        values = service.symbols(self.user_id)
+        if values:
+            return values
+        # 0013升级前的测试库和旧数据库保持只读兼容；一旦任何用户建立个人池，
+        # 所有查询都严格按telegram_user_id隔离。
+        scoped_count = self.db.scalar(select(func.count()).select_from(TelegramUserSymbol)) or 0
+        if scoped_count:
+            return []
+        legacy = set(self.db.scalars(select(CandidatePoolEntry.symbol).distinct()))
+        legacy.update(self.db.scalars(select(CandidateSignal.symbol).distinct()))
+        legacy.update(self.db.scalars(select(Opportunity.symbol).distinct()))
+        return sorted(legacy)
+
+    def _empty_scope(self):
+        return "你的关注池目前为空。请使用 /watch add TICKER 添加，例如：/watch add NVDA"
+
+    def _watchlist(self):
+        symbols = self._user_symbols()
+        return "你的关注池（%s）：\n%s" % (
+            len(symbols), "\n".join("- " + value for value in symbols) if symbols else "暂无股票",
+        )
+
+    def _watch(self, action: str, symbol: str):
+        service = TelegramUserScopeService(self.db)
+        try:
+            if action == "add":
+                value = service.add(self.user_id, symbol)
+                return "%s已加入你的关注池。候选分析只会显示你关注的股票。" % value
+            value = service.normalize(symbol)
+            removed = service.remove(self.user_id, value)
+            return "%s已从你的关注池停用。" % value if removed else "%s不在你的关注池中。" % value
+        except ValueError as exc:
+            return str(exc)
 
 
 class TelegramCommandPoller:

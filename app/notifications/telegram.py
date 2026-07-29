@@ -19,7 +19,7 @@ class NotificationResult:
 
 
 class TelegramNotificationProvider(NotificationProvider):
-    """Outbound-only Telegram provider. There are deliberately no listener APIs."""
+    """Telegram发送与安全命令菜单配置；消息轮询由独立Poller负责。"""
 
     def __init__(self, settings: Settings, db: Optional[Session] = None):
         self.settings = settings
@@ -27,6 +27,28 @@ class TelegramNotificationProvider(NotificationProvider):
 
     async def send(self, message: str) -> NotificationResult:
         return await self.send_text(message)
+
+    async def set_commands(self) -> NotificationResult:
+        if not self.settings.telegram_enabled:
+            return NotificationResult(status="disabled")
+        commands = [
+            {"command": "status", "description": "查看系统运行状态"},
+            {"command": "watchlist", "description": "查看我的关注池"},
+            {"command": "watch", "description": "添加或移除关注股票"},
+            {"command": "candidates", "description": "查看我的候选股票"},
+            {"command": "opportunities", "description": "查看我的交易机会"},
+            {"command": "review", "description": "查看我的Opportunity Review"},
+            {"command": "ai_review", "description": "查看我的AI Review"},
+            {"command": "help", "description": "查看命令帮助"},
+        ]
+        url = "https://api.telegram.org/bot%s/setMyCommands" % self.settings.telegram_bot_token
+        try:
+            async with httpx.AsyncClient(timeout=self.settings.telegram_timeout_seconds) as client:
+                response = await client.post(url, json={"commands": commands})
+                response.raise_for_status()
+            return NotificationResult(status="sent")
+        except (httpx.HTTPError, httpx.TimeoutException) as exc:
+            return NotificationResult(status="failed", error=type(exc).__name__)
 
     async def send_text(self, message: str, chat_ids: Optional[List[str]] = None) -> NotificationResult:
         if not self.settings.telegram_enabled:

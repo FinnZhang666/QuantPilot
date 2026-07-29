@@ -39,6 +39,7 @@ from app.database.models.entities import (
     OpportunityReview,
     ReviewStatistic,
     AIReviewAnalysis,
+    TelegramUserSymbol,
 )
 
 __all__ = [
@@ -82,4 +83,5 @@ __all__ = [
     "OpportunityReview",
     "ReviewStatistic",
     "AIReviewAnalysis",
+    "TelegramUserSymbol",
 ]

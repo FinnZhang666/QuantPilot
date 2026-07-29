@@ -17,6 +17,7 @@ from app.database.models import (
     AIReviewAnalysis,
 )
 from app.database.session import get_db, get_engine
+from app.platform.health import health_report
 
 router = APIRouter(
     prefix="/api/dashboard", tags=["公司工作台"],
@@ -78,6 +79,7 @@ def dashboard_summary(
         OpportunityReview.review_status == "REVIEWED",
     )) or 0
     return {
+        "system_health": health_report(db, settings),
         "services": [_service(row) for row in services],
         "database": {
             "size_bytes": database_size,

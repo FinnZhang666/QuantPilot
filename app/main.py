@@ -22,6 +22,7 @@ from app.api.market_regime import router as market_regime_router
 from app.api.candidate_pool import router as candidate_pool_router
 from app.api.review import router as review_router
 from app.api.ai_review import router as ai_review_router
+from app.api.platform import router as platform_router
 from app.dashboard.routes import router as dashboard_router
 from app.api.routes import router as api_router
 from app.core.config import get_settings
@@ -31,12 +32,16 @@ from app.database.session import get_engine
 from app.realtime.factory import peek_realtime_manager
 from app.core.enums import RealtimeServiceState
 from app.runtime.realtime_runtime import get_runtime
+from app.version import VERSION
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
-    configure_logging(settings.log_level)
+    configure_logging(
+        settings.log_level, settings.log_directory,
+        settings.log_max_bytes, settings.log_backup_count,
+    )
     create_schema(get_engine())
     try:
         yield
@@ -49,7 +54,7 @@ async def lifespan(app: FastAPI):
             manager.stop()
 
 
-app = FastAPI(title="QuantPilot", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="QuantPilot", version=VERSION, lifespan=lifespan)
 
 
 @app.exception_handler(RequestValidationError)
@@ -74,6 +79,7 @@ app.include_router(market_regime_router)
 app.include_router(candidate_pool_router)
 app.include_router(review_router)
 app.include_router(ai_review_router)
+app.include_router(platform_router)
 app.include_router(dashboard_router)
 app.mount(
     "/dashboard/static",
