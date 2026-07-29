@@ -20,7 +20,7 @@ def test_platform_health_version_runtime_api(monkeypatch, tmp_path):
         assert value.get("/health").status_code == 200
         assert value.get("/runtime").status_code == 200
         assert value.get("/api/platform/health").status_code == 200
-        assert value.get("/api/platform/version").json()["sprint"] == "12"
+        assert value.get("/api/platform/version").json()["sprint"] == "13"
 
 
 def test_platform_admin_api_and_secret_mask(monkeypatch, tmp_path):

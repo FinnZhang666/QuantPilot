@@ -253,3 +253,20 @@ Telegram 每个管理员 ID 使用独立研究池：
 
 之后候选、Opportunity、策略原因与 Review 查询仅针对该用户的研究股票。此能力
 是轻量研究隔离，不是完整多租户账号系统。
+
+## Sprint 13：Research Center
+
+Research Center 为每个 Opportunity 建立唯一研究档案，统一聚合 Candidate、
+Opportunity、Review、AI Review、Evidence、Timeline、Manual Notes、
+Attachments、Investigation 和相似历史案例。
+
+```bash
+python -m app.cli research show
+python -m app.cli research timeline --id 1
+python -m app.cli research note --id 1 --content "观察成交量"
+python -m app.cli research similarity --id 1
+```
+
+Dashboard：`/dashboard/research`。完整说明见
+[`docs/SPRINT_13_RESEARCH_CENTER.md`](docs/SPRINT_13_RESEARCH_CENTER.md)。
+Research Center 不会自动修改策略或代码，不会调用Codex、创建Git Issue或交易。

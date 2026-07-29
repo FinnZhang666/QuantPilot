@@ -106,6 +106,7 @@ class OpportunityService:
         }
         self.db.add(opportunity)
         self.db.commit()
+        self._ensure_research(opportunity.id)
         return opportunity, True
 
     def convert_latest(self, symbol: str, timeframe: str) -> Tuple[Optional[Opportunity], bool]:
@@ -126,6 +127,7 @@ class OpportunityService:
             row.notification_status = "SENT"
             row.notification_message_id = message_id
         self.db.commit()
+        self._ensure_research(row.id)
         return row
 
     def mark_notification_failed(self, opportunity_id: int, error: str) -> None:
@@ -153,6 +155,8 @@ class OpportunityService:
                 "summary_zh": signal.summary_zh,
             }
         self.db.commit()
+        for row in rows:
+            self._ensure_research(row.id)
         return len(rows)
 
     def expire_due(self, now: Optional[datetime] = None) -> List[Opportunity]:
@@ -164,6 +168,8 @@ class OpportunityService:
         for row in rows:
             row.status = "EXPIRED"
         self.db.commit()
+        for row in rows:
+            self._ensure_research(row.id)
         return rows
 
     def recent(self, limit: int = 10, symbol: Optional[str] = None) -> List[Opportunity]:
@@ -192,6 +198,14 @@ class OpportunityService:
             "1m": 1, "5m": 5, "15m": 15, "30m": 30, "60m": 60, "1d": 1440,
         }
         return bar_time + timedelta(minutes=minutes[timeframe] * self.expiry_bars)
+
+    def _ensure_research(self, opportunity_id: int) -> None:
+        try:
+            from app.research.service import ResearchService
+            ResearchService(self.db).ensure_workspace(opportunity_id)
+        except Exception:
+            # Research是旁路能力，不得阻断Opportunity Runtime。
+            self.db.rollback()
 
     @staticmethod
     def _aware(value: datetime) -> datetime:

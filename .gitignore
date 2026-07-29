@@ -9,6 +9,7 @@ data/*.db
 data/*.db-*
 data/*.csv
 data/*.pid
+data/research_attachments/
 logs/*.log*
 backups/
 .DS_Store

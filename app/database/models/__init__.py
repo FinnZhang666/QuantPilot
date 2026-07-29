@@ -40,6 +40,12 @@ from app.database.models.entities import (
     ReviewStatistic,
     AIReviewAnalysis,
     TelegramUserSymbol,
+    ResearchWorkspace,
+    ResearchTimelineEvent,
+    ResearchEvidence,
+    ResearchNote,
+    ResearchAttachment,
+    ResearchInvestigation,
 )
 
 __all__ = [
@@ -84,4 +90,10 @@ __all__ = [
     "ReviewStatistic",
     "AIReviewAnalysis",
     "TelegramUserSymbol",
+    "ResearchWorkspace",
+    "ResearchTimelineEvent",
+    "ResearchEvidence",
+    "ResearchNote",
+    "ResearchAttachment",
+    "ResearchInvestigation",
 ]

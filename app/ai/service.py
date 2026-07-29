@@ -255,6 +255,7 @@ class AIReviewService:
                 record.completed_at = datetime.now(timezone.utc)
                 record.latency_ms = int((time.perf_counter() - started) * 1000)
                 self.db.commit()
+                self._sync_research(record.opportunity_id)
                 return record
             except Exception as exc:
                 last_error = exc
@@ -264,7 +265,16 @@ class AIReviewService:
         record.error_code = type(last_error).__name__ if last_error else "UNKNOWN_ERROR"
         record.error_message = _safe_error(last_error)
         self.db.commit()
+        self._sync_research(record.opportunity_id)
         return record
+
+    def _sync_research(self, opportunity_id):
+        try:
+            from app.research.service import ResearchService
+            workspace = ResearchService(self.db).ensure_workspace(opportunity_id)
+            ResearchService(self.db).sync(workspace.id)
+        except Exception:
+            self.db.rollback()
 
     def _regime_context(self, row):
         if row is None:

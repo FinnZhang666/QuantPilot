@@ -22,6 +22,7 @@ from app.backup import BackupService
 from app.platform.environment import validate_environment
 from app.platform.health import health_report
 from app.version import version_info
+from app.research import ResearchService
 
 PID_FILE = Path("data/opportunity_runtime.pid")
 
@@ -39,6 +40,23 @@ def build_parser():
     backup_actions.add_parser("list")
     backup_verify = backup_actions.add_parser("verify")
     backup_verify.add_argument("--path")
+    research = group.add_parser("research")
+    research_actions = research.add_subparsers(dest="action", required=True)
+    research_show = research_actions.add_parser("show")
+    research_show.add_argument("--id", type=int)
+    research_show.add_argument("--symbol")
+    research_timeline = research_actions.add_parser("timeline")
+    research_timeline.add_argument("--id", type=int, required=True)
+    research_note = research_actions.add_parser("note")
+    research_note.add_argument("--id", type=int, required=True)
+    research_note.add_argument("--content", required=True)
+    research_note.add_argument(
+        "--type", default="OBSERVATION",
+        choices=["OBSERVATION", "HYPOTHESIS", "VALIDATION", "EXPERIENCE", "NEXT_STEP"],
+    )
+    research_similarity = research_actions.add_parser("similarity")
+    research_similarity.add_argument("--id", type=int, required=True)
+    research_similarity.add_argument("--limit", type=int, default=10)
     runtime = group.add_parser("runtime")
     runtime_actions = runtime.add_subparsers(dest="action", required=True)
     runtime_actions.add_parser("start")
@@ -108,6 +126,8 @@ def main():
     args = build_parser().parse_args()
     if args.group in {"health", "config", "version", "backup"}:
         return _platform(args)
+    if args.group == "research":
+        return _research(args)
     if args.group == "regime":
         return _regime(args)
     if args.group == "candidates":
@@ -237,6 +257,42 @@ def _platform(args):
         print("AI：%s" % row["ai"])
         print("Disk：%s GB free" % row["disk"]["free_gb"])
         return 1 if row["status"] == "ERROR" else 0
+
+
+def _research(args):
+    with get_session_factory()() as db:
+        service = ResearchService(db)
+        try:
+            if args.action == "show":
+                service.sync_all()
+                if args.id:
+                    values = [service.get(args.id)]
+                else:
+                    values = service.list(symbol=args.symbol, limit=20)
+                if not values:
+                    print("暂无Research Workspace。")
+                    return 0
+                for row in values:
+                    print("#%s %s %s %s %s" % (
+                        row.id, row.symbol, row.timeframe, row.strategy_name, row.status,
+                    ))
+                return 0
+            if args.action == "timeline":
+                for row in service.timeline(args.id):
+                    print("%s %s：%s" % (row.event_time, row.event_type, row.title))
+                return 0
+            if args.action == "note":
+                row = service.add_note(args.id, args.content, args.type, "CLI_ADMIN")
+                print("Research Note已保存：#%s" % row.id)
+                return 0
+            for row in service.similarity(args.id, args.limit):
+                print("%s %s %s 相似度 %.2f" % (
+                    row["symbol"], row["timeframe"], row["direction"], row["similarity"],
+                ))
+            return 0
+        except (KeyError, ValueError) as exc:
+            print(str(exc))
+            return 2
 
 
 def _review(args):

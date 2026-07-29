@@ -1012,3 +1012,96 @@ class TelegramUserSymbol(TimestampMixin, Base):
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     source: Mapped[str] = mapped_column(String(24), default="TELEGRAM")
     notes: Mapped[Optional[str]] = mapped_column(String(255))
+
+
+class ResearchWorkspace(TimestampMixin, Base):
+    __tablename__ = "research_workspaces"
+    __table_args__ = (
+        UniqueConstraint("opportunity_id", name="uq_research_workspace_opportunity"),
+        Index("ix_research_workspace_symbol_updated", "symbol", "updated_at"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    opportunity_id: Mapped[int] = mapped_column(ForeignKey("opportunities.id"))
+    symbol: Mapped[str] = mapped_column(String(32))
+    timeframe: Mapped[str] = mapped_column(String(8))
+    strategy_name: Mapped[str] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(24), default="ACTIVE")
+    summary_json: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class ResearchTimelineEvent(TimestampMixin, Base):
+    __tablename__ = "research_timeline_events"
+    __table_args__ = (
+        UniqueConstraint(
+            "workspace_id", "event_type", "source_type", "source_id",
+            name="uq_research_timeline_source",
+        ),
+        Index("ix_research_timeline_workspace_time", "workspace_id", "event_time"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    workspace_id: Mapped[int] = mapped_column(ForeignKey("research_workspaces.id"))
+    event_type: Mapped[str] = mapped_column(String(48))
+    event_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    title: Mapped[str] = mapped_column(String(255))
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    source_type: Mapped[str] = mapped_column(String(48))
+    source_id: Mapped[str] = mapped_column(String(64))
+    metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class ResearchEvidence(TimestampMixin, Base):
+    __tablename__ = "research_evidence"
+    __table_args__ = (
+        Index("ix_research_evidence_workspace_type", "workspace_id", "evidence_type"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    workspace_id: Mapped[int] = mapped_column(ForeignKey("research_workspaces.id"))
+    evidence_type: Mapped[str] = mapped_column(String(48))
+    label: Mapped[str] = mapped_column(String(255))
+    source_type: Mapped[str] = mapped_column(String(48))
+    source_id: Mapped[Optional[str]] = mapped_column(String(64))
+    value_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    observed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+
+
+class ResearchNote(TimestampMixin, Base):
+    __tablename__ = "research_notes"
+    __table_args__ = (Index("ix_research_notes_workspace_created", "workspace_id", "created_at"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    workspace_id: Mapped[int] = mapped_column(ForeignKey("research_workspaces.id"))
+    note_type: Mapped[str] = mapped_column(String(24), default="OBSERVATION")
+    content: Mapped[str] = mapped_column(Text)
+    created_by: Mapped[Optional[str]] = mapped_column(String(128))
+
+
+class ResearchAttachment(TimestampMixin, Base):
+    __tablename__ = "research_attachments"
+    __table_args__ = (Index("ix_research_attachment_workspace", "workspace_id"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    workspace_id: Mapped[int] = mapped_column(ForeignKey("research_workspaces.id"))
+    original_name: Mapped[str] = mapped_column(String(255))
+    stored_name: Mapped[str] = mapped_column(String(255))
+    media_type: Mapped[str] = mapped_column(String(64))
+    size_bytes: Mapped[int] = mapped_column(BigInteger)
+    sha256: Mapped[str] = mapped_column(String(64))
+    storage_path: Mapped[str] = mapped_column(String(1024))
+    uploaded_by: Mapped[Optional[str]] = mapped_column(String(128))
+
+
+class ResearchInvestigation(TimestampMixin, Base):
+    __tablename__ = "research_investigations"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "source_type", "source_id", name="uq_research_investigation_source"),
+        Index("ix_research_investigation_status_priority", "status", "priority"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    workspace_id: Mapped[int] = mapped_column(ForeignKey("research_workspaces.id"))
+    title: Mapped[str] = mapped_column(String(255))
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(24), default="NEW")
+    priority: Mapped[str] = mapped_column(String(16), default="MEDIUM")
+    source_type: Mapped[str] = mapped_column(String(48))
+    source_id: Mapped[str] = mapped_column(String(64))
+    evidence_ids_json: Mapped[list] = mapped_column(JSON, default=list)
+    result_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    approved_by: Mapped[Optional[str]] = mapped_column(String(128))

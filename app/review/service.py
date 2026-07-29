@@ -116,6 +116,7 @@ class OpportunityReviewService:
         self.db.add(review)
         opportunity.status = "REVIEWED"
         self.db.commit()
+        self._sync_research(opportunity.id)
         return "reviewed"
 
     def get(self, review_id: int) -> Optional[OpportunityReview]:
@@ -203,7 +204,16 @@ class OpportunityReviewService:
             ))
         opportunity.status = "REVIEW_FAILED"
         self.db.commit()
+        self._sync_research(opportunity_id)
         return "failed"
+
+    def _sync_research(self, opportunity_id):
+        try:
+            from app.research.service import ResearchService
+            workspace = ResearchService(self.db).ensure_workspace(opportunity_id)
+            ResearchService(self.db).sync(workspace.id)
+        except Exception:
+            self.db.rollback()
 
     def _atr(self, opportunity):
         row = self.db.scalar(select(FeatureValueRecord).where(

@@ -138,3 +138,15 @@ def ai_review_detail(analysis_id: int, request: Request, settings: Settings = De
 @router.get("/dashboard/system")
 def system(request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "system")
+
+
+@router.get("/dashboard/research")
+def research(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "research")
+
+
+@router.get("/dashboard/research/{workspace_id}")
+def research_detail(
+    workspace_id: int, request: Request, settings: Settings = Depends(get_settings),
+):
+    return _page(request, settings, "research-detail")
