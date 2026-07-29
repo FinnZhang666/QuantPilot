@@ -69,6 +69,24 @@ class Settings(BaseSettings):
     runtime_poll_interval_seconds: float = Field(default=2.0, ge=0.1, le=60)
     dashboard_admin_token: str = ""
     dashboard_readonly_public: bool = False
+    market_regime_enabled: bool = True
+    market_regime_timeframe: str = "1d"
+    market_regime_benchmark: str = "QQQ"
+    market_regime_sector_benchmark: str = "SOXX"
+    market_regime_risk_symbol: str = "SOXS"
+    market_regime_min_bars: int = Field(default=120, ge=20, le=1000)
+    market_regime_cache_minutes: int = Field(default=30, ge=1, le=1440)
+    candidate_pool_enabled: bool = True
+    candidate_pool_max_total: int = Field(default=200, ge=1, le=5000)
+    candidate_pool_max_long: int = Field(default=120, ge=1, le=5000)
+    candidate_pool_max_short: int = Field(default=120, ge=1, le=5000)
+    candidate_pool_min_score: int = Field(default=60, ge=0, le=100)
+    candidate_pool_both_score_gap: int = Field(default=5, ge=0, le=100)
+    candidate_pool_expiry_hours: int = Field(default=36, ge=1, le=720)
+    candidate_pool_daily_enabled: bool = False
+    candidate_pool_daily_time: str = "08:00"
+    candidate_pool_timezone: str = "America/New_York"
+    candidate_pool_config_universe_file: str = "config/candidate_universe.yaml"
     telegram_enabled: bool = False
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""

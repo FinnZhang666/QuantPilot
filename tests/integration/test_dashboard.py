@@ -52,6 +52,7 @@ def test_dashboard_login_and_all_pages(monkeypatch, tmp_path):
         assert login(client).status_code == 303
         for path in (
             "/dashboard", "/dashboard/opportunities", "/dashboard/runtime",
+            "/dashboard/market-regime", "/dashboard/candidates",
             "/dashboard/strategies", "/dashboard/data-quality",
             "/dashboard/reports", "/dashboard/development",
         ):

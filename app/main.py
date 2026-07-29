@@ -18,6 +18,8 @@ from app.api.opportunities import router as opportunities_router
 from app.api.runtime import router as runtime_router
 from app.api.dashboard import router as dashboard_api_router
 from app.api.development import router as development_router
+from app.api.market_regime import router as market_regime_router
+from app.api.candidate_pool import router as candidate_pool_router
 from app.dashboard.routes import router as dashboard_router
 from app.api.routes import router as api_router
 from app.core.config import get_settings
@@ -66,6 +68,8 @@ app.include_router(opportunities_router)
 app.include_router(runtime_router)
 app.include_router(dashboard_api_router)
 app.include_router(development_router)
+app.include_router(market_regime_router)
+app.include_router(candidate_pool_router)
 app.include_router(dashboard_router)
 app.mount(
     "/dashboard/static",

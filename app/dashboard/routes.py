@@ -98,3 +98,18 @@ def development(request: Request, settings: Settings = Depends(get_settings)):
 @router.get("/dashboard/development/{issue_id}")
 def development_detail(issue_id: int, request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "development-detail")
+
+
+@router.get("/dashboard/market-regime")
+def market_regime(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "market-regime")
+
+
+@router.get("/dashboard/candidates")
+def candidates(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "candidates")
+
+
+@router.get("/dashboard/candidates/{entry_id}")
+def candidate_detail(entry_id: int, request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "candidate-detail")

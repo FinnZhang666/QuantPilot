@@ -9,8 +9,8 @@ from sqlalchemy.orm import sessionmaker
 from app.core.config import Settings
 from app.core.enums import BarInterval, RealtimeServiceState
 from app.database.models import (
-    CandidateSignal, Instrument, MarketBar, Opportunity, RealtimeBar,
-    RuntimeStatus, WatchlistItem, WatchlistTimeframe,
+    CandidatePoolEntry, CandidateSignal, Instrument, MarketBar, MarketRegime,
+    Opportunity, RealtimeBar, RuntimeStatus, WatchlistItem, WatchlistTimeframe,
 )
 from app.notifications.telegram import NotificationResult
 from app.notifications.telegram_commands import TelegramCommandService
@@ -77,6 +77,33 @@ def test_opportunity_deduplication(db):
     second, second_created = service.from_signal(signal)
     assert first.id == second.id and first_created and not second_created
     assert db.scalar(select(func.count()).select_from(Opportunity)) == 1
+
+
+def test_opportunity_links_candidate_and_regime(db):
+    add_instrument_and_bar(db)
+    regime = MarketRegime(
+        market="US", timeframe="1d", regime="BULL", trend_score=70,
+        momentum_score=65, volatility_score=60, risk_score=60,
+        long_bias=70, short_bias=35, confidence=80, benchmark_symbol="QQQ",
+        evaluated_at=NOW, bar_time=NOW, feature_snapshot_json={},
+        reason_snapshot_json={"data_sufficient": True},
+    )
+    db.add(regime)
+    db.flush()
+    candidate = CandidatePoolEntry(
+        symbol="SOXL", market="US", asset_type="ETF", direction="LONG",
+        source_type="WATCHLIST", pool_date="2026-07-29", status="CANDIDATE",
+        long_score=84, short_score=30, final_score=84, rank=1,
+        market_regime_id=regime.id, benchmark_symbol="SOXX",
+        reason_snapshot_json={"sources": ["WATCHLIST"]}, filter_snapshot_json={},
+        first_seen_at=NOW, last_seen_at=NOW, expires_at=NOW + timedelta(days=1),
+    )
+    db.add(candidate)
+    db.commit()
+    row, created = OpportunityService(db).from_signal(add_signal(db))
+    assert created and row.candidate_pool_entry_id == candidate.id
+    assert row.market_regime_id == regime.id
+    assert row.decision_snapshot_json["candidate_pool"]["sources"] == ["WATCHLIST"]
 
 
 @pytest.mark.parametrize("direction", ["LONG", "SHORT"])
@@ -254,6 +281,33 @@ def test_why_contains_passed_and_failed(db):
     ok, text = TelegramCommandService(db, Settings(telegram_admin_ids="42")).handle("42", "/why SOXL")
     assert ok and "通过条件" in text and "未通过或风险" in text
     assert "趋势满足" in text and "成交量待确认" in text
+
+
+def test_regime_and_candidate_telegram_commands(db):
+    regime = MarketRegime(
+        market="US", timeframe="1d", regime="NEUTRAL", trend_score=50,
+        momentum_score=50, volatility_score=50, risk_score=50,
+        long_bias=50, short_bias=50, confidence=70, benchmark_symbol="QQQ",
+        evaluated_at=NOW, bar_time=NOW, feature_snapshot_json={},
+        reason_snapshot_json={"reasons": ["方向混合"], "risks": ["波动偏高"]},
+    )
+    db.add(regime)
+    db.flush()
+    db.add(CandidatePoolEntry(
+        symbol="SOXL", market="US", asset_type="ETF", direction="LONG",
+        source_type="WATCHLIST", pool_date="2026-07-29", status="CANDIDATE",
+        long_score=75, short_score=35, final_score=75, rank=1,
+        market_regime_id=regime.id, benchmark_symbol="SOXX",
+        reason_snapshot_json={"reasons": ["趋势成立"], "risks": []},
+        filter_snapshot_json={}, first_seen_at=NOW, last_seen_at=NOW,
+        expires_at=NOW + timedelta(days=1),
+    ))
+    db.commit()
+    service = TelegramCommandService(db, Settings(telegram_admin_ids="42"))
+    for command in ("/regime", "/candidates", "/long", "/short", "/candidate SOXL"):
+        ok, text = service.handle("42", command)
+        assert ok and text
+    assert service.handle("7", "/regime")[0] is False
 
 
 class FailedNotifier:

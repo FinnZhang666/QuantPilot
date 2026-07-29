@@ -1,0 +1,14 @@
+version: "1.0.0"
+description: "Sprint 09小范围配置Universe，不代表全市场"
+thresholds: {}
+weights: {}
+symbols:
+  - QQQ
+  - SOXX
+  - SOXL
+  - SOXS
+  - TQQQ
+  - RAM
+  - MULL
+  - PLTR
+  - ML

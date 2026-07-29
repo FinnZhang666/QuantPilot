@@ -33,6 +33,9 @@ from app.database.models.entities import (
     Opportunity,
     RuntimeStatus,
     DevelopmentIssue,
+    MarketRegime,
+    CandidatePoolEntry,
+    CandidatePoolRun,
 )
 
 __all__ = [
@@ -70,4 +73,7 @@ __all__ = [
     "Opportunity",
     "RuntimeStatus",
     "DevelopmentIssue",
+    "MarketRegime",
+    "CandidatePoolEntry",
+    "CandidatePoolRun",
 ]

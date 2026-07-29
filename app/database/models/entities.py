@@ -766,6 +766,10 @@ class Opportunity(TimestampMixin, Base):
     decision_snapshot_json: Mapped[Optional[dict]] = mapped_column(JSON)
     notification_status: Mapped[str] = mapped_column(String(24), default="PENDING")
     notification_message_id: Mapped[Optional[str]] = mapped_column(String(64))
+    candidate_pool_entry_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("candidate_pool_entries.id")
+    )
+    market_regime_id: Mapped[Optional[int]] = mapped_column(ForeignKey("market_regimes.id"))
 
 
 class RuntimeStatus(TimestampMixin, Base):
@@ -802,3 +806,86 @@ class DevelopmentIssue(TimestampMixin, Base):
     codex_prompt: Mapped[Optional[str]] = mapped_column(Text)
     created_by: Mapped[Optional[str]] = mapped_column(String(128))
     approved_by: Mapped[Optional[str]] = mapped_column(String(128))
+
+
+class MarketRegime(TimestampMixin, Base):
+    __tablename__ = "market_regimes"
+    __table_args__ = (
+        UniqueConstraint("market", "timeframe", "bar_time", name="uq_market_regime_bar"),
+        Index("ix_market_regimes_market_time", "market", "timeframe", "bar_time"),
+        Index("ix_market_regimes_regime", "regime"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    market: Mapped[str] = mapped_column(String(16), default="US")
+    timeframe: Mapped[str] = mapped_column(String(8), default="1d")
+    regime: Mapped[str] = mapped_column(String(24))
+    trend_score: Mapped[int] = mapped_column(Integer)
+    breadth_score: Mapped[Optional[int]] = mapped_column(Integer)
+    momentum_score: Mapped[int] = mapped_column(Integer)
+    volatility_score: Mapped[int] = mapped_column(Integer)
+    risk_score: Mapped[int] = mapped_column(Integer)
+    long_bias: Mapped[int] = mapped_column(Integer)
+    short_bias: Mapped[int] = mapped_column(Integer)
+    confidence: Mapped[int] = mapped_column(Integer)
+    benchmark_symbol: Mapped[str] = mapped_column(String(32))
+    sector_benchmark_symbol: Mapped[Optional[str]] = mapped_column(String(32))
+    evaluated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    bar_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    valid_until: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    feature_snapshot_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    reason_snapshot_json: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class CandidatePoolRun(TimestampMixin, Base):
+    __tablename__ = "candidate_pool_runs"
+    __table_args__ = (
+        Index("ix_candidate_pool_runs_status", "status"),
+        Index("ix_candidate_pool_runs_started", "started_at"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    run_type: Mapped[str] = mapped_column(String(16))
+    market: Mapped[str] = mapped_column(String(16), default="US")
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(24), default="RUNNING")
+    universe_size: Mapped[int] = mapped_column(Integer, default=0)
+    scanned_size: Mapped[int] = mapped_column(Integer, default=0)
+    candidate_count: Mapped[int] = mapped_column(Integer, default=0)
+    long_count: Mapped[int] = mapped_column(Integer, default=0)
+    short_count: Mapped[int] = mapped_column(Integer, default=0)
+    both_count: Mapped[int] = mapped_column(Integer, default=0)
+    regime_id: Mapped[Optional[int]] = mapped_column(ForeignKey("market_regimes.id"))
+    error_count: Mapped[int] = mapped_column(Integer, default=0)
+    summary_json: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class CandidatePoolEntry(TimestampMixin, Base):
+    __tablename__ = "candidate_pool_entries"
+    __table_args__ = (
+        UniqueConstraint("symbol", "market", "pool_date", name="uq_candidate_pool_daily_symbol"),
+        Index("ix_candidate_pool_date_rank", "pool_date", "rank"),
+        Index("ix_candidate_pool_direction_status", "direction", "status"),
+        Index("ix_candidate_pool_symbol_seen", "symbol", "last_seen_at"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(32))
+    market: Mapped[str] = mapped_column(String(16), default="US")
+    asset_type: Mapped[str] = mapped_column(String(16), default="UNKNOWN")
+    direction: Mapped[str] = mapped_column(String(8))
+    source_type: Mapped[str] = mapped_column(String(32))
+    source_reference: Mapped[Optional[str]] = mapped_column(String(255))
+    pool_date: Mapped[str] = mapped_column(String(10))
+    status: Mapped[str] = mapped_column(String(24), default="CANDIDATE")
+    long_score: Mapped[int] = mapped_column(Integer)
+    short_score: Mapped[int] = mapped_column(Integer)
+    final_score: Mapped[int] = mapped_column(Integer)
+    rank: Mapped[Optional[int]] = mapped_column(Integer)
+    market_regime_id: Mapped[Optional[int]] = mapped_column(ForeignKey("market_regimes.id"))
+    benchmark_symbol: Mapped[str] = mapped_column(String(32))
+    sector_benchmark_symbol: Mapped[Optional[str]] = mapped_column(String(32))
+    reason_snapshot_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    filter_snapshot_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    feature_snapshot_json: Mapped[Optional[dict]] = mapped_column(JSON)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

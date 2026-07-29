@@ -1,6 +1,6 @@
 # Moomoo Quant
 
-美股量化研究与安全模拟交易底座。Sprint 02 增加历史行情采集、增量更新、质量检查和SQLite本地数据仓库。
+美股量化研究、实时机会监控与本地公司工作台。Sprint 09 增加确定性 Market Regime 与 LONG/SHORT Candidate Pool。
 
 ## V1 安全边界
 
@@ -31,6 +31,19 @@ cp .env.example .env
 ```
 
 `requirements.txt` 包含 Python 3.9 兼容的运行依赖和 `moomoo-api`；不得混用系统 Python 与项目虚拟环境。
+
+## Market Regime 与候选池
+
+```bash
+python -m app.cli regime evaluate
+python -m app.cli candidates build
+python -m app.cli candidates list --limit 20
+```
+
+Dashboard 新增 `/dashboard/market-regime` 和 `/dashboard/candidates`。Market
+Regime 只是环境加权，Candidate Pool 只是进一步研究入口，均不构成交易指令。
+当前 SHORT 候选不会强迫 LONG-only 策略生成 SHORT Opportunity。详细说明见
+`docs/SPRINT_09_MARKET_REGIME_CANDIDATE_POOL.md`。
 
 ## 配置、数据库与启动
 

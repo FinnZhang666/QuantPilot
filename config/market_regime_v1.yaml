@@ -1,0 +1,15 @@
+version: "1.0.0"
+description: "QQQ、SOXX与SOXS确定性市场状态评分"
+thresholds:
+  strong_bull: 72
+  bull: 58
+  bear: 42
+  strong_bear: 28
+  high_atr_pct: 4.0
+  high_rsi: 70
+  low_rsi: 30
+weights:
+  trend: 0.40
+  momentum: 0.25
+  volatility: 0.15
+  risk: 0.20

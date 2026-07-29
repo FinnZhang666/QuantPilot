@@ -72,6 +72,8 @@ def _serialize(row):
         "direction": row.direction, "opportunity_type": row.opportunity_type,
         "strategy_name": row.strategy_name, "strategy_version": row.strategy_version,
         "signal_id": row.signal_id, "market_regime": row.market_regime,
+        "candidate_pool_entry_id": row.candidate_pool_entry_id,
+        "market_regime_id": row.market_regime_id,
         "status": row.status, "score": row.score, "confidence": row.confidence,
         "detected_at": row.detected_at, "bar_time": row.bar_time,
         "entry_reference_price": str(row.entry_reference_price),

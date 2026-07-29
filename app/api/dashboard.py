@@ -12,6 +12,7 @@ from app.database.models import (
     CandidateSignal, FeatureValueRecord, HistoryDataIssue, HistorySyncJob,
     MarketBar, Notification, Opportunity, RuntimeStatus, StrategyRun,
     SystemEvent, WatchlistItem,
+    MarketRegime, CandidatePoolEntry,
 )
 from app.database.session import get_db, get_engine
 
@@ -71,6 +72,10 @@ def dashboard_summary(
         "recent_errors": [
             _service(row) for row in services if row.last_error_at or row.last_error_message
         ],
+        "market_regime": _regime_summary(db.scalar(select(MarketRegime).order_by(
+            MarketRegime.bar_time.desc(),
+        ).limit(1))),
+        "candidate_pool": _candidate_summary(db, day),
     }
 
 
@@ -197,6 +202,39 @@ def _service(row):
         "last_heartbeat_at": row.last_heartbeat_at, "last_success_at": row.last_success_at,
         "last_error_at": row.last_error_at, "last_error_message": row.last_error_message,
         "metadata": row.metadata_json,
+    }
+
+
+def _regime_summary(row):
+    if row is None:
+        return {"regime": "UNKNOWN", "confidence": 0, "long_bias": 50, "short_bias": 50}
+    return {
+        "id": row.id, "regime": row.regime, "confidence": row.confidence,
+        "long_bias": row.long_bias, "short_bias": row.short_bias,
+        "bar_time": row.bar_time,
+    }
+
+
+def _candidate_summary(db, day):
+    counts = dict(db.execute(select(
+        CandidatePoolEntry.direction, func.count(),
+    ).where(
+        CandidatePoolEntry.pool_date == day,
+        CandidatePoolEntry.status != "EXPIRED",
+    ).group_by(CandidatePoolEntry.direction)).all())
+    rows = db.scalars(select(CandidatePoolEntry).where(
+        CandidatePoolEntry.pool_date == day,
+        CandidatePoolEntry.status != "EXPIRED",
+    ).order_by(CandidatePoolEntry.rank, CandidatePoolEntry.symbol).limit(5)).all()
+    return {
+        "total": sum(counts.values()), "long": counts.get("LONG", 0),
+        "short": counts.get("SHORT", 0), "both": counts.get("BOTH", 0),
+        "top": [{
+            "id": row.id, "rank": row.rank, "symbol": row.symbol,
+            "direction": row.direction, "long_score": row.long_score,
+            "short_score": row.short_score, "final_score": row.final_score,
+            "status": row.status,
+        } for row in rows],
     }
 
 

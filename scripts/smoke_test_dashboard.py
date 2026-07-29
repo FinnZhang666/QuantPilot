@@ -23,17 +23,20 @@ def main():
             assert response.status_code == 303
             for path in (
                 "/dashboard", "/dashboard/opportunities", "/dashboard/runtime",
+                "/dashboard/market-regime", "/dashboard/candidates",
                 "/dashboard/strategies", "/dashboard/data-quality",
                 "/dashboard/reports", "/dashboard/development",
             ):
                 assert client.get(path).status_code == 200
             assert client.get("/api/dashboard/summary").status_code == 200
             assert client.get("/api/dashboard/data-quality").status_code == 200
+            assert client.get("/api/market-regime/current").status_code == 200
+            assert client.get("/api/candidate-pool").status_code == 200
             assert "dashboard-smoke-token" not in client.get("/dashboard").text
-    print("Sprint 08 Dashboard Smoke Test通过")
+    print("Sprint 09 Dashboard Smoke Test通过")
     print("- 空数据库页面：通过")
     print("- 管理员登录：通过")
-    print("- 七个主页面：通过")
+    print("- 九个主页面：通过")
     print("- Token泄露检查：通过")
     print("- 订单接口：未连接")
     return 0

@@ -1,0 +1,16 @@
+version: "1.0.0"
+description: "低成本双向候选池确定性评分"
+thresholds:
+  near_breakout_pct: -3.0
+  near_breakdown_pct: 3.0
+  volume_confirm: 1.2
+  extreme_atr_pct: 12.0
+  minimum_volume: 10000
+weights:
+  trend: 25
+  breakout: 20
+  relative_strength: 15
+  volume: 10
+  data_quality: 20
+  watchlist_priority: 10
+  market_regime_adjustment: 10

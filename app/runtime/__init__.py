@@ -1,3 +1,5 @@
-from app.runtime.realtime_runtime import RealtimeOpportunityRuntime
+"""Realtime runtime package.
 
-__all__ = ["RealtimeOpportunityRuntime"]
+Keep package import side-effect free so command and notification modules can
+reuse runtime state without recursively importing the runtime process.
+"""

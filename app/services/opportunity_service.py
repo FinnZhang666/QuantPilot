@@ -5,7 +5,9 @@ from typing import Dict, List, Optional, Tuple
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
-from app.database.models import CandidateSignal, MarketBar, Opportunity, RealtimeBar
+from app.database.models import (
+    CandidatePoolEntry, CandidateSignal, MarketBar, MarketRegime, Opportunity, RealtimeBar,
+)
 
 VALID_DIRECTIONS = {"LONG", "SHORT"}
 VALID_STATUSES = {"DETECTED", "NOTIFIED", "ACTIVE", "EXPIRED", "INVALIDATED", "CLOSED"}
@@ -56,11 +58,22 @@ class OpportunityService:
         if price is None:
             return None, False
         now = datetime.now(timezone.utc)
+        candidate = self.db.scalar(select(CandidatePoolEntry).where(
+            CandidatePoolEntry.symbol == signal.symbol,
+            CandidatePoolEntry.status.in_(["CANDIDATE", "RESEARCHING", "QUALIFIED"]),
+            CandidatePoolEntry.direction.in_([direction, "BOTH"]),
+        ).order_by(desc(CandidatePoolEntry.pool_date), CandidatePoolEntry.rank).limit(1))
+        regime = self.db.scalar(select(MarketRegime).order_by(
+            desc(MarketRegime.bar_time),
+        ).limit(1))
         opportunity = Opportunity(
             symbol=signal.symbol, timeframe=signal.timeframe, direction=direction,
             opportunity_type="PULLBACK_RESTRENGTH",
             strategy_name=signal.strategy_name, strategy_version=signal.strategy_version,
             signal_id=signal.id, status="DETECTED", score=signal.score,
+            candidate_pool_entry_id=candidate.id if candidate else None,
+            market_regime_id=regime.id if regime else None,
+            market_regime=regime.regime if regime else None,
             confidence=signal.confidence, detected_at=now,
             bar_time=self._aware(signal.bar_timestamp),
             entry_reference_price=price,
@@ -77,6 +90,17 @@ class OpportunityService:
             },
             decision_snapshot_json=None, notification_status="PENDING",
         )
+        opportunity.decision_snapshot_json = {
+            "candidate_pool": {
+                "entry_id": candidate.id, "direction": candidate.direction,
+                "final_score": candidate.final_score,
+                "sources": (candidate.reason_snapshot_json or {}).get("sources", []),
+            } if candidate else None,
+            "market_regime": {
+                "id": regime.id, "regime": regime.regime,
+                "long_bias": regime.long_bias, "short_bias": regime.short_bias,
+            } if regime else {"regime": "UNKNOWN"},
+        }
         self.db.add(opportunity)
         self.db.commit()
         return opportunity, True

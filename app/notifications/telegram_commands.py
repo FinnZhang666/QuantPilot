@@ -9,7 +9,10 @@ from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
-from app.database.models import CandidateSignal, Opportunity, RealtimeServiceStatus, RuntimeStatus
+from app.database.models import (
+    CandidatePoolEntry, CandidateSignal, MarketRegime, Opportunity,
+    RealtimeServiceStatus, RuntimeStatus,
+)
 from app.database.session import get_session_factory
 from app.notifications.telegram import TelegramNotificationProvider
 from app.runtime.runtime_state import RuntimeStateRepository
@@ -26,7 +29,10 @@ class TelegramCommandService:
         parts = command.strip().split()
         name = parts[0].lower() if parts else ""
         if name == "/help":
-            return True, "可用命令：/status、/opportunities、/symbol TICKER、/why TICKER、/help"
+            return True, (
+                "可用命令：/status、/opportunities、/symbol TICKER、/why TICKER、"
+                "/regime、/candidates、/long、/short、/candidate TICKER、/help"
+            )
         if name == "/status":
             return True, self._status()
         if name == "/opportunities":
@@ -36,6 +42,15 @@ class TelegramCommandService:
                 return False, "请提供Ticker，例如：%s SOXL" % name
             symbol = parts[1].upper().replace("US.", "")
             return True, self._symbol(symbol) if name == "/symbol" else self._why(symbol)
+        if name == "/regime":
+            return True, self._regime()
+        if name in {"/candidates", "/long", "/short"}:
+            direction = name[1:].upper() if name in {"/long", "/short"} else None
+            return True, self._candidates(direction)
+        if name == "/candidate":
+            if len(parts) != 2:
+                return False, "请提供Ticker，例如：/candidate SOXL"
+            return True, self._candidate(parts[1].upper().replace("US.", ""))
         return False, "未知命令。发送 /help 查看可用命令。"
 
     def _status(self) -> str:
@@ -100,6 +115,53 @@ class TelegramCommandService:
             "\n".join("- " + value for value in failed) or "- 无",
             signal.summary_zh,
         )
+
+    def _regime(self) -> str:
+        row = self.db.scalar(select(MarketRegime).order_by(
+            desc(MarketRegime.bar_time),
+        ).limit(1))
+        if row is None:
+            return "当前市场状态：UNKNOWN（尚无有效评估）。"
+        snapshot = row.reason_snapshot_json or {}
+        reasons = "\n".join("- " + value for value in snapshot.get("reasons", [])[:5]) or "- 无"
+        risks = "\n".join("- " + value for value in snapshot.get("risks", [])[:5]) or "- 无"
+        return (
+            "【市场状态】\n状态：%s\n可信度：%s\nLONG/SHORT偏好：%s/%s\n"
+            "主要原因：\n%s\n主要风险：\n%s\n\nMarket Regime不是独立买卖信号。"
+        ) % (row.regime, row.confidence, row.long_bias, row.short_bias, reasons, risks)
+
+    def _candidates(self, direction=None) -> str:
+        query = select(CandidatePoolEntry).where(
+            CandidatePoolEntry.status.in_(["CANDIDATE", "RESEARCHING", "QUALIFIED"]),
+        )
+        if direction:
+            query = query.where(CandidatePoolEntry.direction.in_([direction, "BOTH"]))
+        rows = self.db.scalars(query.order_by(
+            desc(CandidatePoolEntry.pool_date), CandidatePoolEntry.rank,
+        ).limit(10)).all()
+        if not rows:
+            return "暂无符合条件的候选。"
+        title = "LONG候选" if direction == "LONG" else ("SHORT候选" if direction == "SHORT" else "当前候选池")
+        lines = ["【%s】" % title]
+        lines.extend("%s. %s %s %s分" % (
+            row.rank or index, row.symbol, row.direction, row.final_score,
+        ) for index, row in enumerate(rows, 1))
+        lines.append("\n候选仅代表进入进一步研究范围，不构成交易指令。")
+        return "\n".join(lines)
+
+    def _candidate(self, symbol: str) -> str:
+        row = self.db.scalar(select(CandidatePoolEntry).where(
+            CandidatePoolEntry.symbol == symbol,
+        ).order_by(desc(CandidatePoolEntry.pool_date), CandidatePoolEntry.rank).limit(1))
+        if row is None:
+            return "%s当前不在候选池中。" % symbol
+        snapshot = row.reason_snapshot_json or {}
+        reasons = "\n".join("- " + value for value in snapshot.get("reasons", [])[:6]) or "- 无"
+        risks = "\n".join("- " + value for value in snapshot.get("risks", [])[:6]) or "- 无"
+        return (
+            "%s候选详情\n方向：%s\nLONG/SHORT：%s/%s\n最终评分：%s\n"
+            "原因：\n%s\n风险：\n%s\n\n不构成交易指令。"
+        ) % (symbol, row.direction, row.long_score, row.short_score, row.final_score, reasons, risks)
 
 
 class TelegramCommandPoller:

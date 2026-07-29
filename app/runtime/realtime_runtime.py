@@ -7,7 +7,8 @@ from sqlalchemy import desc, select
 
 from app.core.config import Settings, get_settings
 from app.core.enums import RealtimeServiceState
-from app.database.models import RealtimeBar, WatchlistItem, WatchlistTimeframe
+from app.database.models import CandidatePoolEntry, RealtimeBar, WatchlistItem, WatchlistTimeframe
+from app.candidate_pool.service import CandidatePoolService
 from app.database.session import get_session_factory
 from app.notifications.telegram import TelegramNotificationProvider
 from app.notifications.telegram_commands import TelegramCommandPoller
@@ -79,12 +80,21 @@ class RealtimeOpportunityRuntime:
         db = self.session_factory()
         try:
             configured = set(self.settings.realtime_timeframe_list())
-            pairs = db.execute(select(WatchlistItem.symbol, WatchlistTimeframe.timeframe).join(
+            pairs = set(db.execute(select(WatchlistItem.symbol, WatchlistTimeframe.timeframe).join(
                 WatchlistTimeframe, WatchlistTimeframe.watchlist_item_id == WatchlistItem.id,
             ).where(
                 WatchlistItem.enabled.is_(True), WatchlistTimeframe.enabled.is_(True),
                 WatchlistTimeframe.timeframe.in_(configured),
-            )).all()
+            )).all())
+            active_candidates = db.scalars(select(CandidatePoolEntry.symbol).where(
+                CandidatePoolEntry.status.in_(["CANDIDATE", "RESEARCHING", "QUALIFIED"]),
+                CandidatePoolEntry.expires_at > datetime.now(timezone.utc),
+            ).distinct()).all()
+            pairs.update(
+                (symbol, timeframe) for symbol in active_candidates for timeframe in configured
+            )
+            if self.settings.candidate_pool_enabled:
+                CandidatePoolService(db, self.settings).run_daily_if_due()
             pipeline = self.pipeline_factory(db) if self.pipeline_factory else OpportunityPipeline(db, self.settings)
             for symbol, timeframe in pairs:
                 full_symbol = "US." + symbol
