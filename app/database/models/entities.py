@@ -584,3 +584,145 @@ class StrategyRun(TimestampMixin, Base):
     elapsed_seconds: Mapped[float] = mapped_column(Float, default=0)
     free_disk_gb: Mapped[float] = mapped_column(Float, default=0)
     error_summary: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class BacktestRun(TimestampMixin, Base):
+    __tablename__ = "backtest_runs"
+    __table_args__ = (
+        Index("ix_backtest_runs_symbol_timeframe", "symbol", "timeframe"),
+        Index("ix_backtest_runs_status", "status"),
+        Index("ix_backtest_runs_configuration_hash", "configuration_hash"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    run_name: Mapped[str] = mapped_column(String(128))
+    run_mode: Mapped[str] = mapped_column(String(32))
+    symbol: Mapped[str] = mapped_column(String(32))
+    market: Mapped[str] = mapped_column(String(16), default="US")
+    timeframe: Mapped[str] = mapped_column(String(8))
+    strategy_name: Mapped[str] = mapped_column(String(64))
+    strategy_version: Mapped[str] = mapped_column(String(16))
+    parameters_hash: Mapped[str] = mapped_column(String(64))
+    configuration_hash: Mapped[str] = mapped_column(String(64))
+    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    warmup_start_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    initial_cash: Mapped[object] = mapped_column(Numeric(24, 8))
+    ending_cash: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    ending_equity: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    position_sizing_mode: Mapped[str] = mapped_column(String(24), default="FULL_CASH")
+    execution_mode: Mapped[str] = mapped_column(String(32), default="NEXT_BAR_OPEN")
+    commission_per_trade: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
+    commission_per_share: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
+    minimum_commission: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
+    slippage_bps: Mapped[object] = mapped_column(Numeric(12, 4), default=0)
+    force_close_at_end: Mapped[bool] = mapped_column(Boolean, default=True)
+    benchmark_symbol: Mapped[Optional[str]] = mapped_column(String(32))
+    benchmark_status: Mapped[str] = mapped_column(String(32), default="UNAVAILABLE")
+    status: Mapped[str] = mapped_column(String(32), default="RUNNING")
+    bars_processed: Mapped[int] = mapped_column(Integer, default=0)
+    signals_processed: Mapped[int] = mapped_column(Integer, default=0)
+    entries_count: Mapped[int] = mapped_column(Integer, default=0)
+    exits_count: Mapped[int] = mapped_column(Integer, default=0)
+    forced_exit_count: Mapped[int] = mapped_column(Integer, default=0)
+    closed_trades_count: Mapped[int] = mapped_column(Integer, default=0)
+    winning_trades: Mapped[int] = mapped_column(Integer, default=0)
+    losing_trades: Mapped[int] = mapped_column(Integer, default=0)
+    gross_profit: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    gross_loss: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    gross_pnl: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    net_pnl: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    total_return_pct: Mapped[Optional[object]] = mapped_column(Numeric(18, 10))
+    annualized_return_pct: Mapped[Optional[object]] = mapped_column(Numeric(18, 10))
+    max_drawdown_pct: Mapped[Optional[object]] = mapped_column(Numeric(18, 10))
+    win_rate: Mapped[Optional[object]] = mapped_column(Numeric(18, 10))
+    profit_factor: Mapped[Optional[object]] = mapped_column(Numeric(24, 10))
+    average_trade_return_pct: Mapped[Optional[object]] = mapped_column(Numeric(18, 10))
+    average_holding_bars: Mapped[Optional[object]] = mapped_column(Numeric(18, 4))
+    average_holding_seconds: Mapped[Optional[object]] = mapped_column(Numeric(24, 4))
+    symbol_buy_hold_return_pct: Mapped[Optional[object]] = mapped_column(Numeric(18, 10))
+    benchmark_return_pct: Mapped[Optional[object]] = mapped_column(Numeric(18, 10))
+    excess_return_vs_symbol_pct: Mapped[Optional[object]] = mapped_column(Numeric(18, 10))
+    excess_return_vs_benchmark_pct: Mapped[Optional[object]] = mapped_column(Numeric(18, 10))
+    open_position: Mapped[bool] = mapped_column(Boolean, default=False)
+    unrealized_pnl: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    elapsed_seconds: Mapped[float] = mapped_column(Float, default=0)
+    error_summary: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class BacktestTrade(TimestampMixin, Base):
+    __tablename__ = "backtest_trades"
+    __table_args__ = (
+        UniqueConstraint("backtest_run_id", "trade_number", name="uq_backtest_trade_number"),
+        Index("ix_backtest_trades_symbol_timeframe", "symbol", "timeframe"),
+        Index("ix_backtest_trades_entry_time", "entry_execution_timestamp"),
+        Index("ix_backtest_trades_exit_time", "exit_execution_timestamp"),
+        Index("ix_backtest_trades_status", "status"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    backtest_run_id: Mapped[int] = mapped_column(ForeignKey("backtest_runs.id"), index=True)
+    trade_number: Mapped[int] = mapped_column(Integer)
+    symbol: Mapped[str] = mapped_column(String(32))
+    timeframe: Mapped[str] = mapped_column(String(8))
+    status: Mapped[str] = mapped_column(String(24))
+    entry_signal_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    entry_execution_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    entry_signal_type: Mapped[str] = mapped_column(String(32))
+    entry_raw_price: Mapped[object] = mapped_column(Numeric(24, 8))
+    entry_adjusted_price: Mapped[object] = mapped_column(Numeric(24, 8))
+    entry_shares: Mapped[int] = mapped_column(BigInteger)
+    entry_notional: Mapped[object] = mapped_column(Numeric(24, 8))
+    entry_fees: Mapped[object] = mapped_column(Numeric(18, 8))
+    exit_signal_timestamp: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    exit_execution_timestamp: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    exit_signal_type: Mapped[Optional[str]] = mapped_column(String(32))
+    exit_reason: Mapped[Optional[str]] = mapped_column(String(64))
+    exit_raw_price: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    exit_adjusted_price: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    exit_notional: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    exit_fees: Mapped[Optional[object]] = mapped_column(Numeric(18, 8))
+    gross_pnl: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    net_pnl: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    return_pct: Mapped[Optional[object]] = mapped_column(Numeric(18, 10))
+    holding_bars: Mapped[Optional[int]] = mapped_column(Integer)
+    holding_seconds: Mapped[Optional[int]] = mapped_column(BigInteger)
+    mae_pct: Mapped[Optional[object]] = mapped_column(Numeric(18, 10))
+    mfe_pct: Mapped[Optional[object]] = mapped_column(Numeric(18, 10))
+
+
+class BacktestEquityPoint(Base):
+    __tablename__ = "backtest_equity_points"
+    __table_args__ = (
+        UniqueConstraint("backtest_run_id", "timestamp", name="uq_backtest_equity_time"),
+        Index("ix_backtest_equity_run_time", "backtest_run_id", "timestamp"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    backtest_run_id: Mapped[int] = mapped_column(ForeignKey("backtest_runs.id"))
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    cash: Mapped[object] = mapped_column(Numeric(24, 8))
+    position_shares: Mapped[int] = mapped_column(BigInteger)
+    position_market_value: Mapped[object] = mapped_column(Numeric(24, 8))
+    equity: Mapped[object] = mapped_column(Numeric(24, 8))
+    running_peak: Mapped[object] = mapped_column(Numeric(24, 8))
+    drawdown_amount: Mapped[object] = mapped_column(Numeric(24, 8))
+    drawdown_pct: Mapped[object] = mapped_column(Numeric(18, 10))
+    signal_type: Mapped[Optional[str]] = mapped_column(String(32))
+    position_state: Mapped[str] = mapped_column(String(16))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class BacktestPendingAction(TimestampMixin, Base):
+    __tablename__ = "backtest_pending_actions"
+    __table_args__ = (Index("ix_backtest_pending_run_status", "backtest_run_id", "status"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    backtest_run_id: Mapped[int] = mapped_column(ForeignKey("backtest_runs.id"))
+    symbol: Mapped[str] = mapped_column(String(32))
+    timeframe: Mapped[str] = mapped_column(String(8))
+    action_type: Mapped[str] = mapped_column(String(32))
+    signal_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    signal_type: Mapped[str] = mapped_column(String(32))
+    scheduled_execution_timestamp: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    execution_timestamp: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(32), default="PENDING")
+    failure_reason: Mapped[Optional[str]] = mapped_column(Text)

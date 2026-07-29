@@ -143,3 +143,6 @@ docker compose up --build
 ## 已知限制
 
 当前不含Moomoo模拟下单、策略、回测、前端或真实Telegram信号通知。实时行情和历史行情能力取决于OpenD登录状态及市场权限。
+# Sprint 06：轻量历史回测
+
+Sprint 06 提供单标的、单策略、单周期的 Candidate Signal 历史回放与策略重算回测。默认在信号 K 线的下一根开盘成交，只做 `FLAT/LONG` 状态模拟，不连接券商、不创建订单。完整说明见 [docs/BACKTEST_ENGINE.md](docs/BACKTEST_ENGINE.md)。

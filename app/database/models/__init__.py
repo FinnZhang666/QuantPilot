@@ -26,6 +26,10 @@ from app.database.models.entities import (
     StrategyParameterSet,
     CandidateSignal,
     StrategyRun,
+    BacktestRun,
+    BacktestTrade,
+    BacktestEquityPoint,
+    BacktestPendingAction,
 )
 
 __all__ = [
@@ -56,4 +60,8 @@ __all__ = [
     "StrategyParameterSet",
     "CandidateSignal",
     "StrategyRun",
+    "BacktestRun",
+    "BacktestTrade",
+    "BacktestEquityPoint",
+    "BacktestPendingAction",
 ]

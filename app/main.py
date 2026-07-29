@@ -11,6 +11,7 @@ from app.api.realtime import router as realtime_router
 from app.api.features import router as features_router
 from app.api.watchlist import router as watchlist_router
 from app.api.strategy import router as strategy_router
+from app.api.backtest import router as backtest_router
 from app.api.routes import router as api_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
@@ -49,3 +50,4 @@ app.include_router(realtime_router)
 app.include_router(features_router)
 app.include_router(watchlist_router)
 app.include_router(strategy_router)
+app.include_router(backtest_router)
