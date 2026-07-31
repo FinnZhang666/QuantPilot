@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from decimal import Decimal
+import re
 
 from fastapi.testclient import TestClient
 
@@ -293,5 +294,56 @@ def test_product_architecture_is_presentation_only(monkeypatch, tmp_path):
         assert "/api/platform/version" in script
         assert "place_order" not in script
         assert "sendMessage" not in script
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_every_sidebar_route_is_registered_protected_and_renders(monkeypatch, tmp_path):
+    client = dashboard_client(monkeypatch, tmp_path)
+    try:
+        public_html = client.get("/dashboard/login").text
+        assert "Trade Companion" in public_html
+        assert login(client).status_code == 303
+        html = client.get("/dashboard").text
+        paths = sorted(set(re.findall(
+            r'<a href="(/dashboard(?:/[^"]*)?)" data-nav=', html,
+        )))
+        route_paths = {route.path: route.name for route in app.routes}
+        assert paths
+        for path in paths:
+            assert path in route_paths, "Sidebar route is not registered: %s" % path
+            response = client.get(path)
+            assert response.status_code == 200, path
+            assert response.headers["content-type"].startswith("text/html")
+            assert 'data-page="' in response.text
+            assert '{"detail":"Not Found"}' not in response.text
+        client.cookies.clear()
+        for path in paths:
+            response = client.get(path, follow_redirects=False)
+            assert response.status_code == 303, path
+            assert response.headers["location"] == "/dashboard/login"
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_part_d_dashboard_ui_contract(monkeypatch, tmp_path):
+    client = dashboard_client(monkeypatch, tmp_path, public=True)
+    try:
+        html = client.get("/dashboard").text
+        script = client.get("/dashboard/static/dashboard.js").text
+        ui = client.get("/dashboard/static/ui.js").text
+        css = client.get("/dashboard/static/dashboard.css").text
+        assert html.count("nav-group-toggle") == 7
+        assert "tc-nav-group-" in ui and 'aria-expanded' in ui
+        assert "homeFinal" in script and "pageFailure" in script
+        assert "retry-page" in script
+        assert "System Paper Positions" in script
+        assert "User Positions and Portfolio Holdings are not substituted" in script
+        assert "Strategy Lab" in script and "Parameter experiments" in script
+        assert "Safe Log View" in script
+        assert "Telegram Runtime is unavailable" in script
+        assert "min-height:66px" in css
+        assert 'href="#"' not in html
+        assert "sendMessage" not in script and "place_order" not in script
     finally:
         client.__exit__(None, None, None)

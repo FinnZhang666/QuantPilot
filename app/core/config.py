@@ -127,6 +127,16 @@ class Settings(BaseSettings):
     telegram_admin_usernames: str = ""
     telegram_timeout_seconds: float = Field(default=10.0, gt=0)
     telegram_max_retries: int = Field(default=2, ge=0, le=5)
+    telegram_bot_token_trade_companion_ai_en: str = ""
+    telegram_bot_token_quantpilot_ai_en: str = ""
+    telegram_bot_token_ai_stock_analyze_en: str = ""
+    telegram_bot_token_trade_companion_zh: str = ""
+    telegram_bot_token_stock_analysis_zh: str = ""
+    telegram_bot_enabled_trade_companion_ai_en: bool = False
+    telegram_bot_enabled_quantpilot_ai_en: bool = False
+    telegram_bot_enabled_ai_stock_analyze_en: bool = False
+    telegram_bot_enabled_trade_companion_zh: bool = False
+    telegram_bot_enabled_stock_analysis_zh: bool = False
     default_timezone: str = "America/New_York"
     display_timezone: str = "Asia/Shanghai"
     default_slippage_bps: int = Field(default=8, ge=0, le=1000)

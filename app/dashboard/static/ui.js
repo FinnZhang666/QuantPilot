@@ -77,7 +77,7 @@
 
   const statusCopy = {
     "zh-CN": {CONNECTED:"已连接",RUNNING:"运行中",ACTIVE:"有效",NOTIFIED:"已通知",COMPLETED:"已完成",DEGRADED:"降级",DETECTED:"已发现",INBOX:"待处理",OPEN:"开放",INVESTIGATING:"处理中",IN_PROGRESS:"处理中",PLANNED:"已规划",RELEASED:"已发布",WAITING_APPROVAL:"等待批准",FAILED:"失败",INVALID:"无效",INVALIDATED:"已失效",REJECTED:"已拒绝",CANCELLED:"已取消",EXPIRED:"已过期",STOPPED:"已停止",DISCONNECTED:"已断开",DISABLED:"未启用",VALID:"正常",WARMUP:"预热中",MISSING_FEATURE:"缺少特征",INSUFFICIENT_DATA:"数据不足",NO_SIGNAL:"暂无信号",LONG:"做多",SHORT:"做空",HIGH:"高",MEDIUM:"中",LOW:"低",CRITICAL:"紧急",UNKNOWN:"未知",NO_DATA:"无数据",PLAN:"计划中",COMPANION:"陪伴中",REVIEW:"复盘中",READY:"已就绪",CLOSED:"已关闭",WATCH:"观察中",PENDING:"待处理",NONE:"无"},
-    "en-US": {CONNECTED:"Connected",RUNNING:"Running",ACTIVE:"Active",NOTIFIED:"Notified",COMPLETED:"Completed",DEGRADED:"Degraded",DETECTED:"Detected",INBOX:"Inbox",WAITING_APPROVAL:"Waiting approval",FAILED:"Failed",INVALIDATED:"Invalidated",REJECTED:"Rejected",EXPIRED:"Expired",STOPPED:"Stopped",DISCONNECTED:"Disconnected",DISABLED:"Disabled",VALID:"Valid",WARMUP:"Warming up",MISSING_FEATURE:"Missing feature",INSUFFICIENT_DATA:"Insufficient data",NO_SIGNAL:"No signal",LONG:"Long",SHORT:"Short",HIGH:"High",MEDIUM:"Medium",LOW:"Low",CRITICAL:"Critical",UNKNOWN:"Unknown",NO_DATA:"No data"},
+    "en-US": {CONNECTED:"Connected",RUNNING:"Running",ACTIVE:"Active",NOTIFIED:"Notified",COMPLETED:"Completed",DEGRADED:"Degraded",DETECTED:"Detected",INBOX:"Inbox",OPEN:"Open",INVESTIGATING:"In progress",IN_PROGRESS:"In progress",PLANNED:"Planned",RELEASED:"Released",WAITING_APPROVAL:"Waiting approval",FAILED:"Failed",INVALID:"Invalid",INVALIDATED:"Invalidated",REJECTED:"Rejected",CANCELLED:"Cancelled",EXPIRED:"Expired",STOPPED:"Stopped",DISCONNECTED:"Disconnected",DISABLED:"Disabled",VALID:"Valid",WARMUP:"Warming up",MISSING_FEATURE:"Missing feature",INSUFFICIENT_DATA:"Insufficient data",NO_SIGNAL:"No signal",LONG:"Long",SHORT:"Short",HIGH:"High",MEDIUM:"Medium",LOW:"Low",CRITICAL:"Critical",UNKNOWN:"Unknown",NO_DATA:"No data",PLAN:"Plan",COMPANION:"Companion",REVIEW:"Review",READY:"Ready",CLOSED:"Closed",WATCH:"Watch",PENDING:"Pending",NONE:"None"},
   };
 
   const supported = new Set(["zh-CN", "en-US"]);
@@ -122,6 +122,18 @@
       localStorage.setItem("tc-sidebar-collapsed", String(document.body.classList.contains("sidebar-collapsed")));
     });
     document.querySelector("#mobile-menu")?.addEventListener("click", () => document.body.classList.add("sidebar-open"));
+    document.querySelectorAll(".nav-group-toggle").forEach((button) => {
+      const group = button.closest(".nav-group");
+      const key = `tc-nav-group-${button.dataset.group}`;
+      const isClosed = localStorage.getItem(key) === "closed";
+      group.classList.toggle("collapsed", isClosed);
+      button.setAttribute("aria-expanded", String(!isClosed));
+      button.addEventListener("click", () => {
+        const closed = group.classList.toggle("collapsed");
+        button.setAttribute("aria-expanded", String(!closed));
+        localStorage.setItem(key, closed ? "closed" : "open");
+      });
+    });
     backdrop?.addEventListener("click", () => document.body.classList.remove("sidebar-open"));
     sidebar?.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => document.body.classList.remove("sidebar-open")));
     window.setInterval(() => {

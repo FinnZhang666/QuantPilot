@@ -47,3 +47,23 @@ filesystem maintenance. Roll back code only together with a database backup comp
 
 External AI Provider, Telegram Runtime, OpenD Runtime and Broker execution remain deployment-specific and disabled
 for this RC. Enabling them is not part of this guide and must not be inferred from successful Preview/API tests.
+
+## Telegram Bot Profile Synchronization (Windows handoff)
+
+The Mac handoff includes five disabled, alias-based Bot Profiles, localized copy, commands, menus and a 512×512
+profile asset. `/start` uses text and buttons only; it does not send a welcome image.
+
+1. Rotate every Token previously shared outside the protected deployment environment.
+2. Store the replacement values only in the Windows `.env`, using the documented alias variables.
+3. Run `python scripts/sync_telegram_profiles.py --all` and inspect the dry-run report.
+4. Check each alias, intended language, market scope and explicit enabled flag.
+5. Apply supported profile fields one Bot at a time with `--bot ALIAS --apply` only after approval.
+6. Set the profile photo through BotFather using
+   `app/dashboard/static/branding/telegram/trade-companion-profile-512.png`; Bot API cannot upload it.
+7. Start the Telegram Runtime only after profile synchronization and environment validation.
+8. Test `/start`, localized Commands, the four-item menu and every Callback.
+9. Validate administrator feedback notifications without exposing ordinary user details.
+10. Confirm `.env`, Tokens and sync logs containing sensitive data are absent from Git.
+
+The synchronization tool is dry-run by default. `--apply` performs real Telegram API requests and is reserved for
+the Windows deployment stage.

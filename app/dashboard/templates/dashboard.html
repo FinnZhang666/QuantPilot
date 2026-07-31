@@ -17,41 +17,41 @@
     <button class="collapse-button ghost icon-button" id="sidebar-toggle" aria-label="折叠导航" title="折叠导航">‹</button>
   </div>
   <nav aria-label="主导航">
-    <section class="nav-group"><p data-i18n="nav.workspace">🏠 工作台</p>
+    <section class="nav-group"><button type="button" class="nav-group-toggle" data-group="workspace" aria-expanded="true"><span data-i18n="nav.workspace">🏠 工作台</span><i>⌄</i></button><div class="nav-items">
       <a href="/dashboard" data-nav="home" data-label-key="nav.home"><span>⌂</span><b>工作台</b></a>
-    </section>
-    <section class="nav-group"><p data-i18n="nav.market">📈 市场</p>
+    </div></section>
+    <section class="nav-group"><button type="button" class="nav-group-toggle" data-group="market" aria-expanded="true"><span data-i18n="nav.market">📈 市场</span><i>⌄</i></button><div class="nav-items">
       <a href="/dashboard/market-regime" data-nav="market-regime" data-label-key="nav.regime"><span>◎</span><b>市场状态</b></a>
       <a href="/dashboard/market-monitor" data-nav="market-monitor" data-label-key="nav.marketMonitor"><span>◫</span><b>市场监控</b></a>
       <a href="/dashboard/candidates" data-nav="candidates" data-label-key="nav.candidates"><span>◇</span><b>候选池</b></a>
-    </section>
-    <section class="nav-group"><p data-i18n="nav.strategy">📊 策略</p>
+    </div></section>
+    <section class="nav-group"><button type="button" class="nav-group-toggle" data-group="strategy" aria-expanded="true"><span data-i18n="nav.strategy">📊 策略</span><i>⌄</i></button><div class="nav-items">
       <a href="/dashboard/trade-plans" data-nav="trade-plans" data-label-key="nav.plans"><span>▤</span><b>交易计划</b></a>
       <a href="/dashboard/paper-positions" data-nav="paper-positions" data-label-key="nav.paperPositions"><span>◉</span><b>模拟持仓</b></a>
       <a href="/dashboard/trade-reviews" data-nav="trade-reviews" data-label-key="nav.tradeReviews"><span>↻</span><b>交易复盘</b></a>
       <a href="/dashboard/strategy-scoreboard" data-nav="strategy-scoreboard" data-label-key="nav.scoreboard"><span>▥</span><b>策略成绩榜</b></a>
-    </section>
-    <section class="nav-group"><p data-i18n="nav.ai">🤖 AI</p>
+    </div></section>
+    <section class="nav-group"><button type="button" class="nav-group-toggle" data-group="ai" aria-expanded="true"><span data-i18n="nav.ai">🤖 AI</span><i>⌄</i></button><div class="nav-items">
       <a href="/dashboard/companion" data-nav="companion" data-label-key="nav.companion"><span>◈</span><b>AI 交易解读</b></a>
       <a href="/dashboard/ai-reviews" data-nav="ai-reviews" data-label-key="nav.aiReviews"><span>✧</span><b>AI 策略复盘</b></a>
       <a href="/dashboard/telegram-preview" data-nav="telegram-preview" data-label-key="nav.telegram"><span>➤</span><b>Telegram 预览</b></a>
-    </section>
-    <section class="nav-group"><p data-i18n="nav.product">📱 产品运营</p>
+    </div></section>
+    <section class="nav-group"><button type="button" class="nav-group-toggle" data-group="product" aria-expanded="true"><span data-i18n="nav.product">📱 产品运营</span><i>⌄</i></button><div class="nav-items">
       <a href="/dashboard/product/feedback" data-nav="product-feedback" data-label-key="nav.feedback"><span>♧</span><b>用户反馈</b><em id="feedback-count" class="nav-badge" hidden>0</em></a>
       <a href="/dashboard/product/behavior" data-nav="product-behavior" data-label-key="nav.behavior"><span>⌁</span><b>用户行为</b></a>
       <a href="/dashboard/product/bot-statistics" data-nav="bot-statistics" data-label-key="nav.botStats"><span>◌</span><b>Bot 统计</b></a>
       <a href="/dashboard/product/user-intelligence" data-nav="user-intelligence" data-label-key="nav.userIntelligence"><span>◍</span><b>用户洞察</b></a>
-    </section>
-    <section class="nav-group"><p data-i18n="nav.lab">🧪 Strategy Lab</p>
+    </div></section>
+    <section class="nav-group"><button type="button" class="nav-group-toggle" data-group="lab" aria-expanded="true"><span data-i18n="nav.lab">🧪 Strategy Lab</span><i>⌄</i></button><div class="nav-items">
       <a href="/dashboard/strategies" data-nav="strategies" data-label-key="nav.experiments"><span>⚗</span><b>策略实验</b></a>
       <a href="/dashboard/strategy-lab/parameters" data-nav="strategy-parameters" data-label-key="nav.parameters"><span>≋</span><b>参数比较</b></a>
       <a href="/dashboard/research" data-nav="research" data-label-key="nav.researchCenter"><span>⌘</span><b>研究中心</b></a>
-    </section>
-    <section class="nav-group"><p data-i18n="nav.more">⚙ 更多</p>
+    </div></section>
+    <section class="nav-group"><button type="button" class="nav-group-toggle" data-group="more" aria-expanded="true"><span data-i18n="nav.more">⚙ 更多</span><i>⌄</i></button><div class="nav-items">
       <a href="/dashboard/system" data-nav="system" data-label-key="nav.system"><span>ⓘ</span><b>版本中心</b></a>
       <a href="/dashboard/system-monitor" data-nav="system-monitor" data-label-key="nav.systemMonitor"><span>◌</span><b>系统监控</b></a>
       <a href="/dashboard/runtime-logs" data-nav="runtime-logs" data-label-key="nav.logs"><span>☷</span><b>运行日志</b></a>
-    </section>
+    </div></section>
   </nav>
   <form action="/dashboard/logout" method="post"><button class="ghost sidebar-logout" data-i18n="action.logout">退出登录</button></form>
 </aside>

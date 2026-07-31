@@ -399,3 +399,13 @@ Trade Companion 1.0.0-rc1 完成聚合、Repository、Service、API、Dashboard�
 Trade Companion 1.0.0-rc2 冻结 Public API、Dashboard、数据库和业务逻辑，只补全配置说明、安装、部署、
 备份恢复、已知问题和发布检查清单。RC2 离线基线不包含 Windows、OpenD Runtime、Telegram Runtime、
 Broker 或外部 AI Provider 的生产联调。
+
+## Sprint 41 Part D：Dashboard Route Repair 与 Mac 交接
+
+最终 Dashboard 信息架构的所有 Sidebar 页面均有真实、受登录保护的 HTML Route。市场监控、策略成绩、
+系统监控和安全日志视图读取现有服务；尚无可靠数据源的模拟持仓、参数实验和产品运营指标使用明确空状态，
+不伪造数据。Sidebar 分组可折叠，工作台采用紧凑运营布局。
+
+同时准备了 5 个 Telegram Bot 的脱敏 Profile、定稿中英文 `/start` 文案、Commands、菜单、512×512 头像与
+默认 dry-run 同步工具。Mac 不执行真实同步、不发送消息、不启动 Telegram Runtime；详见
+[`docs/SPRINT_41_PART_D_DASHBOARD_ROUTE_REPAIR.md`](docs/SPRINT_41_PART_D_DASHBOARD_ROUTE_REPAIR.md)。
