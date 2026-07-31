@@ -33,7 +33,7 @@ from app.database.session import get_engine
 from app.realtime.factory import peek_realtime_manager
 from app.core.enums import RealtimeServiceState
 from app.runtime.realtime_runtime import get_runtime
-from app.version import VERSION
+from app.version import PRODUCT, VERSION
 
 
 @asynccontextmanager
@@ -55,7 +55,15 @@ async def lifespan(app: FastAPI):
             manager.stop()
 
 
-app = FastAPI(title="QuantPilot", version=VERSION, lifespan=lifespan)
+app = FastAPI(
+    title=PRODUCT,
+    description=(
+        "Trade Companion 是覆盖交易研究、机会识别与复盘生命周期的 AI 辅助工作台。"
+        "它不提供自动下单，也不构成投资建议。"
+    ),
+    version=VERSION,
+    lifespan=lifespan,
+)
 
 
 @app.exception_handler(RequestValidationError)

@@ -27,7 +27,7 @@ class BackupService:
             with sqlite3.connect(str(database)) as source, sqlite3.connect(str(snapshot)) as destination:
                 source.backup(destination)
             manifest = {
-                "product": "QuantPilot", "type": backup_type,
+                "product": "Trade Companion", "type": backup_type,
                 "created_at": datetime.now(timezone.utc).isoformat(),
                 "database": database.name,
             }

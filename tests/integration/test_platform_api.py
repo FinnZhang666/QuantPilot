@@ -20,7 +20,12 @@ def test_platform_health_version_runtime_api(monkeypatch, tmp_path):
         assert value.get("/health").status_code == 200
         assert value.get("/runtime").status_code == 200
         assert value.get("/api/platform/health").status_code == 200
-        assert value.get("/api/platform/version").json()["sprint"] == "13"
+        version = value.get("/api/platform/version").json()
+        assert version["product"] == "Trade Companion"
+        assert version["sprint"] == "29"
+        openapi = value.get("/openapi.json").json()
+        assert openapi["info"]["title"] == "Trade Companion"
+        assert "AI 辅助" in openapi["info"]["description"]
 
 
 def test_platform_admin_api_and_secret_mask(monkeypatch, tmp_path):
@@ -43,3 +48,4 @@ def test_system_dashboard_page(monkeypatch, tmp_path):
     with client(monkeypatch, tmp_path) as value:
         response = value.get("/dashboard/system")
         assert response.status_code == 200 and "公司工作台" in response.text
+        assert "Trade Companion" in response.text

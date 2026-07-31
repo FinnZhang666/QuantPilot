@@ -1,1 +1,1 @@
-"""QuantPilot统一CLI。"""
+"""Trade Companion统一CLI。"""

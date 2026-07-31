@@ -11,7 +11,7 @@ async def main() -> None:
         print("Telegram is disabled. Configure .env manually before a real test.")
         return
     result = await TelegramNotificationProvider(settings).send_text(
-        "QuantPilot connection test"
+        "Trade Companion connection test"
     )
     print(f"Telegram result: {result.status}")
 

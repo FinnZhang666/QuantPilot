@@ -2,7 +2,7 @@
 
 ## 定位
 
-Dashboard是本机公司内部工作台，用于观察QuantPilot运行、Opportunity、策略状态、数据质量和历史记录。它不提供买卖、订单、持仓操作，也不调用券商交易接口。
+Dashboard是本机公司内部工作台，用于观察Trade Companion运行、Opportunity、策略状态、数据质量和历史记录。它不提供买卖、订单、持仓操作，也不调用券商交易接口。
 
 ## 启动
 

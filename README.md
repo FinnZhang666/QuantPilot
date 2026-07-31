@@ -1,8 +1,15 @@
-# QuantPilot
+# Trade Companion
 
-![QuantPilot Logo](app/dashboard/static/quantpilot-logo.png)
+![Trade Companion Logo](app/dashboard/static/quantpilot-logo.png)
 
-美股量化研究、实时机会监控与本地公司工作台。Sprint 09 增加确定性 Market Regime 与 LONG/SHORT Candidate Pool。
+**陪你把每一笔交易做完 · Your AI Trade Companion**
+
+Trade Companion 是一个 AI 辅助的美股研究与交易生命周期工作台，将数据、特征、
+策略观察、Opportunity、Review 与研究证据连接起来。它的定位是陪伴用户完成
+交易前、交易中和交易后的研究流程，而不是只提供一个买卖信号。
+
+项目内部包名、数据库文件名和 GitHub 仓库名在 Beta 期间继续保持 `quantpilot`、
+`quantpilot.db` 与 `FinnZhang666/QuantPilot`，以保持部署和导入兼容性。
 
 ## V1 安全边界
 
@@ -227,7 +234,7 @@ Codex，也不会创建订单。
 
 ## Sprint 12：Platform Foundation
 
-QuantPilot 现在提供统一配置、环境校验、Secret Mask、结构化滚动日志、Health、
+Trade Companion 现在提供统一配置、环境校验、Secret Mask、结构化滚动日志、Health、
 Version、Runtime Diagnostics、SQLite ZIP Backup 和 System Dashboard。
 
 ```bash

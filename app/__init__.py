@@ -1,1 +1,1 @@
-"""QuantPilot application package."""
+"""Trade Companion application package."""

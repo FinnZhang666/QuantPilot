@@ -1,4 +1,5 @@
 import json
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -51,7 +52,7 @@ def test_environment_missing_optional_is_warning(db):
 
 def test_version_center_fields(db):
     assert {"product", "version", "sprint", "commit", "migration", "python"} <= set(version_info(db))
-    assert version_info(db)["product"] == "QuantPilot"
+    assert version_info(db)["product"] == "Trade Companion"
 
 
 def test_health_report(db):
@@ -80,6 +81,9 @@ def test_backup_create_and_verify(tmp_path, db, monkeypatch):
     value = service.create()
     assert value["valid"] and Path(value["path"]).exists()
     assert "database/quantpilot.db" in value["files"]
+    with zipfile.ZipFile(value["path"]) as archive:
+        manifest = json.loads(archive.read("manifest.json"))
+    assert manifest["product"] == "Trade Companion"
 
 
 def test_backup_list(tmp_path, db, monkeypatch):

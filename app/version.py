@@ -5,9 +5,9 @@ from pathlib import Path
 
 from sqlalchemy import text
 
-PRODUCT = "QuantPilot"
-VERSION = "0.13.0"
-SPRINT = "13"
+PRODUCT = "Trade Companion"
+VERSION = "0.9.0-beta"
+SPRINT = "29"
 MIGRATION = "0014"
 BUILD_TIME = datetime.now(timezone.utc).isoformat()
 

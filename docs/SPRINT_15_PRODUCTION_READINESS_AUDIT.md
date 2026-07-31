@@ -2,7 +2,7 @@
 
 ## 1. Summary
 
-This audit reviewed the current QuantPilot repository without changing trading
+This audit reviewed the current Trade Companion repository without changing trading
 logic, API contracts, database schema, scheduling frequencies, Telegram command
 flows, branding, or UI. No migration was created and the existing database was
 opened read-only for production-data checks.
@@ -136,4 +136,3 @@ No business logic, branding, UI, public API contract, database schema, scheduler
 frequency, Telegram command, package version, or project structure was changed.
 No database was created, recreated, deleted, migrated, or populated. No history
 download, order submission, or Git push was performed.
-

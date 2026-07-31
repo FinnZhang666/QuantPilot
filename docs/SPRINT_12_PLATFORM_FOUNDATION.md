@@ -1,7 +1,7 @@
 # Sprint 12：Platform Foundation
 
 Sprint 12 不改变交易、策略、Feature、回测、Opportunity 或 AI Review 逻辑。它为
-QuantPilot 增加统一配置入口、环境校验、Secret 脱敏、结构化滚动日志、Health、
+Trade Companion 增加统一配置入口、环境校验、Secret 脱敏、结构化滚动日志、Health、
 Version、Runtime Diagnostics、Backup 和 System Dashboard。
 
 ## 配置中心

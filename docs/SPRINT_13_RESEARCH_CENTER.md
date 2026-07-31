@@ -1,6 +1,6 @@
 # Sprint 13：Research Center
 
-Research Center 是 QuantPilot 的统一研究入口。它不新增策略、AI Provider 或交易
+Research Center 是 Trade Companion 的统一研究入口。它不新增策略、AI Provider 或交易
 能力，而是围绕每个 Opportunity 保存完整、可追溯的研究档案。
 
 ## Research Workspace

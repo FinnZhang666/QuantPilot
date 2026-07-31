@@ -28,7 +28,7 @@ PID_FILE = Path("data/opportunity_runtime.pid")
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(prog="python -m app.cli", description="QuantPilot管理CLI")
+    parser = argparse.ArgumentParser(prog="python -m app.cli", description="Trade Companion管理CLI")
     group = parser.add_subparsers(dest="group", required=True)
     group.add_parser("health")
     group.add_parser("config")
@@ -172,7 +172,7 @@ def main():
     provider = TelegramNotificationProvider(settings)
     result = asyncio.run(
         provider.set_commands() if args.action == "sync-commands"
-        else provider.send_text("【QuantPilot】Telegram测试消息。")
+        else provider.send_text("【Trade Companion】Telegram测试消息。")
     )
     print("Telegram%s结果：%s" % (
         "命令菜单同步" if args.action == "sync-commands" else "测试", result.status,
@@ -242,7 +242,7 @@ def _platform(args):
             return 0
         if args.group == "config":
             environment = validate_environment(settings, db)
-            print("QuantPilot配置（Secret已隐藏）")
+            print("Trade Companion配置（Secret已隐藏）")
             for key, value in sorted(settings.safe_dict().items()):
                 print("%s=%s" % (key, value))
             print("环境校验：%s" % environment["status"])
@@ -250,7 +250,7 @@ def _platform(args):
                 print("[%s] %s：%s" % (item["status"], item["name"], item["message"]))
             return 1 if environment["status"] == "FAILED" else 0
         row = health_report(db, settings)
-        print("QuantPilot Health：%s" % row["status"])
+        print("Trade Companion Health：%s" % row["status"])
         print("Database：%s" % row["database"]["status"])
         print("Runtime：%s" % row["runtime"])
         print("Telegram：%s" % row["telegram"])

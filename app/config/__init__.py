@@ -1,4 +1,4 @@
-"""QuantPilot统一配置中心。"""
+"""Trade Companion统一配置中心。"""
 
 from app.config.settings import Settings, get_settings, settings
 
