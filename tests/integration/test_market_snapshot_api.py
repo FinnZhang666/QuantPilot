@@ -149,3 +149,29 @@ def test_symbol_overview_ai_entry_defaults_to_dry_run(monkeypatch, tmp_path):
         with get_session_factory()() as db:
             from app.database.models import CompanionAnalysis
             assert db.query(CompanionAnalysis).count() == 0
+
+
+def test_telegram_preview_api_permission_i18n_and_no_send(monkeypatch, tmp_path):
+    with client(monkeypatch, tmp_path) as api:
+        add_market("SOXL")
+        assert api.get("/api/telegram-preview/SOXL").status_code == 401
+        response = api.get(
+            "/api/telegram-preview/SOXL", headers=HEADERS, params={"language": "en-US"},
+        )
+        assert response.status_code == 200
+        value = response.json()
+        assert value["preview"] is True and value["sent"] is False
+        assert "Market Snapshot" in value["message"]
+        assert value["view_model"]["schema_version"] == "telegram-symbol-overview-v1"
+        assert api.get(
+            "/api/telegram-preview/SOXL", headers=HEADERS, params={"language": "bad"},
+        ).status_code == 422
+
+
+def test_telegram_preview_dashboard_and_openapi(monkeypatch, tmp_path):
+    with client(monkeypatch, tmp_path) as api:
+        assert api.get("/dashboard/telegram-preview", follow_redirects=False).status_code == 303
+        page = api.get("/dashboard/telegram-preview", headers=HEADERS)
+        assert page.status_code == 200 and 'data-page="telegram-preview"' in page.text
+        paths = api.get("/openapi.json").json()["paths"]
+        assert "/api/telegram-preview/{symbol}" in paths

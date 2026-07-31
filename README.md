@@ -361,3 +361,10 @@ Snapshot、Trade Plan、Portfolio Holding、Trade Review 和已缓存 AI Compani
 统一工作流。各详情页共享 Related Objects 导航；缺失对象明确显示 `Not Available`。AI 入口统一
 委托现有 `CompanionService`，不改变 Prompt、Provider 或策略决策。详见
 [`docs/SPRINT_37_EXPERIENCE_INTEGRATION.md`](docs/SPRINT_37_EXPERIENCE_INTEGRATION.md)。
+
+## Sprint 38：Telegram Product Integration
+
+Telegram 产品层把 Symbol Overview 转换为版本化 ViewModel、Markdown-safe 消息、Action Button 与
+Deep Link。`GET /api/telegram-preview/{symbol}` 和 `/dashboard/telegram-preview` 仅提供预览，返回
+`sent=false`；该层不读取 Repository、不访问网络、不接 Bot Token，也不启动 Polling、Webhook 或
+消息发送。详见 [`docs/SPRINT_38_TELEGRAM_PRODUCT_LAYER.md`](docs/SPRINT_38_TELEGRAM_PRODUCT_LAYER.md)。

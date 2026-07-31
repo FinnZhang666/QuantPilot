@@ -145,6 +145,11 @@ def symbol_overview(symbol: str, request: Request, settings: Settings = Depends(
     return _page(request, settings, "symbol-overview")
 
 
+@router.get("/dashboard/telegram-preview")
+def telegram_preview(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "telegram-preview")
+
+
 @router.get("/dashboard/watchlists/{portfolio_id}/snapshot")
 def watchlist_snapshot(portfolio_id: int, request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "watchlist-snapshot")
