@@ -343,3 +343,13 @@ Position：系统不读取券商、OpenD 或实时行情，不计算市值、盈
 Dashboard：`/dashboard/portfolios`。公开文档中的读取 API 使用现有管理员身份；当前没有可靠普通
 用户身份上下文，因此普通用户访问采用 Fail Closed。完整说明见
 [`docs/SPRINT_35_PORTFOLIO_CENTER.md`](docs/SPRINT_35_PORTFOLIO_CENTER.md)。
+
+## Sprint 36：Market Snapshot Foundation
+
+Market Snapshot 是不持久化的只读聚合模型，将已有 Market Bar、Feature、Candidate Signal、Trade
+Plan、Portfolio Holding 和 Investment Watchlist 统一为每个 Symbol 一份 Snapshot。它不重新计算
+Feature 或 Signal，不调用 AI、Broker、OpenD 或 Telegram，也不写入数据库。
+
+Dashboard：`/dashboard/market-snapshots`。只读 API：`GET /api/market-snapshots`、
+`GET /api/market-snapshots/{symbol}` 和 `GET /api/watchlists/{portfolio_id}/snapshots`。完整说明见
+[`docs/SPRINT_36_MARKET_SNAPSHOT.md`](docs/SPRINT_36_MARKET_SNAPSHOT.md)。

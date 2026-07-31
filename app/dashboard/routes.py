@@ -130,6 +130,21 @@ def holding_detail(holding_id: int, request: Request, settings: Settings = Depen
     return _page(request, settings, "holding-detail")
 
 
+@router.get("/dashboard/market-snapshots")
+def market_snapshots(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "market-snapshots")
+
+
+@router.get("/dashboard/market-snapshots/{symbol}")
+def market_snapshot_detail(symbol: str, request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "market-snapshot-detail")
+
+
+@router.get("/dashboard/watchlists/{portfolio_id}/snapshot")
+def watchlist_snapshot(portfolio_id: int, request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "watchlist-snapshot")
+
+
 @router.get("/dashboard/runtime")
 def runtime(request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "runtime")
