@@ -135,6 +135,11 @@ def market_snapshots(request: Request, settings: Settings = Depends(get_settings
     return _page(request, settings, "market-snapshots")
 
 
+@router.get("/dashboard/market-monitor", include_in_schema=False)
+def market_monitor(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "market-monitor")
+
+
 @router.get("/dashboard/market-snapshots/{symbol}")
 def market_snapshot_detail(symbol: str, request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "market-snapshot-detail")
@@ -168,6 +173,21 @@ def strategies(request: Request, settings: Settings = Depends(get_settings)):
 @router.get("/dashboard/strategies/{strategy_name}")
 def strategy_detail(strategy_name: str, request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "strategy-detail")
+
+
+@router.get("/dashboard/paper-positions", include_in_schema=False)
+def paper_positions(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "paper-positions")
+
+
+@router.get("/dashboard/strategy-scoreboard", include_in_schema=False)
+def strategy_scoreboard(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "strategy-scoreboard")
+
+
+@router.get("/dashboard/strategy-lab/parameters", include_in_schema=False)
+def strategy_parameters(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "strategy-parameters")
 
 
 @router.get("/dashboard/data-quality")
@@ -228,6 +248,36 @@ def ai_review_detail(analysis_id: int, request: Request, settings: Settings = De
 @router.get("/dashboard/system")
 def system(request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "system")
+
+
+@router.get("/dashboard/system-monitor", include_in_schema=False)
+def system_monitor(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "system-monitor")
+
+
+@router.get("/dashboard/runtime-logs", include_in_schema=False)
+def runtime_logs(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "runtime-logs")
+
+
+@router.get("/dashboard/product/feedback", include_in_schema=False)
+def product_feedback(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "product-feedback")
+
+
+@router.get("/dashboard/product/behavior", include_in_schema=False)
+def product_behavior(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "product-behavior")
+
+
+@router.get("/dashboard/product/bot-statistics", include_in_schema=False)
+def bot_statistics(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "bot-statistics")
+
+
+@router.get("/dashboard/product/user-intelligence", include_in_schema=False)
+def user_intelligence(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "user-intelligence")
 
 
 @router.get("/dashboard/research")

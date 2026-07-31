@@ -157,6 +157,12 @@ def test_dashboard_product_shell_and_all_routes(monkeypatch, tmp_path):
             "/dashboard/data-quality", "/dashboard/reports",
             "/dashboard/development", "/dashboard/system",
             "/dashboard/symbols/QQQ", "/dashboard/holdings/1",
+            "/dashboard/market-monitor", "/dashboard/paper-positions",
+            "/dashboard/strategy-scoreboard", "/dashboard/strategy-lab/parameters",
+            "/dashboard/product/feedback", "/dashboard/product/behavior",
+            "/dashboard/product/bot-statistics",
+            "/dashboard/product/user-intelligence",
+            "/dashboard/system-monitor", "/dashboard/runtime-logs",
         )
         for path in paths:
             response = client.get(path)
@@ -178,12 +184,21 @@ def test_dashboard_navigation_is_grouped_and_has_no_placeholder_links(monkeypatc
         assert 'id="mobile-menu"' in html
         assert 'href="#"' not in html
         for target in (
-            "/dashboard/market-snapshots", "/dashboard/trade-plans",
-            "/dashboard/positions", "/dashboard/portfolios",
-            "/dashboard/trade-reviews", "/dashboard/companion",
-            "/dashboard/telegram-preview", "/dashboard/system",
+            "/dashboard/market-regime", "/dashboard/market-monitor",
+            "/dashboard/candidates", "/dashboard/trade-plans",
+            "/dashboard/paper-positions", "/dashboard/trade-reviews",
+            "/dashboard/strategy-scoreboard", "/dashboard/companion",
+            "/dashboard/ai-reviews", "/dashboard/telegram-preview",
+            "/dashboard/product/feedback", "/dashboard/product/behavior",
+            "/dashboard/product/bot-statistics",
+            "/dashboard/product/user-intelligence", "/dashboard/strategies",
+            "/dashboard/strategy-lab/parameters", "/dashboard/research",
+            "/dashboard/system", "/dashboard/system-monitor",
+            "/dashboard/runtime-logs",
         ):
             assert 'href="%s"' % target in html
+        assert 'href="/dashboard/opportunities"' not in html
+        assert 'href="/dashboard/positions"' not in html
     finally:
         client.__exit__(None, None, None)
 
@@ -242,5 +257,41 @@ def test_dashboard_responsive_and_component_system(monkeypatch, tmp_path):
         assert "暂无持仓计划" in script
         assert "暂无复盘记录" in script
         assert "暂无 AI 分析" in script
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_product_architecture_primary_navigation(monkeypatch, tmp_path):
+    client = dashboard_client(monkeypatch, tmp_path, public=True)
+    try:
+        html = client.get("/dashboard").text
+        script = client.get("/dashboard/static/ui.js").text
+        for label in (
+            "🏠 工作台", "📈 市场", "📊 策略", "🤖 AI",
+            "📱 产品运营", "🧪 Strategy Lab", "⚙ 更多",
+        ):
+            assert label in html + script
+        for label in ("市场监控", "模拟持仓", "策略成绩榜", "用户反馈", "系统监控"):
+            assert label in html
+        assert 'data-nav="opportunities"' not in html
+        assert 'data-nav="positions"' not in html
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_product_architecture_is_presentation_only(monkeypatch, tmp_path):
+    client = dashboard_client(monkeypatch, tmp_path, public=True)
+    try:
+        script = client.get("/dashboard/static/dashboard.js").text
+        for function_name in (
+            "marketMonitor", "strategyScoreboard", "productFeedback", "systemMonitor",
+        ):
+            assert "function %s" % function_name in script
+        assert "Telegram Runtime 未接入" in script
+        assert "不发送消息" in script
+        assert "/api/development/issues?source_type=USER_FEEDBACK" in script
+        assert "/api/platform/version" in script
+        assert "place_order" not in script
+        assert "sendMessage" not in script
     finally:
         client.__exit__(None, None, None)

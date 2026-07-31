@@ -107,6 +107,9 @@ Release UI Review 使用统一的紧凑深色工作台、分组及可折叠导�
 响应式表格和可追溯版本页。界面只聚合现有服务数据，不修改策略、交易计划、持仓、复盘或
 AI 业务结果。设计规范和按钮审计见
 [`SPRINT_41_DASHBOARD_UX_REFRESH.md`](docs/SPRINT_41_DASHBOARD_UX_REFRESH.md)。
+产品后台最终按工作台、市场、策略、AI、产品运营、Strategy Lab 和更多七个一级模块组织；
+Feedback Center 与 Telegram 反馈按钮目前仅完成信息架构和展示模型，不启动 Bot 或写入新业务数据。
+详见 [`SPRINT_41_PRODUCT_ARCHITECTURE_FINAL.md`](docs/SPRINT_41_PRODUCT_ARCHITECTURE_FINAL.md)。
 
 ## 测试
 

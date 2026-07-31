@@ -4,6 +4,7 @@ import pytest
 
 from app.symbol_overview.service import SymbolOverviewService
 from app.telegram_product.deep_links import deep_link
+from app.telegram_product.feedback import analysis_feedback_actions, feedback_menu
 from app.telegram_product.formatter import TelegramFormatter
 from app.telegram_product.presenter import MAX_MESSAGE_LENGTH, TelegramPresenter
 from tests.unit.test_market_snapshot import add_market, add_plan, add_portfolio
@@ -80,3 +81,26 @@ def test_presentation_does_not_mutate_session(db):
     before = len(db.new), len(db.dirty), len(db.deleted)
     TelegramFormatter().overview(value)
     assert before == (len(db.new), len(db.dirty), len(db.deleted))
+
+
+def test_feedback_menu_is_presentation_only_and_bilingual():
+    zh = feedback_menu("zh-CN")
+    en = feedback_menu("en-US")
+    assert [item.category for item in zh] == ["BUG", "FEATURE", "STRATEGY", "MARKET", "OTHER"]
+    assert zh[0].label == "🐞 Bug"
+    assert en[1].label == "💡 Feature Idea"
+    assert all(item.action == "submit_feedback" for item in zh)
+    assert all(item.callback_data.startswith("feedback-v1:") for item in zh)
+
+
+def test_ai_analysis_feedback_actions_are_safe_models():
+    actions = analysis_feedback_actions(12, "zh-CN")
+    assert [item.category for item in actions] == ["HELPFUL", "NOT_HELPFUL"]
+    assert actions[0].callback_data == "analysis-feedback-v1:12:helpful"
+    assert actions[1].callback_data == "analysis-feedback-v1:12:not-helpful"
+    assert not hasattr(actions[0], "send")
+
+
+def test_ai_analysis_feedback_rejects_invalid_id():
+    with pytest.raises(ValueError):
+        analysis_feedback_actions(0)

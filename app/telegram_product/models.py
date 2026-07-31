@@ -12,6 +12,14 @@ class TelegramActionButton:
 
 
 @dataclass(frozen=True)
+class TelegramFeedbackAction:
+    label: str
+    action: str
+    callback_data: str
+    category: str
+
+
+@dataclass(frozen=True)
 class TelegramSymbolOverview:
     schema_version: str
     language: str

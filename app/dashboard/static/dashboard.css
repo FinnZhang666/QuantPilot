@@ -25,10 +25,11 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .nav-group{display:grid;gap:2px}.nav-group>p{color:#627784;font-size:9px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;margin:5px 10px 2px;white-space:nowrap}
 .sidebar a{display:flex;align-items:center;gap:10px;color:var(--muted);padding:7px 10px;border-radius:8px;font-size:12px;white-space:nowrap;min-height:32px}
 .sidebar a>span{width:18px;text-align:center;color:#718795;font-size:14px}.sidebar a>b{font-weight:560}
+.sidebar a>em.nav-badge{margin-left:auto;min-width:20px;padding:2px 6px;border-radius:999px;background:var(--bad-soft);border:1px solid #603033;color:#ffaaaa;font-size:9px;font-style:normal;text-align:center}
 .sidebar a:hover{background:#121e29;color:var(--text)}.sidebar a.active{background:var(--blue-soft);color:#dbeaff;box-shadow:inset 2px 0 0 var(--blue)}.sidebar a.active>span{color:var(--blue)}
 .sidebar form{border-top:1px solid var(--line);padding-top:10px}.sidebar-logout{width:100%;text-align:left}
 .sidebar-backdrop{display:none}.mobile-menu{display:none;position:fixed;top:14px;left:14px;z-index:50}
-.sidebar-collapsed{--sidebar-width:72px}.sidebar-collapsed .brand-copy,.sidebar-collapsed .nav-group>p,.sidebar-collapsed .sidebar a>b,.sidebar-collapsed .sidebar form{display:none}.sidebar-collapsed .brand{padding-left:4px}.sidebar-collapsed .brand>img{width:34px;height:34px}.sidebar-collapsed .collapse-button{position:absolute;right:-14px;top:64px;background:var(--panel);border:1px solid var(--line)}.sidebar-collapsed .sidebar a{justify-content:center;padding:7px}.sidebar-collapsed .sidebar a>span{font-size:16px}.sidebar-collapsed .sidebar nav{gap:5px}
+.sidebar-collapsed{--sidebar-width:72px}.sidebar-collapsed .brand-copy,.sidebar-collapsed .nav-group>p,.sidebar-collapsed .sidebar a>b,.sidebar-collapsed .sidebar a>em,.sidebar-collapsed .sidebar form{display:none}.sidebar-collapsed .brand{padding-left:4px}.sidebar-collapsed .brand>img{width:34px;height:34px}.sidebar-collapsed .collapse-button{position:absolute;right:-14px;top:64px;background:var(--panel);border:1px solid var(--line)}.sidebar-collapsed .sidebar a{justify-content:center;padding:7px}.sidebar-collapsed .sidebar a>span{font-size:16px}.sidebar-collapsed .sidebar nav{gap:5px}
 
 .workspace{margin-left:var(--sidebar-width);padding:20px 28px 28px;max-width:1680px;transition:margin-left .2s ease}
 .topbar{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:18px;min-height:54px}
