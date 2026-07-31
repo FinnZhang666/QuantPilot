@@ -289,3 +289,13 @@ Dashboard：`/dashboard/trade-plans`
 Read-only API：`GET /api/trade-plans`、`GET /api/trade-plans/{plan_id}` 和
 `GET /api/trade-plans/{plan_id}/history`。详见
 [`docs/SPRINT_30_TRADE_LIFECYCLE_FOUNDATION.md`](docs/SPRINT_30_TRADE_LIFECYCLE_FOUNDATION.md)。
+
+## Sprint 31：Trade Plan Runtime
+
+Trade Companion 会把既有 `CANDIDATE_BUY + VALID` Strategy Signal 幂等转换为真实
+Trade Plan，并通过生命周期审计从 `DISCOVER` 推进到 `PLAN`。现有 Runtime 会触发轻量
+Generator；Dashboard 提供真实列表与详情，内部管理员接口可进行有限批次生成。
+
+本功能不改变 Strategy Engine，不进入用户参与阶段，不下单，也不会在 macOS 启动或发送
+Telegram。架构、去重规则与部署边界见
+[`docs/SPRINT_31_TRADE_PLAN_RUNTIME.md`](docs/SPRINT_31_TRADE_PLAN_RUNTIME.md)。

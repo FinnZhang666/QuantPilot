@@ -2,34 +2,36 @@ import uuid
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
-from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
-from app.database.models import CandidateSignal, TradePlan, TradePlanTransition
+from app.database.models import TradePlan, TradePlanTransition
 from app.trade_lifecycle.adapter import TradePlanAdapter
 from app.trade_lifecycle.domain import (
     ALLOWED_TRANSITIONS, LifecycleStage, TradePlanDraft, TradePlanStatus,
     normalize_stage,
 )
+from app.trade_lifecycle.repository import TradePlanRepository
 
 
 class TradeLifecycleService:
-    def __init__(self, db: Session, adapter: Optional[TradePlanAdapter] = None):
-        self.db = db
+    def __init__(
+        self, db: Session, adapter: Optional[TradePlanAdapter] = None,
+        repository: Optional[TradePlanRepository] = None,
+    ):
         self.adapter = adapter or TradePlanAdapter()
+        self.repository = repository or TradePlanRepository(db)
 
     def create_from_signal(
         self, signal_id: int, direction: Optional[str] = None,
     ) -> Tuple[TradePlan, bool]:
-        signal = self.db.get(CandidateSignal, signal_id)
+        signal = self.repository.get_signal(signal_id)
         if signal is None:
             raise KeyError("Candidate Signal不存在。")
         draft = self.adapter.from_candidate_signal(signal, direction=direction)
-        existing = self.db.scalar(select(TradePlan).where(
-            TradePlan.signal_id == draft.signal_id,
-            TradePlan.direction == draft.direction.value,
-        ))
+        existing = self.repository.find_by_signal(draft.signal_id, draft.direction.value)
         if existing is not None:
+            self.repository.update_from_draft(existing, draft)
+            self.repository.commit()
             return existing, False
         return self.create(draft), True
 
@@ -53,17 +55,16 @@ class TradeLifecycleService:
             source_metadata_json=dict(draft.source_metadata),
             user_participation_status="NOT_DECLARED", review_status="NOT_STARTED",
         )
-        self.db.add(row)
-        self.db.flush()
+        self.repository.add(row)
         self._record_transition(
             row, None, LifecycleStage.DISCOVER, "Trade Plan由策略输出适配创建。",
             "STRATEGY_ADAPTER", {"signal_id": draft.signal_id},
         )
-        self.db.commit()
+        self.repository.commit()
         return row
 
     def get(self, plan_id: str) -> Optional[TradePlan]:
-        return self.db.scalar(select(TradePlan).where(TradePlan.plan_id == plan_id))
+        return self.repository.get(plan_id)
 
     def list(
         self, symbol: Optional[str] = None, lifecycle_stage: Optional[str] = None,
@@ -71,30 +72,25 @@ class TradeLifecycleService:
         market: Optional[str] = None, start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None, limit: int = 100, offset: int = 0,
     ) -> List[TradePlan]:
-        query = select(TradePlan)
-        if symbol:
-            query = query.where(TradePlan.symbol == symbol.upper().replace("US.", ""))
-        if lifecycle_stage:
-            query = query.where(TradePlan.lifecycle_stage == normalize_stage(lifecycle_stage).value)
-        if status:
-            query = query.where(TradePlan.plan_status == status.upper())
-        if strategy:
-            query = query.where(TradePlan.strategy_name == strategy)
-        if market:
-            query = query.where(TradePlan.market == market.upper())
-        if start_time:
-            query = query.where(TradePlan.created_at >= start_time)
-        if end_time:
-            query = query.where(TradePlan.created_at <= end_time)
-        return list(self.db.scalars(query.order_by(
-            desc(TradePlan.created_at), desc(TradePlan.id),
-        ).offset(offset).limit(limit)))
+        stage = normalize_stage(lifecycle_stage).value if lifecycle_stage else None
+        return self.repository.list(
+            symbol, stage, status, strategy, market, start_time, end_time, limit, offset,
+        )
+
+    def count(
+        self, symbol: Optional[str] = None, lifecycle_stage: Optional[str] = None,
+        status: Optional[str] = None, strategy: Optional[str] = None,
+        market: Optional[str] = None, start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+    ) -> int:
+        stage = normalize_stage(lifecycle_stage).value if lifecycle_stage else None
+        return self.repository.count(
+            symbol, stage, status, strategy, market, start_time, end_time,
+        )
 
     def history(self, plan_id: str) -> List[TradePlanTransition]:
         row = self._required(plan_id)
-        return list(self.db.scalars(select(TradePlanTransition).where(
-            TradePlanTransition.trade_plan_id == row.id,
-        ).order_by(TradePlanTransition.transitioned_at, TradePlanTransition.id)))
+        return self.repository.history(row.id)
 
     def advance(
         self, plan_id: str, new_stage, reason: str, source: str,
@@ -115,7 +111,8 @@ class TradeLifecycleService:
         if target == LifecycleStage.REVIEW:
             row.review_status = "PENDING"
         self._record_transition(row, previous, target, reason, source, metadata or {})
-        self.db.commit()
+        self.repository.save(row)
+        self.repository.commit()
         return row
 
     def cancel(self, plan_id: str, reason: str, source: str = "INTERNAL") -> TradePlan:
@@ -134,7 +131,7 @@ class TradeLifecycleService:
         self, row: TradePlan, previous: Optional[LifecycleStage], target: LifecycleStage,
         reason: str, source: str, metadata: Dict[str, object],
     ) -> None:
-        self.db.add(TradePlanTransition(
+        self.repository.add_transition(TradePlanTransition(
             trade_plan_id=row.id,
             previous_stage=previous.value if previous else None,
             new_stage=target.value, transitioned_at=datetime.now(timezone.utc),

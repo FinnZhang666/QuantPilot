@@ -164,6 +164,7 @@ def test_trade_plan_formatter_marks_missing_levels(db):
     assert "Symbol: SOXL" in text and "Stage: DISCOVER" in text
     assert text.count("暂无（策略未提供）") >= 5
     assert "不是订单" in text
+    assert "Confidence: 88" in text and "Generated Time:" in text
 
 
 def test_formatter_uses_supplied_levels(db):

@@ -2,18 +2,27 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, select
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.database.models import TradePlan
 from app.database.session import get_db
-from app.dashboard.auth import require_read
+from app.dashboard.auth import require_admin, require_read
+from app.trade_lifecycle.runtime import TradePlanRuntime
 from app.trade_lifecycle.service import TradeLifecycleService
 
 router = APIRouter(
     prefix="/api/trade-plans", tags=["Trade Lifecycle"],
     dependencies=[Depends(require_read)],
 )
+internal_router = APIRouter(
+    prefix="/internal/trade-plans", tags=["Internal Trade Plan Runtime"],
+    dependencies=[Depends(require_admin)],
+)
+
+
+class GenerateTradePlansRequest(BaseModel):
+    limit: int = Field(100, ge=1, le=1000)
 
 
 @router.get("")
@@ -33,22 +42,9 @@ def list_trade_plans(
         )
     except ValueError as exc:
         raise HTTPException(422, str(exc))
-    filters = []
-    if symbol:
-        filters.append(TradePlan.symbol == symbol.upper().replace("US.", ""))
-    if lifecycle_stage:
-        filters.append(TradePlan.lifecycle_stage == lifecycle_stage.upper())
-    if status:
-        filters.append(TradePlan.plan_status == status.upper())
-    if strategy:
-        filters.append(TradePlan.strategy_name == strategy)
-    if market:
-        filters.append(TradePlan.market == market.upper())
-    if start_time:
-        filters.append(TradePlan.created_at >= start_time)
-    if end_time:
-        filters.append(TradePlan.created_at <= end_time)
-    total = db.scalar(select(func.count()).select_from(TradePlan).where(*filters)) or 0
+    total = service.count(
+        symbol, lifecycle_stage, status, strategy, market, start_time, end_time,
+    )
     return {
         "items": [_serialize(row) for row in rows],
         "total": total, "limit": limit, "offset": offset,
@@ -70,6 +66,13 @@ def get_trade_plan_history(plan_id: str, db: Session = Depends(get_db)):
     except KeyError as exc:
         raise HTTPException(404, str(exc).strip("'"))
     return {"items": [_serialize_transition(row) for row in rows]}
+
+
+@internal_router.post("/generate", include_in_schema=False)
+def generate_trade_plans(
+    request: GenerateTradePlansRequest, db: Session = Depends(get_db),
+):
+    return TradePlanRuntime(db).run(request.limit)
 
 
 def _decimal(value):

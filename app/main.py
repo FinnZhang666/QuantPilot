@@ -24,6 +24,7 @@ from app.api.review import router as review_router
 from app.api.ai_review import router as ai_review_router
 from app.api.platform import router as platform_router
 from app.api.research import router as research_router
+from app.api.trade_plans import internal_router as internal_trade_plans_router
 from app.api.trade_plans import router as trade_plans_router
 from app.dashboard.routes import router as dashboard_router
 from app.api.routes import router as api_router
@@ -92,6 +93,7 @@ app.include_router(ai_review_router)
 app.include_router(platform_router)
 app.include_router(research_router)
 app.include_router(trade_plans_router)
+app.include_router(internal_trade_plans_router)
 app.include_router(dashboard_router)
 app.mount(
     "/dashboard/static",

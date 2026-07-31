@@ -70,6 +70,11 @@ def trade_plans(request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "trade-plans")
 
 
+@router.get("/dashboard/trade-plans/{plan_id}")
+def trade_plan_detail(plan_id: str, request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "trade-plan-detail")
+
+
 @router.get("/dashboard/runtime")
 def runtime(request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "runtime")

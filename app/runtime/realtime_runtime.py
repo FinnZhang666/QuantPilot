@@ -17,6 +17,7 @@ from app.runtime.opportunity_pipeline import OpportunityPipeline
 from app.runtime.runtime_state import RuntimeStateRepository
 from app.review.scheduler import ReviewScheduler
 from app.ai.scheduler import AIReviewScheduler
+from app.trade_lifecycle.scheduler import TradePlanGeneratorScheduler
 
 
 class RealtimeOpportunityRuntime:
@@ -40,6 +41,7 @@ class RealtimeOpportunityRuntime:
         self.telegram_poller = TelegramCommandPoller(self.settings, self.session_factory)
         self.review_scheduler = ReviewScheduler(self.settings, self.session_factory)
         self.ai_review_scheduler = AIReviewScheduler(self.settings, self.session_factory)
+        self.trade_plan_scheduler = TradePlanGeneratorScheduler(self.session_factory)
 
     def start(self) -> Dict[str, object]:
         with self.lock:
@@ -76,6 +78,7 @@ class RealtimeOpportunityRuntime:
         self.telegram_poller.stop()
         self.review_scheduler.stop()
         self.ai_review_scheduler.stop()
+        self.trade_plan_scheduler.stop()
         self.status = "STOPPED"
         self._save_state()
         self._save_pipeline_stopped()
@@ -147,6 +150,7 @@ class RealtimeOpportunityRuntime:
         while not self.stop_event.wait(self.settings.runtime_poll_interval_seconds):
             try:
                 self.process_once()
+                self.trade_plan_scheduler.trigger()
                 self.review_scheduler.trigger()
                 self.ai_review_scheduler.trigger()
             except Exception as exc:

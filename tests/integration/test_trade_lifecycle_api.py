@@ -62,3 +62,33 @@ def test_trade_plan_dashboard_and_openapi(monkeypatch, tmp_path):
         paths = api.get("/openapi.json").json()["paths"]
         assert "/api/trade-plans" in paths
         assert "/api/trade-plans/{plan_id}/history" in paths
+        assert "/internal/trade-plans/generate" not in paths
+
+
+def test_internal_generation_is_admin_only_and_idempotent(monkeypatch, tmp_path):
+    monkeypatch.setenv("DATABASE_URL", "sqlite:///" + str(tmp_path / "runtime-api.db"))
+    monkeypatch.setenv("DASHBOARD_READONLY_PUBLIC", "true")
+    monkeypatch.setenv("DASHBOARD_ADMIN_TOKEN", "admin-test")
+    get_settings.cache_clear()
+    get_engine.cache_clear()
+    with TestClient(app) as api:
+        with get_session_factory()() as db:
+            signal = CandidateSignal(
+                symbol="SOXL", market="US", timeframe="60m",
+                bar_timestamp=datetime(2026, 7, 31, tzinfo=timezone.utc),
+                strategy_name="pullback_restrength", strategy_version="1.0.0",
+                parameters_hash="api-hash", signal_type="CANDIDATE_BUY", score=82,
+                confidence=87, status="VALID", summary_zh="测试",
+                reasons_json=[], risks_json=[], feature_refs_json={}, components_json={},
+            )
+            db.add(signal)
+            db.commit()
+        assert api.post("/internal/trade-plans/generate", json={"limit": 10}).status_code == 401
+        headers = {"X-Dashboard-Token": "admin-test"}
+        first = api.post("/internal/trade-plans/generate", json={"limit": 10}, headers=headers)
+        second = api.post("/internal/trade-plans/generate", json={"limit": 10}, headers=headers)
+        assert first.status_code == 200 and first.json()["created"] == 1
+        assert second.status_code == 200 and second.json()["scanned"] == 0
+        plan_id = first.json()["plan_ids"][0]
+        page = api.get("/dashboard/trade-plans/" + plan_id)
+        assert page.status_code == 200 and 'data-page="trade-plan-detail"' in page.text
