@@ -28,6 +28,8 @@ from app.api.trade_plans import internal_router as internal_trade_plans_router
 from app.api.trade_plans import router as trade_plans_router
 from app.api.user_positions import internal_router as internal_user_positions_router
 from app.api.user_positions import router as user_positions_router
+from app.api.trade_reviews import internal_router as internal_trade_reviews_router
+from app.api.trade_reviews import router as trade_reviews_router
 from app.dashboard.routes import router as dashboard_router
 from app.api.routes import router as api_router
 from app.core.config import get_settings
@@ -98,6 +100,8 @@ app.include_router(trade_plans_router)
 app.include_router(internal_trade_plans_router)
 app.include_router(user_positions_router)
 app.include_router(internal_user_positions_router)
+app.include_router(trade_reviews_router)
+app.include_router(internal_trade_reviews_router)
 app.include_router(dashboard_router)
 app.mount(
     "/dashboard/static",

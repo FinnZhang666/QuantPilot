@@ -309,3 +309,14 @@ Dashboard：`/dashboard/positions`。只读 API：`GET /api/user-positions`、
 `GET /api/user-positions/{id}` 和 `GET /api/user-positions/statistics`。管理员内部 open/close
 接口不会出现在 OpenAPI，也不会触发真实交易。详见
 [`docs/SPRINT_32_USER_PARTICIPATION_ENGINE.md`](docs/SPRINT_32_USER_PARTICIPATION_ENGINE.md)。
+
+## Sprint 33：Review Engine Foundation
+
+Trade Review 只针对终态 Trade Plan（`REVIEW/CANCELLED/EXPIRED`）和 `CLOSED` User Position，
+使用现有 Historical Bars 计算基础 MFE/MAE、持有时间及 Target/Stop 命中。重复回填更新同一
+Review，不会产生重复记录，也不会修改来源对象。
+
+Dashboard：`/dashboard/trade-reviews`。只读 API：`GET /api/reviews`、
+`GET /api/reviews/{id}`、`GET /api/reviews/statistics`。手工 Runtime 的管理员内部接口默认
+dry-run，本 Sprint 不接 Scheduler。完整公式和边界见
+[`docs/SPRINT_33_REVIEW_ENGINE_FOUNDATION.md`](docs/SPRINT_33_REVIEW_ENGINE_FOUNDATION.md)。

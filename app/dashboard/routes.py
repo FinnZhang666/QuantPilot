@@ -85,6 +85,16 @@ def user_position_detail(position_id: int, request: Request, settings: Settings 
     return _page(request, settings, "position-detail")
 
 
+@router.get("/dashboard/trade-reviews")
+def trade_reviews(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "trade-reviews")
+
+
+@router.get("/dashboard/trade-reviews/{review_id}")
+def trade_review_detail(review_id: int, request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "trade-review-detail")
+
+
 @router.get("/dashboard/runtime")
 def runtime(request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "runtime")

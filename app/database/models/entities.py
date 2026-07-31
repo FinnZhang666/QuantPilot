@@ -1196,3 +1196,32 @@ class UserPosition(TimestampMixin, Base):
     status: Mapped[str] = mapped_column(String(16), default="OPEN")
     source: Mapped[str] = mapped_column(String(32), default="ADMIN_API")
     notes: Mapped[Optional[str]] = mapped_column(Text)
+
+
+class TradeReview(TimestampMixin, Base):
+    __tablename__ = "trade_reviews"
+    __table_args__ = (
+        UniqueConstraint("review_key", name="uq_trade_review_key"),
+        Index("ix_trade_reviews_plan_type", "trade_plan_id", "review_type"),
+        Index("ix_trade_reviews_position", "user_position_id"),
+        Index("ix_trade_reviews_result_time", "result", "review_time"),
+        CheckConstraint("review_type IN ('SYSTEM','USER')", name="ck_trade_review_type"),
+        CheckConstraint(
+            "result IN ('WIN','LOSS','BREAKEVEN','OPEN','CANCELLED','EXPIRED')",
+            name="ck_trade_review_result",
+        ),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    review_key: Mapped[str] = mapped_column(String(64))
+    trade_plan_id: Mapped[int] = mapped_column(ForeignKey("trade_plans.id"))
+    user_position_id: Mapped[Optional[int]] = mapped_column(ForeignKey("user_positions.id"))
+    review_type: Mapped[str] = mapped_column(String(16))
+    result: Mapped[str] = mapped_column(String(16))
+    entry_price: Mapped[object] = mapped_column(Numeric(24, 8))
+    exit_price: Mapped[object] = mapped_column(Numeric(24, 8))
+    mfe: Mapped[object] = mapped_column(Numeric(18, 8))
+    mae: Mapped[object] = mapped_column(Numeric(18, 8))
+    holding_minutes: Mapped[int] = mapped_column(BigInteger)
+    target_hit: Mapped[bool] = mapped_column(Boolean, default=False)
+    stop_hit: Mapped[bool] = mapped_column(Boolean, default=False)
+    review_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
