@@ -40,6 +40,9 @@ cp .env.example .env
 ```
 
 `requirements.txt` 包含 Python 3.9 兼容的运行依赖和 `moomoo-api`；不得混用系统 Python 与项目虚拟环境。
+完整发布文档：[`INSTALLATION.md`](docs/INSTALLATION.md)、[`DEPLOYMENT.md`](docs/DEPLOYMENT.md)、
+[`RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md)、[`BACKUP_AND_RECOVERY.md`](docs/BACKUP_AND_RECOVERY.md)
+和 [`KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md)。
 
 ## Market Regime 与候选池
 
@@ -192,7 +195,11 @@ docker compose up --build
 
 ## 已知限制
 
-当前不含Moomoo模拟下单、策略、回测、前端或真实Telegram信号通知。实时行情和历史行情能力取决于OpenD登录状态及市场权限。
+当前已包含 Strategy、Backtest、Dashboard、Trade Lifecycle、Review、AI Companion Mock 和 Telegram
+产品预览层，但仍不包含 Broker 实盘执行。Telegram 产品按钮/Deep Link 尚未与 Windows 部署端真实
+Bot Runtime 联调；外部 AI Provider 和 Windows 生产环境也尚未完成发布验证。实时与历史行情覆盖仍
+取决于用户本机 OpenD 登录状态和市场权限。完整清单见
+[`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md)。
 # Sprint 06：轻量历史回测
 
 Sprint 06 提供单标的、单策略、单周期的 Candidate Signal 历史回放与策略重算回测。默认在信号 K 线的下一根开盘成交，只做 `FLAT/LONG` 状态模拟，不连接券商、不创建订单。完整说明见 [docs/BACKTEST_ENGINE.md](docs/BACKTEST_ENGINE.md)。
@@ -376,3 +383,9 @@ Trade Companion 1.0.0-rc1 完成聚合、Repository、Service、API、Dashboard�
 当前策略版本的最新 VALID 记录；Symbol Overview 复用 Snapshot 已加载来源，Dashboard 在单页内合并
 重复 GET。该 Sprint 不增加业务模块、数据库或 Migration。详见
 [`docs/SPRINT_39_PRODUCTION_HARDENING.md`](docs/SPRINT_39_PRODUCTION_HARDENING.md)。
+
+## Sprint 40：Release Candidate Finalization
+
+Trade Companion 1.0.0-rc2 冻结 Public API、Dashboard、数据库和业务逻辑，只补全配置说明、安装、部署、
+备份恢复、已知问题和发布检查清单。RC2 离线基线不包含 Windows、OpenD Runtime、Telegram Runtime、
+Broker 或外部 AI Provider 的生产联调。

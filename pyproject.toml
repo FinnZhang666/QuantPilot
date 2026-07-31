@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "quantpilot"
-version = "0.1.0"
-description = "Safe US equity research and paper-trading foundation"
+version = "1.0.0rc2"
+description = "Trade Companion AI-assisted trade lifecycle research workspace"
 requires-python = ">=3.9,<3.10"
 dependencies = [
   "fastapi>=0.115,<0.129",

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import importlib
+import importlib.util
 import platform
 import sys
 
@@ -12,10 +12,9 @@ def main() -> int:
     print(f"Python 3.9基线：{'通过' if baseline_ok else '不通过'}")
     missing = []
     for module in MODULES:
-        try:
-            importlib.import_module(module)
+        if importlib.util.find_spec(module) is not None:
             print(f"{module}：已安装")
-        except ImportError:
+        else:
             missing.append(module)
             print(f"{module}：缺失")
     return 1 if missing or not baseline_ok else 0
