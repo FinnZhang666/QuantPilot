@@ -83,7 +83,7 @@ def test_ai_review_dashboard_pages(monkeypatch, tmp_path):
         cookies = {"dashboard_admin": "admin"}
         assert api.get("/dashboard/ai-reviews", cookies=cookies).status_code == 200
         assert api.get("/dashboard/ai-reviews/1", cookies=cookies).status_code == 200
-        assert "AI Review Analyst" in api.get("/dashboard/ai-reviews", cookies=cookies).text
+        assert "Trade Companion" in api.get("/dashboard/ai-reviews", cookies=cookies).text
     finally:
         api.__exit__(None, None, None)
 

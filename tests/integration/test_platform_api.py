@@ -47,5 +47,5 @@ def test_platform_backup_api(monkeypatch, tmp_path):
 def test_system_dashboard_page(monkeypatch, tmp_path):
     with client(monkeypatch, tmp_path) as value:
         response = value.get("/dashboard/system")
-        assert response.status_code == 200 and "公司工作台" in response.text
+        assert response.status_code == 200 and "Trade Companion" in response.text
         assert "Trade Companion" in response.text

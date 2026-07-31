@@ -58,7 +58,7 @@ def test_dashboard_login_and_all_pages(monkeypatch, tmp_path):
         ):
             response = client.get(path)
             assert response.status_code == 200
-            assert "公司工作台" in response.text
+            assert "Trade Companion" in response.text
     finally:
         client.__exit__(None, None, None)
 
@@ -138,5 +138,109 @@ def test_tokens_not_leaked(monkeypatch, tmp_path):
             response = client.get(path)
             assert "secret-dashboard-token" not in response.text
             assert "telegram_bot_token" not in response.text
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_dashboard_product_shell_and_all_routes(monkeypatch, tmp_path):
+    client = dashboard_client(monkeypatch, tmp_path)
+    try:
+        login(client)
+        paths = (
+            "/dashboard", "/dashboard/opportunities", "/dashboard/trade-plans",
+            "/dashboard/positions", "/dashboard/portfolios",
+            "/dashboard/market-snapshots", "/dashboard/telegram-preview",
+            "/dashboard/trade-reviews", "/dashboard/companion",
+            "/dashboard/market-regime", "/dashboard/candidates",
+            "/dashboard/reviews", "/dashboard/ai-reviews", "/dashboard/research",
+            "/dashboard/runtime", "/dashboard/strategies",
+            "/dashboard/data-quality", "/dashboard/reports",
+            "/dashboard/development", "/dashboard/system",
+            "/dashboard/symbols/QQQ", "/dashboard/holdings/1",
+        )
+        for path in paths:
+            response = client.get(path)
+            assert response.status_code == 200
+            assert "Trade Companion" in response.text
+            assert "quantpilot-logo.png" in response.text
+            assert "ui.js" in response.text
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_dashboard_navigation_is_grouped_and_has_no_placeholder_links(monkeypatch, tmp_path):
+    client = dashboard_client(monkeypatch, tmp_path)
+    try:
+        login(client)
+        html = client.get("/dashboard").text
+        assert html.count('class="nav-group"') >= 7
+        assert 'id="sidebar-toggle"' in html
+        assert 'id="mobile-menu"' in html
+        assert 'href="#"' not in html
+        for target in (
+            "/dashboard/market-snapshots", "/dashboard/trade-plans",
+            "/dashboard/positions", "/dashboard/portfolios",
+            "/dashboard/trade-reviews", "/dashboard/companion",
+            "/dashboard/telegram-preview", "/dashboard/system",
+        ):
+            assert 'href="%s"' % target in html
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_dashboard_language_and_accessibility_assets(monkeypatch, tmp_path):
+    client = dashboard_client(monkeypatch, tmp_path)
+    try:
+        login(client)
+        html = client.get("/dashboard").text
+        script = client.get("/dashboard/static/ui.js").text
+        login_html = client.get("/dashboard/login").text
+        assert 'id="language-select"' in html
+        assert 'value="zh-CN"' in html and 'value="en-US"' in html
+        assert 'tc-dashboard-language' in script
+        assert '"zh-CN"' in script and '"en-US"' in script
+        assert 'aria-label="主导航"' in html
+        assert 'aria-label="刷新页面"' in html
+        assert 'for="admin-token"' in login_html
+        assert 'id="toggle-password"' in login_html
+        assert "QuantPilot" not in login_html
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_dashboard_version_uses_central_source(monkeypatch, tmp_path):
+    client = dashboard_client(monkeypatch, tmp_path, public=True)
+    try:
+        version = client.get("/api/platform/version").json()
+        openapi = client.get("/openapi.json").json()
+        script = client.get("/dashboard/static/dashboard.js").text
+        html = client.get("/dashboard").text
+        assert version["product"] == openapi["info"]["title"] == "Trade Companion"
+        assert version["version"] == openapi["info"]["version"] == "1.0.0-rc2"
+        assert version["sprint"] == "40"
+        assert version["migration"] in {"0019", "unknown"}
+        assert "/api/platform/version" in script
+        assert 'id="footer-version"' in html
+        assert "1.0.0-rc1" not in html + script
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_dashboard_responsive_and_component_system(monkeypatch, tmp_path):
+    client = dashboard_client(monkeypatch, tmp_path, public=True)
+    try:
+        css = client.get("/dashboard/static/dashboard.css").text
+        script = client.get("/dashboard/static/dashboard.js").text
+        for breakpoint in ("1280px", "900px", "600px"):
+            assert breakpoint in css
+        assert ".sidebar-collapsed" in css
+        assert ".table-wrap" in css and "position:sticky" in css
+        assert ":focus-visible" in css
+        assert ".button.disabled" in css and "pointer-events:none" in css
+        assert "telegram-phone" in css and "telegram-preview-layout" in css
+        assert "暂无交易计划" in script
+        assert "暂无持仓计划" in script
+        assert "暂无复盘记录" in script
+        assert "暂无 AI 分析" in script
     finally:
         client.__exit__(None, None, None)

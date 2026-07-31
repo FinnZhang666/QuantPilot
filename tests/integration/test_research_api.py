@@ -80,4 +80,4 @@ def test_research_dashboard(monkeypatch, tmp_path):
             "/dashboard/research", headers={"X-Dashboard-Token": "research-admin"},
             follow_redirects=False,
         )
-        assert response.status_code == 200 and "Research Center" in response.text
+        assert response.status_code == 200 and "Trade Companion" in response.text

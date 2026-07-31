@@ -58,7 +58,7 @@ def test_trade_plan_dashboard_and_openapi(monkeypatch, tmp_path):
     with client(monkeypatch, tmp_path) as api:
         page = api.get("/dashboard/trade-plans")
         assert page.status_code == 200 and 'data-page="trade-plans"' in page.text
-        assert "Trade Plans" in page.text
+        assert "Trade Companion" in page.text
         paths = api.get("/openapi.json").json()["paths"]
         assert "/api/trade-plans" in paths
         assert "/api/trade-plans/{plan_id}/history" in paths

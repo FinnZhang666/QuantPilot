@@ -101,6 +101,13 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 默认`DASHBOARD_READONLY_PUBLIC=false`，只读页面也需要管理员Token。Runtime启停、创建Issue和修改Issue状态始终要求管理员鉴权。详细说明见`docs/SPRINT_08_DASHBOARD.md`。
 
+### Release Dashboard 2.0
+
+Release UI Review 使用统一的紧凑深色工作台、分组及可折叠导航、中文/English 语言切换、
+响应式表格和可追溯版本页。界面只聚合现有服务数据，不修改策略、交易计划、持仓、复盘或
+AI 业务结果。设计规范和按钮审计见
+[`SPRINT_41_DASHBOARD_UX_REFRESH.md`](docs/SPRINT_41_DASHBOARD_UX_REFRESH.md)。
+
 ## 测试
 
 ```bash

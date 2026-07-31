@@ -1,28 +1,79 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Trade Companion · 公司工作台</title><link rel="stylesheet" href="/dashboard/static/dashboard.css"></head>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b1118">
+  <title>Trade Companion · 工作台</title>
+  <link rel="icon" href="/dashboard/static/quantpilot-logo.png">
+  <link rel="stylesheet" href="/dashboard/static/dashboard.css">
+</head>
 <body data-page="__PAGE__">
-<aside class="sidebar"><div class="brand"><img src="/dashboard/static/quantpilot-logo.png" alt="Trade Companion Logo"><div><b>Trade Companion</b><small>陪你把每一笔交易做完</small></div></div>
-<nav>
-<a href="/dashboard" data-nav="home">工作台</a><a href="/dashboard/opportunities" data-nav="opportunities">交易机会</a>
-<a href="/dashboard/trade-plans" data-nav="trade-plans">Trade Plans</a>
-<a href="/dashboard/positions" data-nav="positions">My Positions</a>
-<a href="/dashboard/portfolios" data-nav="portfolios">Portfolio Center</a>
-<a href="/dashboard/market-snapshots" data-nav="market-snapshots">Market Snapshot</a>
-<a href="/dashboard/telegram-preview" data-nav="telegram-preview">Telegram Preview</a>
-<a href="/dashboard/trade-reviews" data-nav="trade-reviews">Trade Reviews</a>
-<a href="/dashboard/companion" data-nav="companion">AI Companion</a>
-<a href="/dashboard/market-regime" data-nav="market-regime">市场状态</a><a href="/dashboard/candidates" data-nav="candidates">候选池</a>
-<a href="/dashboard/reviews" data-nav="reviews">Opportunity Review</a>
-<a href="/dashboard/ai-reviews" data-nav="ai-reviews">AI Review Analyst</a>
-<a href="/dashboard/research" data-nav="research">Research Center</a>
-<a href="/dashboard/runtime" data-nav="runtime">运行状态</a><a href="/dashboard/strategies" data-nav="strategies">策略观察</a>
-<a href="/dashboard/data-quality" data-nav="data-quality">数据质量</a><a href="/dashboard/reports" data-nav="reports">历史报告</a>
-<a href="/dashboard/development" data-nav="development">开发看板</a>
-<a href="/dashboard/system" data-nav="system">System</a></nav>
-<form action="/dashboard/logout" method="post"><button class="ghost">退出</button></form></aside>
-<main class="workspace"><header><div><p class="eyebrow">INTERNAL OPERATIONS</p><h1 id="page-title">工作台</h1></div>
-<button class="ghost" onclick="location.reload()">刷新</button></header>
-<div id="flash"></div><section id="content"><div class="loading">正在读取本地数据…</div></section></main>
-<script src="/dashboard/static/dashboard.js"></script></body></html>
+<button class="mobile-menu ghost icon-button" id="mobile-menu" aria-label="打开导航" title="打开导航">☰</button>
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <img src="/dashboard/static/quantpilot-logo.png" alt="Trade Companion Logo">
+    <div class="brand-copy"><b>Trade Companion</b><small data-i18n="tagline">陪你把每一笔交易做完</small></div>
+    <button class="collapse-button ghost icon-button" id="sidebar-toggle" aria-label="折叠导航" title="折叠导航">‹</button>
+  </div>
+  <nav aria-label="主导航">
+    <section class="nav-group"><p data-i18n="nav.workspace">工作台</p>
+      <a href="/dashboard" data-nav="home" data-label-key="nav.home"><span>⌂</span><b>工作台</b></a>
+    </section>
+    <section class="nav-group"><p data-i18n="nav.market">市场洞察</p>
+      <a href="/dashboard/market-snapshots" data-nav="market-snapshots" data-label-key="nav.snapshots"><span>◫</span><b>市场快照</b></a>
+      <a href="/dashboard/market-regime" data-nav="market-regime" data-label-key="nav.regime"><span>◎</span><b>市场状态</b></a>
+      <a href="/dashboard/candidates" data-nav="candidates" data-label-key="nav.candidates"><span>◇</span><b>候选池</b></a>
+      <a href="/dashboard/opportunities" data-nav="opportunities" data-label-key="nav.opportunities"><span>✦</span><b>交易机会</b></a>
+    </section>
+    <section class="nav-group"><p data-i18n="nav.planning">交易计划</p>
+      <a href="/dashboard/trade-plans" data-nav="trade-plans" data-label-key="nav.plans"><span>▤</span><b>交易计划</b></a>
+      <a href="/dashboard/positions" data-nav="positions" data-label-key="nav.positions"><span>◉</span><b>我的持仓计划</b></a>
+    </section>
+    <section class="nav-group"><p data-i18n="nav.investment">投资组合</p>
+      <a href="/dashboard/portfolios" data-nav="portfolios" data-label-key="nav.portfolios"><span>▣</span><b>投资组合</b></a>
+    </section>
+    <section class="nav-group"><p data-i18n="nav.research">研究与复盘</p>
+      <a href="/dashboard/trade-reviews" data-nav="trade-reviews" data-label-key="nav.tradeReviews"><span>↻</span><b>交易复盘</b></a>
+      <a href="/dashboard/reviews" data-nav="reviews" data-label-key="nav.opportunityReviews"><span>✓</span><b>机会复盘</b></a>
+      <a href="/dashboard/ai-reviews" data-nav="ai-reviews" data-label-key="nav.aiReviews"><span>✧</span><b>AI 复盘分析</b></a>
+      <a href="/dashboard/research" data-nav="research" data-label-key="nav.researchCenter"><span>⌘</span><b>研究中心</b></a>
+    </section>
+    <section class="nav-group"><p data-i18n="nav.ai">AI 助手</p>
+      <a href="/dashboard/companion" data-nav="companion" data-label-key="nav.companion"><span>◈</span><b>AI 交易助手</b></a>
+      <a href="/dashboard/telegram-preview" data-nav="telegram-preview" data-label-key="nav.telegram"><span>➤</span><b>Telegram 预览</b></a>
+    </section>
+    <section class="nav-group"><p data-i18n="nav.operations">运营工具</p>
+      <a href="/dashboard/runtime" data-nav="runtime" data-label-key="nav.runtime"><span>◌</span><b>运行状态</b></a>
+      <a href="/dashboard/strategies" data-nav="strategies" data-label-key="nav.strategies"><span>⌁</span><b>策略观察</b></a>
+      <a href="/dashboard/data-quality" data-nav="data-quality" data-label-key="nav.quality"><span>≋</span><b>数据质量</b></a>
+      <a href="/dashboard/reports" data-nav="reports" data-label-key="nav.reports"><span>▥</span><b>历史报告</b></a>
+      <a href="/dashboard/development" data-nav="development" data-label-key="nav.development"><span>⚙</span><b>开发看板</b></a>
+    </section>
+    <section class="nav-group"><p data-i18n="nav.more">更多</p>
+      <a href="/dashboard/system" data-nav="system" data-label-key="nav.system"><span>ⓘ</span><b>版本中心</b></a>
+    </section>
+  </nav>
+  <form action="/dashboard/logout" method="post"><button class="ghost sidebar-logout" data-i18n="action.logout">退出登录</button></form>
+</aside>
+<div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+<main class="workspace">
+  <header class="topbar">
+    <div class="page-heading"><p class="eyebrow" data-i18n="workspace.eyebrow">TRADE COMPANION 工作台</p><h1 id="page-title">工作台</h1></div>
+    <div class="topbar-status" aria-label="系统状态">
+      <span class="clock" id="market-clock">ET —</span>
+      <span class="status-pill neutral" id="health-badge">系统 —</span>
+      <span class="status-pill neutral" id="opend-badge">OpenD —</span>
+      <span class="status-pill neutral" id="ai-badge">AI —</span>
+      <span class="status-pill neutral" id="telegram-badge">Telegram —</span>
+      <label class="language-control"><span class="sr-only">语言</span><select id="language-select" aria-label="语言"><option value="zh-CN">中文</option><option value="en-US">English</option></select></label>
+      <button class="ghost icon-button" id="refresh-page" aria-label="刷新页面" title="刷新页面">↻</button>
+    </div>
+  </header>
+  <div id="flash" aria-live="polite"></div>
+  <section id="content"><div class="loading" data-i18n="state.loading">正在读取本地数据…</div></section>
+  <footer><span>Trade Companion</span><span id="footer-version">版本加载中…</span><span data-i18n="footer.boundary">研究与交易生命周期工作台 · 不提供自动下单</span></footer>
+</main>
+<script src="/dashboard/static/ui.js"></script>
+<script src="/dashboard/static/dashboard.js"></script>
+</body></html>

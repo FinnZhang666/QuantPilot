@@ -1,12 +1,31 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>登录 · Trade Companion</title>
-<link rel="stylesheet" href="/dashboard/static/dashboard.css"></head>
-<body class="login-body"><main class="login-card">
-<img class="login-logo" src="/dashboard/static/quantpilot-logo.png" alt="Trade Companion Logo"><p class="eyebrow">TRADE COMPANION</p>
-<h1>陪你把每一笔交易做完</h1><p class="muted">Your AI Trade Companion · 本地研究与交易生命周期工作台</p>
-<!--ERROR-->
-<form method="post" action="/dashboard/login"><label>管理员 Token<input name="token" type="password" required autocomplete="current-password"></label>
-<button type="submit">进入工作台</button></form>
-<p class="fine">Token仅用于本地鉴权，不会显示在页面或API中。</p>
-</main></body></html>
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b1118">
+  <title>登录 · Trade Companion</title>
+  <link rel="icon" href="/dashboard/static/quantpilot-logo.png">
+  <link rel="stylesheet" href="/dashboard/static/dashboard.css">
+</head>
+<body class="login-body">
+  <main class="login-shell">
+    <section class="login-brand-panel">
+      <img class="login-logo" src="/dashboard/static/quantpilot-logo.png" alt="Trade Companion Logo">
+      <p class="eyebrow">TRADE COMPANION</p>
+      <h1>陪你把每一笔交易做完</h1>
+      <p class="muted">Your AI Trade Companion</p>
+      <ul><li>统一查看市场、计划与持仓</li><li>保留完整研究与复盘链路</li><li>本地部署，不提供自动下单</li></ul>
+    </section>
+    <section class="login-card">
+      <div><p class="eyebrow">管理员入口</p><h2>欢迎回来</h2><p class="muted">请输入本机管理员 Token 进入工作台。</p></div>
+      <!--ERROR-->
+      <form method="post" action="/dashboard/login">
+        <label for="admin-token">管理员 Token</label>
+        <div class="password-field"><input id="admin-token" name="token" type="password" required autocomplete="current-password"><button id="toggle-password" class="ghost icon-button" type="button" aria-label="显示 Token" title="显示 Token">◉</button></div>
+        <button class="primary" type="submit">进入工作台</button>
+      </form>
+      <p class="fine">Token 仅用于本地鉴权，不会显示在页面或 API 中。</p>
+    </section>
+  </main>
+  <script>document.querySelector('#toggle-password').addEventListener('click',function(){const input=document.querySelector('#admin-token');const show=input.type==='password';input.type=show?'text':'password';this.setAttribute('aria-label',show?'隐藏 Token':'显示 Token');});</script>
+</body></html>
