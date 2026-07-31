@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 import time
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -25,6 +26,7 @@ from app.database.models import (
 
 
 ANALYSIS_VERSION = "1.0.0"
+logger = logging.getLogger(__name__)
 
 
 class AIReviewService:
@@ -275,6 +277,13 @@ class AIReviewService:
             ResearchService(self.db).sync(workspace.id)
         except Exception:
             self.db.rollback()
+            logger.exception(
+                "Research workspace synchronization failed after AI review",
+                extra={
+                    "event": "research_workspace_sync_failed",
+                    "context": {"opportunity_id": opportunity_id, "source": "ai_review"},
+                },
+            )
 
     def _regime_context(self, row):
         if row is None:

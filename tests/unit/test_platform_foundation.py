@@ -9,7 +9,7 @@ from app.candidate_pool.user_scope import TelegramUserScopeService
 from app.config.settings import Settings
 from app.core.security import mask_secret, sanitize_mapping, sanitize_text
 from app.database.models import TelegramUserSymbol
-from app.notifications.telegram_commands import TelegramCommandService
+from app.notifications.telegram_commands import TelegramCommandPoller, TelegramCommandService
 from app.platform.environment import validate_environment
 from app.platform.health import health_report, runtime_diagnostics
 from app.version import version_info
@@ -97,6 +97,36 @@ def test_backup_invalid_type(tmp_path, db):
 def test_backup_missing_verify(tmp_path, db):
     with pytest.raises(FileNotFoundError):
         BackupService(backup_settings(tmp_path, db)).verify()
+
+
+def test_backup_verify_streams_archive_in_bounded_chunks(tmp_path, db, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    service = BackupService(backup_settings(tmp_path, db))
+    value = service.create()
+
+    def reject_unbounded_read(self):
+        raise AssertionError("backup verification must not load the whole archive")
+
+    monkeypatch.setattr(Path, "read_bytes", reject_unbounded_read)
+    assert service.verify(value["path"])["valid"] is True
+
+
+def test_telegram_poller_survives_unexpected_iteration_error(monkeypatch):
+    poller = TelegramCommandPoller(Settings(telegram_enabled=True, telegram_bot_token="test-token"))
+    states = []
+
+    def unexpected_failure(*args, **kwargs):
+        raise RuntimeError("unexpected database-adjacent failure")
+
+    def capture_state(status, error=None, success=False):
+        states.append((status, error, success))
+        poller.stop_event.set()
+
+    monkeypatch.setattr("app.notifications.telegram_commands.httpx.get", unexpected_failure)
+    monkeypatch.setattr(poller, "_state", capture_state)
+    poller._loop()
+
+    assert states == [("DEGRADED", "RuntimeError", False)]
 
 
 def test_user_scope_normalizes_and_is_idempotent(db):

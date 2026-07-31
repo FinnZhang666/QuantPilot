@@ -49,7 +49,11 @@ class BackupService:
         target = Path(path) if path else (next(iter(sorted(self.root.glob("quantpilot-*.zip"), reverse=True)), None))
         if target is None or not target.exists():
             raise FileNotFoundError("没有可验证的备份。")
-        digest = hashlib.sha256(target.read_bytes()).hexdigest()
+        digest_builder = hashlib.sha256()
+        with target.open("rb") as backup_file:
+            for chunk in iter(lambda: backup_file.read(1024 * 1024), b""):
+                digest_builder.update(chunk)
+        digest = digest_builder.hexdigest()
         try:
             with zipfile.ZipFile(target) as archive:
                 bad = archive.testzip()

@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 import asyncio
+import logging
 import threading
 from typing import Optional, Tuple
 
@@ -19,6 +20,9 @@ from app.database.session import get_session_factory
 from app.notifications.telegram import TelegramNotificationProvider
 from app.runtime.runtime_state import RuntimeStateRepository
 from app.candidate_pool.user_scope import TelegramUserScopeService
+
+
+logger = logging.getLogger(__name__)
 
 
 class TelegramCommandService:
@@ -375,6 +379,13 @@ class TelegramCommandPoller:
                     self._handle_update(update)
                 self._state("CONNECTED", success=True)
             except (httpx.HTTPError, ValueError, KeyError) as exc:
+                self._state("DEGRADED", error=type(exc).__name__)
+                self.stop_event.wait(2)
+            except Exception as exc:
+                logger.exception(
+                    "Telegram command poller iteration failed",
+                    extra={"event": "telegram_poller_iteration_failed"},
+                )
                 self._state("DEGRADED", error=type(exc).__name__)
                 self.stop_event.wait(2)
 

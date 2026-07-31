@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+import logging
 from typing import Dict, List, Optional, Tuple
 
 from sqlalchemy import desc, select
@@ -14,6 +15,8 @@ VALID_STATUSES = {
     "DETECTED", "NOTIFIED", "ACTIVE", "EXPIRED", "INVALIDATED", "CLOSED",
     "REVIEW_PENDING", "REVIEWED", "REVIEW_FAILED",
 }
+
+logger = logging.getLogger(__name__)
 
 
 class OpportunityService:
@@ -206,6 +209,13 @@ class OpportunityService:
         except Exception:
             # Research是旁路能力，不得阻断Opportunity Runtime。
             self.db.rollback()
+            logger.exception(
+                "Research workspace synchronization failed",
+                extra={
+                    "event": "research_workspace_sync_failed",
+                    "context": {"opportunity_id": opportunity_id},
+                },
+            )
 
     @staticmethod
     def _aware(value: datetime) -> datetime:

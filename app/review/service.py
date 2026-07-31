@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from decimal import Decimal
+import logging
 from typing import Dict, List, Optional
 
 from sqlalchemy import desc, func, select
@@ -11,6 +12,9 @@ from app.database.models import (
 )
 from app.review.config import load_review_windows
 from app.review.engine import OpportunityReviewEngine
+
+
+logger = logging.getLogger(__name__)
 
 
 class OpportunityReviewService:
@@ -214,6 +218,13 @@ class OpportunityReviewService:
             ResearchService(self.db).sync(workspace.id)
         except Exception:
             self.db.rollback()
+            logger.exception(
+                "Research workspace synchronization failed after review",
+                extra={
+                    "event": "research_workspace_sync_failed",
+                    "context": {"opportunity_id": opportunity_id, "source": "review"},
+                },
+            )
 
     def _atr(self, opportunity):
         row = self.db.scalar(select(FeatureValueRecord).where(
