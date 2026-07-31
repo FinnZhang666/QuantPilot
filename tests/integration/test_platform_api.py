@@ -22,7 +22,7 @@ def test_platform_health_version_runtime_api(monkeypatch, tmp_path):
         assert value.get("/api/platform/health").status_code == 200
         version = value.get("/api/platform/version").json()
         assert version["product"] == "Trade Companion"
-        assert version["sprint"] == "31"
+        assert version["sprint"] == "32"
         openapi = value.get("/openapi.json").json()
         assert openapi["info"]["title"] == "Trade Companion"
         assert "AI 辅助" in openapi["info"]["description"]

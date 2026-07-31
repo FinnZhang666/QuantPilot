@@ -299,3 +299,13 @@ Generator；Dashboard 提供真实列表与详情，内部管理员接口可进�
 本功能不改变 Strategy Engine，不进入用户参与阶段，不下单，也不会在 macOS 启动或发送
 Telegram。架构、去重规则与部署边界见
 [`docs/SPRINT_31_TRADE_PLAN_RUNTIME.md`](docs/SPRINT_31_TRADE_PLAN_RUNTIME.md)。
+
+## Sprint 32：User Participation Engine
+
+User Position 独立记录每位用户是否参与 Trade Plan、自己的进入价格、可选数量及平仓状态。
+系统 Trade Plan 保持不可被用户修改；同一个 Plan 可以关联多个用户，彼此完全隔离。
+
+Dashboard：`/dashboard/positions`。只读 API：`GET /api/user-positions`、
+`GET /api/user-positions/{id}` 和 `GET /api/user-positions/statistics`。管理员内部 open/close
+接口不会出现在 OpenAPI，也不会触发真实交易。详见
+[`docs/SPRINT_32_USER_PARTICIPATION_ENGINE.md`](docs/SPRINT_32_USER_PARTICIPATION_ENGINE.md)。

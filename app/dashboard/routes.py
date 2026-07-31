@@ -75,6 +75,16 @@ def trade_plan_detail(plan_id: str, request: Request, settings: Settings = Depen
     return _page(request, settings, "trade-plan-detail")
 
 
+@router.get("/dashboard/positions")
+def user_positions(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "positions")
+
+
+@router.get("/dashboard/positions/{position_id}")
+def user_position_detail(position_id: int, request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "position-detail")
+
+
 @router.get("/dashboard/runtime")
 def runtime(request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "runtime")

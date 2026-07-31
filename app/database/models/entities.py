@@ -1169,3 +1169,30 @@ class TradePlanTransition(TimestampMixin, Base):
     reason: Mapped[str] = mapped_column(Text)
     source: Mapped[str] = mapped_column(String(64))
     metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class UserPosition(TimestampMixin, Base):
+    __tablename__ = "user_positions"
+    __table_args__ = (
+        Index("ix_user_positions_user_status", "user_id", "status"),
+        Index("ix_user_positions_plan_user", "trade_plan_id", "user_id"),
+        Index("ix_user_positions_symbol_opened", "symbol", "opened_at"),
+        CheckConstraint("direction IN ('LONG','SHORT')", name="ck_user_position_direction"),
+        CheckConstraint("status IN ('OPEN','CLOSED','CANCELLED')", name="ck_user_position_status"),
+        CheckConstraint("entry_price > 0", name="ck_user_position_entry_price"),
+        CheckConstraint("quantity IS NULL OR quantity > 0", name="ck_user_position_quantity"),
+        CheckConstraint("exit_price IS NULL OR exit_price > 0", name="ck_user_position_exit_price"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(128))
+    trade_plan_id: Mapped[int] = mapped_column(ForeignKey("trade_plans.id"))
+    symbol: Mapped[str] = mapped_column(String(32))
+    direction: Mapped[str] = mapped_column(String(8))
+    entry_price: Mapped[object] = mapped_column(Numeric(24, 8))
+    quantity: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    opened_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    exit_price: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    status: Mapped[str] = mapped_column(String(16), default="OPEN")
+    source: Mapped[str] = mapped_column(String(32), default="ADMIN_API")
+    notes: Mapped[Optional[str]] = mapped_column(Text)

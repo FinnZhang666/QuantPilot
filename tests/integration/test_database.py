@@ -35,3 +35,19 @@ def test_trade_lifecycle_migration_upgrade_downgrade(monkeypatch, tmp_path):
     assert before == downgraded
     command.upgrade(config, "0015")
     assert "trade_plans" in inspect(create_engine(url)).get_table_names()
+
+
+def test_user_participation_migration_upgrade_downgrade(monkeypatch, tmp_path):
+    url = "sqlite:///" + str(tmp_path / "participation-migration.db")
+    monkeypatch.setenv("DATABASE_URL", url)
+    config = Config("alembic.ini")
+    command.upgrade(config, "0015")
+    engine = create_engine(url)
+    Base.metadata.tables["user_positions"].drop(engine, checkfirst=True)
+    before = set(inspect(engine).get_table_names())
+    command.upgrade(config, "0016")
+    assert "user_positions" in inspect(engine).get_table_names()
+    command.downgrade(config, "0015")
+    assert set(inspect(engine).get_table_names()) == before
+    command.upgrade(config, "0016")
+    assert "user_positions" in inspect(engine).get_table_names()
