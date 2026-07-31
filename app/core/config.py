@@ -111,6 +111,14 @@ class Settings(BaseSettings):
     ai_review_store_raw_response: bool = True
     ai_review_auto_run: bool = False
     ai_review_admin_only: bool = True
+    ai_companion_enabled: bool = False
+    ai_companion_provider: str = "mock"
+    ai_companion_model: str = "mock-companion-v1"
+    ai_companion_api_key: str = ""
+    ai_companion_timeout_seconds: float = Field(default=30.0, gt=0, le=600)
+    ai_companion_max_retries: int = Field(default=1, ge=0, le=10)
+    ai_companion_max_output_tokens: int = Field(default=2048, ge=128, le=32768)
+    ai_companion_default_language: str = "zh-CN"
     telegram_enabled: bool = False
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
@@ -140,6 +148,13 @@ class Settings(BaseSettings):
         if self.ai_review_enabled and self.ai_review_provider != "mock":
             if not self.ai_review_base_url or not self.ai_review_model:
                 raise ValueError("AI Review已启用，但缺少Base URL或模型名称。")
+        if self.ai_companion_provider not in {"mock", "gemini"}:
+            raise ValueError("AI_COMPANION_PROVIDER必须是mock或gemini。")
+        if self.ai_companion_default_language not in {"zh-CN", "en-US"}:
+            raise ValueError("AI_COMPANION_DEFAULT_LANGUAGE必须是zh-CN或en-US。")
+        if self.ai_companion_enabled and self.ai_companion_provider != "mock":
+            if not self.ai_companion_api_key or not self.ai_companion_model:
+                raise ValueError("External AI Companion已启用，但缺少API Key或模型名称。")
         if self.trading_mode == TradingMode.MOOMOO_PAPER and not self.enable_moomoo_paper:
             raise ValueError("TRADING_MODE=MOOMOO_PAPER requires ENABLE_MOOMOO_PAPER=true.")
         return self
@@ -171,6 +186,10 @@ class Settings(BaseSettings):
             "ai_review_enabled": self.ai_review_enabled,
             "ai_review_provider": self.ai_review_provider,
             "ai_review_model": self.ai_review_model,
+            "ai_companion_enabled": self.ai_companion_enabled,
+            "ai_companion_provider": self.ai_companion_provider,
+            "ai_companion_model": self.ai_companion_model,
+            "ai_companion_default_language": self.ai_companion_default_language,
             "default_timezone": self.default_timezone,
             "display_timezone": self.display_timezone,
             "default_slippage_bps": self.default_slippage_bps,

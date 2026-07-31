@@ -67,3 +67,19 @@ def test_trade_review_migration_upgrade_downgrade(monkeypatch, tmp_path):
     assert set(inspect(engine).get_table_names()) == before
     command.upgrade(config, "0017")
     assert "trade_reviews" in inspect(engine).get_table_names()
+
+
+def test_ai_companion_migration_upgrade_downgrade(monkeypatch, tmp_path):
+    url = "sqlite:///" + str(tmp_path / "companion-migration.db")
+    monkeypatch.setenv("DATABASE_URL", url)
+    config = Config("alembic.ini")
+    command.upgrade(config, "0017")
+    engine = create_engine(url)
+    Base.metadata.tables["companion_analyses"].drop(engine, checkfirst=True)
+    before = set(inspect(engine).get_table_names())
+    command.upgrade(config, "0018")
+    assert "companion_analyses" in inspect(engine).get_table_names()
+    command.downgrade(config, "0017")
+    assert set(inspect(engine).get_table_names()) == before
+    command.upgrade(config, "0018")
+    assert "companion_analyses" in inspect(engine).get_table_names()

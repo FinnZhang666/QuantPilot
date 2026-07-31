@@ -95,6 +95,26 @@ def trade_review_detail(review_id: int, request: Request, settings: Settings = D
     return _page(request, settings, "trade-review-detail")
 
 
+@router.get("/dashboard/companion")
+def companion(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "companion")
+
+
+@router.get("/dashboard/companion/{analysis_id}")
+def companion_detail(analysis_id: int, request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "companion-detail")
+
+
+@router.get("/dashboard/ai-companion")
+def ai_companion(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "companion")
+
+
+@router.get("/dashboard/ai-companion/{analysis_id}")
+def ai_companion_detail(analysis_id: int, request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "companion-detail")
+
+
 @router.get("/dashboard/runtime")
 def runtime(request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "runtime")

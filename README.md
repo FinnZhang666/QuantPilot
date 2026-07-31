@@ -320,3 +320,15 @@ Dashboard：`/dashboard/trade-reviews`。只读 API：`GET /api/reviews`、
 `GET /api/reviews/{id}`、`GET /api/reviews/statistics`。手工 Runtime 的管理员内部接口默认
 dry-run，本 Sprint 不接 Scheduler。完整公式和边界见
 [`docs/SPRINT_33_REVIEW_ENGINE_FOUNDATION.md`](docs/SPRINT_33_REVIEW_ENGINE_FOUNDATION.md)。
+
+## Sprint 34：AI Companion Foundation
+
+AI Companion 只解释既有 Trade Plan、User Position、Trade Review 和现有 Statistics，Strategy
+Engine 仍是唯一决策来源。默认使用确定性离线 Mock Provider；Context、Prompt、结构化输出、
+Validator、持久化、审计、只读 API、Dashboard 和 Formatter 已形成安全闭环。
+
+Dashboard：`/dashboard/ai-companion`。只读 API：`GET /api/ai-companion/outputs` 和
+`GET /api/ai-companion/outputs/{id}`（保留旧路径兼容）。管理员内部生成接口默认 dry-run，
+不调用 Provider、不写库。
+本 Sprint 没有真实 Gemini、外部 AI 或 Telegram 调用。详见
+[`docs/SPRINT_34_AI_COMPANION_FOUNDATION.md`](docs/SPRINT_34_AI_COMPANION_FOUNDATION.md)。

@@ -22,6 +22,10 @@ def clean_settings_cache(monkeypatch):
         "MOOMOO_ENABLED",
         "DASHBOARD_ADMIN_TOKEN",
         "DASHBOARD_READONLY_PUBLIC",
+        "AI_COMPANION_ENABLED",
+        "AI_COMPANION_PROVIDER",
+        "AI_COMPANION_MODEL",
+        "AI_COMPANION_API_KEY",
     ):
         monkeypatch.delenv(key, raising=False)
     get_settings.cache_clear()

@@ -50,6 +50,7 @@ from app.database.models.entities import (
     TradePlanTransition,
     UserPosition,
     TradeReview,
+    CompanionAnalysis,
 )
 
 __all__ = [
@@ -104,4 +105,5 @@ __all__ = [
     "TradePlanTransition",
     "UserPosition",
     "TradeReview",
+    "CompanionAnalysis",
 ]

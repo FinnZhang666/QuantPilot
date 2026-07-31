@@ -1225,3 +1225,53 @@ class TradeReview(TimestampMixin, Base):
     target_hit: Mapped[bool] = mapped_column(Boolean, default=False)
     stop_hit: Mapped[bool] = mapped_column(Boolean, default=False)
     review_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class CompanionAnalysis(TimestampMixin, Base):
+    __tablename__ = "companion_analyses"
+    __table_args__ = (
+        UniqueConstraint("analysis_key", name="uq_companion_analysis_key"),
+        Index("ix_companion_context_created", "context_type", "created_at"),
+        Index("ix_companion_status_provider", "status", "provider"),
+        Index("ix_companion_request_fingerprint", "request_fingerprint"),
+        Index("ix_companion_trade_plan", "trade_plan_id"),
+        Index("ix_companion_user_position", "user_position_id"),
+        Index("ix_companion_trade_review", "trade_review_id"),
+        CheckConstraint(
+            "context_type IN ('TRADE_PLAN','USER_POSITION','TRADE_REVIEW','STATISTICS')",
+            name="ck_companion_context_type",
+        ),
+        CheckConstraint(
+            "status IN ('PENDING','COMPLETED','FAILED','REJECTED')",
+            name="ck_companion_status",
+        ),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    analysis_key: Mapped[str] = mapped_column(String(64))
+    request_fingerprint: Mapped[str] = mapped_column(String(64))
+    cache_key: Mapped[Optional[str]] = mapped_column(String(64), unique=True)
+    input_hash: Mapped[str] = mapped_column(String(64))
+    context_type: Mapped[str] = mapped_column(String(24))
+    trade_plan_id: Mapped[Optional[int]] = mapped_column(ForeignKey("trade_plans.id"))
+    user_position_id: Mapped[Optional[int]] = mapped_column(ForeignKey("user_positions.id"))
+    trade_review_id: Mapped[Optional[int]] = mapped_column(ForeignKey("trade_reviews.id"))
+    user_id: Mapped[Optional[str]] = mapped_column(String(128))
+    language: Mapped[str] = mapped_column(String(16), default="zh-CN")
+    template_id: Mapped[str] = mapped_column(String(48))
+    template_version: Mapped[str] = mapped_column(String(16))
+    context_schema_version: Mapped[str] = mapped_column(String(32))
+    response_schema_version: Mapped[str] = mapped_column(String(32))
+    provider: Mapped[str] = mapped_column(String(32))
+    model: Mapped[str] = mapped_column(String(128))
+    status: Mapped[str] = mapped_column(String(16), default="PENDING")
+    summary: Mapped[Optional[str]] = mapped_column(Text)
+    structured_response_json: Mapped[Optional[dict]] = mapped_column(JSON)
+    context_snapshot_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    error_code: Mapped[Optional[str]] = mapped_column(String(64))
+    error_summary: Mapped[Optional[str]] = mapped_column(String(512))
+    request_started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    request_completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    request_source: Mapped[str] = mapped_column(String(32), default="ADMIN_API")
+    token_input: Mapped[Optional[int]] = mapped_column(Integer)
+    token_output: Mapped[Optional[int]] = mapped_column(Integer)
+    latency_ms: Mapped[Optional[int]] = mapped_column(Integer)
