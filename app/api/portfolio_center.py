@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.dashboard.auth import require_admin
+from app.dashboard.auth import require_admin, require_read
 from app.database.session import get_db
 from app.portfolio_center.errors import (
     DuplicatePortfolioName,
@@ -21,7 +21,7 @@ from app.portfolio_center.errors import (
 from app.portfolio_center.service import HoldingService, PortfolioService, PortfolioStatisticsService, WatchlistService
 
 
-router = APIRouter(prefix="/api", tags=["Portfolio Center"], dependencies=[Depends(require_admin)])
+router = APIRouter(prefix="/api", tags=["Portfolio Center"], dependencies=[Depends(require_read)])
 internal_router = APIRouter(
     prefix="/internal", tags=["Internal Portfolio Center"], dependencies=[Depends(require_admin)],
 )

@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.dashboard.auth import require_admin
+from app.dashboard.auth import require_read
 from app.database.session import get_db
 from app.market_snapshot.service import MarketSnapshotService, SnapshotNotFound
 from app.market_snapshot.models import snapshot_dict
@@ -11,7 +11,7 @@ from app.portfolio_center.errors import PortfolioNotFound, ValidationError
 
 
 router = APIRouter(
-    prefix="/api", tags=["Market Snapshot"], dependencies=[Depends(require_admin)],
+    prefix="/api", tags=["Market Snapshot"], dependencies=[Depends(require_read)],
 )
 
 

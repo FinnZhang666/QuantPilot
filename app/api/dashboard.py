@@ -78,9 +78,16 @@ def dashboard_summary(
     completed_reviews = db.scalar(select(func.count()).select_from(OpportunityReview).where(
         OpportunityReview.review_status == "REVIEWED",
     )) or 0
+    service_payload = [_service(row) for row in services]
+    if not any(row["service_name"] == "opend" for row in service_payload):
+        service_payload.append({
+            "service_name": "opend", "status": "DISCONNECTED",
+            "last_heartbeat_at": None, "last_success_at": None,
+            "last_error_at": None, "last_error_message": None, "metadata": {},
+        })
     return {
         "system_health": health_report(db, settings),
-        "services": [_service(row) for row in services],
+        "services": service_payload,
         "database": {
             "size_bytes": database_size,
             "size_text": _size(database_size),

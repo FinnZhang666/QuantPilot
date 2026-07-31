@@ -40,7 +40,7 @@ def test_platform_backup_api(monkeypatch, tmp_path):
     with client(monkeypatch, tmp_path) as value:
         headers = {"X-Dashboard-Token": "admin-secret"}
         result = value.post("/api/platform/backups", headers=headers)
-        assert result.status_code == 200 and result.json()["valid"]
+        assert result.status_code == 200 and result.json()["valid"], result.text
         assert value.get("/api/platform/backups", headers=headers).json()["items"]
 
 

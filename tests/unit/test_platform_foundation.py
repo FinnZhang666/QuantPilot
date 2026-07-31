@@ -116,7 +116,9 @@ def test_backup_verify_streams_archive_in_bounded_chunks(tmp_path, db, monkeypat
 
 
 def test_telegram_poller_survives_unexpected_iteration_error(monkeypatch):
-    poller = TelegramCommandPoller(Settings(telegram_enabled=True, telegram_bot_token="test-token"))
+    poller = TelegramCommandPoller(Settings(
+        telegram_enabled=True, telegram_bot_token="test-token", telegram_chat_id="1",
+    ))
     states = []
 
     def unexpected_failure(*args, **kwargs):

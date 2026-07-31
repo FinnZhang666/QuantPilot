@@ -1,8 +1,10 @@
 import hashlib
 import json
+import os
 import sqlite3
 import tempfile
 import zipfile
+from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List
@@ -22,9 +24,15 @@ class BackupService:
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         target = self.root / ("quantpilot-%s-%s.zip" % (backup_type, stamp))
         database = Path(self.settings.database_url.removeprefix("sqlite:///"))
-        with tempfile.TemporaryDirectory() as temp:
-            snapshot = Path(temp) / "quantpilot.db"
-            with sqlite3.connect(str(database)) as source, sqlite3.connect(str(snapshot)) as destination:
+        descriptor, snapshot_name = tempfile.mkstemp(
+            prefix="quantpilot-snapshot-", suffix=".db", dir=str(self.root),
+        )
+        os.close(descriptor)
+        snapshot = Path(snapshot_name)
+        try:
+            with closing(sqlite3.connect(str(database))) as source, closing(
+                sqlite3.connect(str(snapshot))
+            ) as destination:
                 source.backup(destination)
             manifest = {
                 "product": "Trade Companion", "type": backup_type,
@@ -36,6 +44,8 @@ class BackupService:
                 for path in self._config_files():
                     archive.write(path, "config/" + path.name)
                 archive.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
+        finally:
+            snapshot.unlink(missing_ok=True)
         result = self.verify(target)
         self._apply_retention()
         return result

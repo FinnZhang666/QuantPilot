@@ -5,13 +5,12 @@ from pydantic import BaseModel, Field
 from sqlalchemy import desc, func, select
 
 from app.ai.service import AIReviewService
-from app.dashboard.auth import require_admin
+from app.dashboard.auth import require_admin, require_read
 from app.database.models import AIReviewAnalysis, Opportunity, OpportunityReview
 from app.database.session import get_db
 
 router = APIRouter(
     prefix="/api/ai-review", tags=["AI复盘分析"],
-    dependencies=[Depends(require_admin)],
 )
 
 
@@ -21,14 +20,14 @@ class RunRequest(BaseModel):
     symbol: Optional[str] = None
 
 
-@router.post("/run")
+@router.post("/run", dependencies=[Depends(require_admin)])
 def run_ai_review(payload: RunRequest, db=Depends(get_db)):
     return AIReviewService(db).run(
         limit=payload.limit, review_id=payload.review_id, symbol=payload.symbol,
     )
 
 
-@router.get("/pending")
+@router.get("/pending", dependencies=[Depends(require_read)])
 def pending_ai_reviews(
     limit: int = Query(20, ge=1, le=200), symbol: Optional[str] = None,
     db=Depends(get_db),
@@ -46,12 +45,12 @@ def pending_ai_reviews(
     }
 
 
-@router.get("/statistics")
+@router.get("/statistics", dependencies=[Depends(require_read)])
 def ai_review_statistics(include_mock: bool = False, db=Depends(get_db)):
     return AIReviewService(db).statistics(include_mock=include_mock)
 
 
-@router.get("")
+@router.get("", dependencies=[Depends(require_read)])
 def list_ai_reviews(
     symbol: Optional[str] = None, strategy: Optional[str] = None,
     timeframe: Optional[str] = None, direction: Optional[str] = None,
@@ -89,7 +88,7 @@ def list_ai_reviews(
     }
 
 
-@router.get("/{analysis_id}")
+@router.get("/{analysis_id}", dependencies=[Depends(require_read)])
 def get_ai_review(analysis_id: int, db=Depends(get_db)):
     row = db.execute(select(AIReviewAnalysis, OpportunityReview, Opportunity).join(
         OpportunityReview, OpportunityReview.id == AIReviewAnalysis.opportunity_review_id,
@@ -101,7 +100,7 @@ def get_ai_review(analysis_id: int, db=Depends(get_db)):
     return _serialize(row[0], row[1], row[2], detail=True)
 
 
-@router.post("/{analysis_id}/retry")
+@router.post("/{analysis_id}/retry", dependencies=[Depends(require_admin)])
 def retry_ai_review(analysis_id: int, db=Depends(get_db)):
     try:
         row = AIReviewService(db).retry(analysis_id)

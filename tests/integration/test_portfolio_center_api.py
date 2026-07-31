@@ -24,9 +24,9 @@ def create_portfolio(api, name="My Portfolio", user="user-a"):
     return response.json()
 
 
-def test_unknown_identity_fails_closed_and_internal_requires_admin(monkeypatch, tmp_path):
+def test_public_readonly_allows_portfolio_reads_and_internal_requires_admin(monkeypatch, tmp_path):
     with client(monkeypatch, tmp_path) as api:
-        assert api.get("/api/portfolios").status_code == 401
+        assert api.get("/api/portfolios").status_code == 200
         assert api.post("/internal/portfolios", json={"user_id": "u", "name": "P"}).status_code == 401
 
 

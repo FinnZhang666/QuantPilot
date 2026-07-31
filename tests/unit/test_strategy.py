@@ -489,7 +489,7 @@ def test_previous_or_next_benchmark_is_not_substituted(db):
 def test_strategy_source_does_not_recompute_rolling_or_volume():
     from pathlib import Path
     root = Path(__file__).resolve().parents[2] / "app" / "strategy"
-    text = "\n".join(path.read_text() for path in root.rglob("*.py"))
+    text = "\n".join(path.read_text(encoding="utf-8") for path in root.rglob("*.py"))
     assert ".rolling(" not in text
     assert ".bfill(" not in text
     assert ".backfill(" not in text

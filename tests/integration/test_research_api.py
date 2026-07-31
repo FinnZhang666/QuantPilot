@@ -8,6 +8,7 @@ from app.core.config import get_settings
 from app.database.models import Opportunity
 from app.database.session import get_engine, get_session_factory
 from app.main import app
+from app.research.service import ResearchService
 
 
 def client(monkeypatch, tmp_path):
@@ -33,7 +34,10 @@ def add_opportunity():
         )
         db.add(row)
         db.commit()
-        return row.id
+        opportunity_id = row.id
+    with get_session_factory()() as db:
+        ResearchService(db).sync_all(limit=1000)
+    return opportunity_id
 
 
 def test_research_api_requires_admin(monkeypatch, tmp_path):

@@ -4,18 +4,17 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
-from app.dashboard.auth import require_admin
+from app.dashboard.auth import require_admin, require_read
 from app.database.models import Opportunity, OpportunityReview, ReviewStatistic
 from app.database.session import get_db
 from app.review.service import OpportunityReviewService
 
 router = APIRouter(
     prefix="/api/review", tags=["Opportunity复盘"],
-    dependencies=[Depends(require_admin)],
 )
 
 
-@router.post("/run")
+@router.post("/run", dependencies=[Depends(require_admin)])
 def run_reviews(
     limit: int = Query(100, ge=1, le=1000), symbol: Optional[str] = None,
     db: Session = Depends(get_db),
@@ -23,7 +22,7 @@ def run_reviews(
     return OpportunityReviewService(db).run(limit=limit, symbol=symbol)
 
 
-@router.get("/pending")
+@router.get("/pending", dependencies=[Depends(require_read)])
 def pending_reviews(
     limit: int = Query(100, ge=1, le=1000), symbol: Optional[str] = None,
     db: Session = Depends(get_db),
@@ -35,7 +34,7 @@ def pending_reviews(
     }
 
 
-@router.get("/statistics")
+@router.get("/statistics", dependencies=[Depends(require_read)])
 def review_statistics(db: Session = Depends(get_db)):
     rows = db.scalars(select(ReviewStatistic).order_by(
         ReviewStatistic.strategy_name, ReviewStatistic.timeframe, ReviewStatistic.symbol,
@@ -43,7 +42,7 @@ def review_statistics(db: Session = Depends(get_db)):
     return {"items": [_statistic(row) for row in rows]}
 
 
-@router.get("")
+@router.get("", dependencies=[Depends(require_read)])
 def list_reviews(
     status: Optional[str] = None, symbol: Optional[str] = None,
     limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0),
@@ -67,7 +66,7 @@ def list_reviews(
     }
 
 
-@router.get("/{review_id}")
+@router.get("/{review_id}", dependencies=[Depends(require_read)])
 def get_review(review_id: int, db: Session = Depends(get_db)):
     row = db.execute(select(OpportunityReview, Opportunity).join(
         Opportunity,

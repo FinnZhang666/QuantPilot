@@ -14,6 +14,26 @@ def test_database_migration(monkeypatch, tmp_path):
     assert {"portfolios", "paper_orders", "trades", "system_events"}.issubset(tables)
 
 
+def test_fresh_0019_schema_matches_git_metadata(monkeypatch, tmp_path):
+    url = f"sqlite:///{tmp_path / 'fresh-0019.db'}"
+    monkeypatch.setenv("DATABASE_URL", url)
+    config = Config("alembic.ini")
+    command.upgrade(config, "head")
+    engine = create_engine(url)
+    inspector = inspect(engine)
+    assert set(inspector.get_table_names()) - {"alembic_version"} == set(Base.metadata.tables)
+    assert {column["name"] for column in inspector.get_columns("trade_reviews")} >= {
+        "review_key", "trade_plan_id", "user_position_id", "review_type",
+        "result", "entry_price", "exit_price", "mfe", "mae",
+        "holding_minutes", "target_hit", "stop_hit", "review_time",
+        "created_at", "updated_at",
+    }
+    with engine.connect() as connection:
+        assert connection.exec_driver_sql(
+            "SELECT version_num FROM alembic_version"
+        ).scalar_one() == "0019"
+
+
 def test_trade_lifecycle_migration_upgrade_downgrade(monkeypatch, tmp_path):
     url = "sqlite:///" + str(tmp_path / "lifecycle-migration.db")
     monkeypatch.setenv("DATABASE_URL", url)

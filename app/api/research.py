@@ -5,13 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.dashboard.auth import require_admin
+from app.dashboard.auth import require_admin, require_read
 from app.database.session import get_db
 from app.research.service import ResearchService
 
 router = APIRouter(
     prefix="/api/research", tags=["研究中心"],
-    dependencies=[Depends(require_admin)],
 )
 
 
@@ -33,13 +32,12 @@ class InvestigationPatch(BaseModel):
     approved_by: Optional[str] = None
 
 
-@router.get("")
+@router.get("", dependencies=[Depends(require_read)])
 def list_research(
     symbol: Optional[str] = None, limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0), db: Session = Depends(get_db),
 ):
     service = ResearchService(db)
-    service.sync_all(limit=1000)
     rows = service.list(symbol=symbol, limit=limit, offset=offset)
     return {
         "items": [_workspace(row) for row in rows],
@@ -47,7 +45,7 @@ def list_research(
     }
 
 
-@router.get("/{workspace_id}")
+@router.get("/{workspace_id}", dependencies=[Depends(require_read)])
 def detail(workspace_id: int, db: Session = Depends(get_db)):
     try:
         value = ResearchService(db).detail(workspace_id)
@@ -56,7 +54,7 @@ def detail(workspace_id: int, db: Session = Depends(get_db)):
     return _detail(value)
 
 
-@router.get("/{workspace_id}/timeline")
+@router.get("/{workspace_id}/timeline", dependencies=[Depends(require_read)])
 def timeline(workspace_id: int, db: Session = Depends(get_db)):
     try:
         rows = ResearchService(db).timeline(workspace_id)
@@ -65,7 +63,7 @@ def timeline(workspace_id: int, db: Session = Depends(get_db)):
     return {"items": [_row(row) for row in rows], "total": len(rows)}
 
 
-@router.post("/{workspace_id}/notes")
+@router.post("/{workspace_id}/notes", dependencies=[Depends(require_admin)])
 def add_note(workspace_id: int, payload: NoteRequest, db: Session = Depends(get_db)):
     try:
         return _row(ResearchService(db).add_note(
@@ -77,7 +75,7 @@ def add_note(workspace_id: int, payload: NoteRequest, db: Session = Depends(get_
         raise HTTPException(400, str(exc))
 
 
-@router.post("/{workspace_id}/attachments")
+@router.post("/{workspace_id}/attachments", dependencies=[Depends(require_admin)])
 def add_attachment(
     workspace_id: int, payload: AttachmentRequest, db: Session = Depends(get_db),
 ):
@@ -92,7 +90,7 @@ def add_attachment(
         raise HTTPException(400, str(exc))
 
 
-@router.get("/{workspace_id}/similarity")
+@router.get("/{workspace_id}/similarity", dependencies=[Depends(require_read)])
 def similarity(
     workspace_id: int, limit: int = Query(10, ge=1, le=50),
     db: Session = Depends(get_db),
@@ -104,7 +102,7 @@ def similarity(
     return {"items": rows, "total": len(rows)}
 
 
-@router.get("/{workspace_id}/investigations")
+@router.get("/{workspace_id}/investigations", dependencies=[Depends(require_read)])
 def investigations(
     workspace_id: int, status: Optional[str] = None,
     db: Session = Depends(get_db),
@@ -116,7 +114,7 @@ def investigations(
     return {"items": [_row(row) for row in rows], "total": len(rows)}
 
 
-@router.patch("/investigations/{investigation_id}")
+@router.patch("/investigations/{investigation_id}", dependencies=[Depends(require_admin)])
 def update_investigation(
     investigation_id: int, payload: InvestigationPatch,
     db: Session = Depends(get_db),
