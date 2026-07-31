@@ -115,6 +115,21 @@ def ai_companion_detail(analysis_id: int, request: Request, settings: Settings =
     return _page(request, settings, "companion-detail")
 
 
+@router.get("/dashboard/portfolios")
+def portfolios(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "portfolios")
+
+
+@router.get("/dashboard/portfolios/{portfolio_id}")
+def portfolio_detail(portfolio_id: int, request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "portfolio-detail")
+
+
+@router.get("/dashboard/holdings/{holding_id}")
+def holding_detail(holding_id: int, request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "holding-detail")
+
+
 @router.get("/dashboard/runtime")
 def runtime(request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "runtime")

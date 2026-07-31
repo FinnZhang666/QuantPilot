@@ -83,3 +83,21 @@ def test_ai_companion_migration_upgrade_downgrade(monkeypatch, tmp_path):
     assert set(inspect(engine).get_table_names()) == before
     command.upgrade(config, "0018")
     assert "companion_analyses" in inspect(engine).get_table_names()
+
+
+def test_portfolio_center_migration_upgrade_downgrade(monkeypatch, tmp_path):
+    url = "sqlite:///" + str(tmp_path / "portfolio-center-migration.db")
+    monkeypatch.setenv("DATABASE_URL", url)
+    config = Config("alembic.ini")
+    command.upgrade(config, "0018")
+    engine = create_engine(url)
+    for name in ("portfolio_watchlists", "portfolio_holdings", "investment_portfolios"):
+        Base.metadata.tables[name].drop(engine, checkfirst=True)
+    before = set(inspect(engine).get_table_names())
+    command.upgrade(config, "0019")
+    expected = {"investment_portfolios", "portfolio_holdings", "portfolio_watchlists"}
+    assert expected <= set(inspect(engine).get_table_names())
+    command.downgrade(config, "0018")
+    assert set(inspect(engine).get_table_names()) == before
+    command.upgrade(config, "0019")
+    assert "portfolio_holdings" in inspect(engine).get_table_names()

@@ -1275,3 +1275,78 @@ class CompanionAnalysis(TimestampMixin, Base):
     token_input: Mapped[Optional[int]] = mapped_column(Integer)
     token_output: Mapped[Optional[int]] = mapped_column(Integer)
     latency_ms: Mapped[Optional[int]] = mapped_column(Integer)
+
+
+class InvestmentPortfolio(TimestampMixin, Base):
+    """User-entered portfolio center record; not the legacy paper portfolio."""
+
+    __tablename__ = "investment_portfolios"
+    __table_args__ = (
+        UniqueConstraint("user_id", "normalized_name", name="uq_investment_portfolio_user_name"),
+        Index("ix_investment_portfolios_user", "user_id"),
+        Index("ix_investment_portfolios_status", "status"),
+        Index("ix_investment_portfolios_default", "user_id", "is_default"),
+        CheckConstraint("status IN ('ACTIVE','INACTIVE')", name="ck_investment_portfolio_status"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(128))
+    name: Mapped[str] = mapped_column(String(128))
+    normalized_name: Mapped[str] = mapped_column(String(128))
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    currency: Mapped[str] = mapped_column(String(8), default="USD")
+    status: Mapped[str] = mapped_column(String(16), default="ACTIVE")
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class PortfolioHolding(TimestampMixin, Base):
+    """Manual holding fact in Portfolio Center; never a broker position."""
+
+    __tablename__ = "portfolio_holdings"
+    __table_args__ = (
+        Index("ix_portfolio_holdings_portfolio", "portfolio_id"),
+        Index("ix_portfolio_holdings_symbol_market", "symbol", "market"),
+        Index("ix_portfolio_holdings_status", "status"),
+        Index("ix_portfolio_holdings_opened", "opened_at"),
+        Index("ix_portfolio_holdings_closed", "closed_at"),
+        Index("ix_portfolio_holdings_trade_plan", "trade_plan_id"),
+        Index("ix_portfolio_holdings_user_position", "user_position_id"),
+        CheckConstraint("direction IN ('LONG','SHORT')", name="ck_portfolio_holding_direction"),
+        CheckConstraint("status IN ('OPEN','CLOSED')", name="ck_portfolio_holding_status"),
+        CheckConstraint("quantity > 0", name="ck_portfolio_holding_quantity"),
+        CheckConstraint("average_cost >= 0", name="ck_portfolio_holding_average_cost"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    portfolio_id: Mapped[int] = mapped_column(ForeignKey("investment_portfolios.id"))
+    symbol: Mapped[str] = mapped_column(String(32))
+    market: Mapped[str] = mapped_column(String(8))
+    direction: Mapped[str] = mapped_column(String(8), default="LONG")
+    quantity: Mapped[object] = mapped_column(Numeric(24, 8))
+    average_cost: Mapped[object] = mapped_column(Numeric(24, 8))
+    status: Mapped[str] = mapped_column(String(16), default="OPEN")
+    opened_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    trade_plan_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("trade_plans.id", ondelete="SET NULL"), nullable=True,
+    )
+    user_position_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("user_positions.id", ondelete="SET NULL"), nullable=True,
+    )
+    notes: Mapped[Optional[str]] = mapped_column(Text)
+
+
+class PortfolioWatchlist(TimestampMixin, Base):
+    __tablename__ = "portfolio_watchlists"
+    __table_args__ = (
+        UniqueConstraint("portfolio_id", "market", "symbol", name="uq_portfolio_watchlist_symbol"),
+        Index("ix_portfolio_watchlists_portfolio", "portfolio_id"),
+        Index("ix_portfolio_watchlists_market_symbol", "market", "symbol"),
+        Index("ix_portfolio_watchlists_order", "portfolio_id", "display_order"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    portfolio_id: Mapped[int] = mapped_column(
+        ForeignKey("investment_portfolios.id", ondelete="CASCADE"),
+    )
+    symbol: Mapped[str] = mapped_column(String(32))
+    market: Mapped[str] = mapped_column(String(8))
+    display_order: Mapped[int] = mapped_column(Integer, default=0)
+    notes: Mapped[Optional[str]] = mapped_column(Text)

@@ -332,3 +332,14 @@ Dashboard：`/dashboard/ai-companion`。只读 API：`GET /api/ai-companion/outp
 不调用 Provider、不写库。
 本 Sprint 没有真实 Gemini、外部 AI 或 Telegram 调用。详见
 [`docs/SPRINT_34_AI_COMPANION_FOUNDATION.md`](docs/SPRINT_34_AI_COMPANION_FOUNDATION.md)。
+
+## Sprint 35：Portfolio Center Foundation
+
+Portfolio Center 保存用户手工录入的 Portfolio、Holding 与 Portfolio Watchlist，并提供统一的
+事实统计、只读 API、管理员管理接口、Dashboard 和纯 Formatter。这里的 Holding 不是 Broker
+Position：系统不读取券商、OpenD 或实时行情，不计算市值、盈亏或收益率，也不触发 Review、AI、
+策略、通知或交易。
+
+Dashboard：`/dashboard/portfolios`。公开文档中的读取 API 使用现有管理员身份；当前没有可靠普通
+用户身份上下文，因此普通用户访问采用 Fail Closed。完整说明见
+[`docs/SPRINT_35_PORTFOLIO_CENTER.md`](docs/SPRINT_35_PORTFOLIO_CENTER.md)。
