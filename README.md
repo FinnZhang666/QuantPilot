@@ -368,3 +368,11 @@ Telegram 产品层把 Symbol Overview 转换为版本化 ViewModel、Markdown-sa
 Deep Link。`GET /api/telegram-preview/{symbol}` 和 `/dashboard/telegram-preview` 仅提供预览，返回
 `sent=false`；该层不读取 Repository、不访问网络、不接 Bot Token，也不启动 Polling、Webhook 或
 消息发送。详见 [`docs/SPRINT_38_TELEGRAM_PRODUCT_LAYER.md`](docs/SPRINT_38_TELEGRAM_PRODUCT_LAYER.md)。
+
+## Sprint 39：Production Hardening
+
+Trade Companion 1.0.0-rc1 完成聚合、Repository、Service、API、Dashboard、Formatter、异常、安全和
+性能一致性审计。Strategy Status 仅在 PLAN/COMPANION 映射 ACTIVE；Candidate 统一限制为当前市场、
+当前策略版本的最新 VALID 记录；Symbol Overview 复用 Snapshot 已加载来源，Dashboard 在单页内合并
+重复 GET。该 Sprint 不增加业务模块、数据库或 Migration。详见
+[`docs/SPRINT_39_PRODUCTION_HARDENING.md`](docs/SPRINT_39_PRODUCTION_HARDENING.md)。

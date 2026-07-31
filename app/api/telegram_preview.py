@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.dashboard.auth import require_read
 from app.database.session import get_db
 from app.market_snapshot.service import SnapshotNotFound
+from app.portfolio_center.errors import ValidationError
 from app.symbol_overview.service import SymbolOverviewService
 from app.telegram_product.formatter import TelegramFormatter
 
@@ -20,5 +21,5 @@ def telegram_preview(symbol: str, market: str = "US", language: str = "zh-CN", d
         return TelegramFormatter().overview(overview, language)
     except SnapshotNotFound as exc:
         raise HTTPException(404, str(exc))
-    except ValueError as exc:
+    except (ValidationError, ValueError) as exc:
         raise HTTPException(422, str(exc))

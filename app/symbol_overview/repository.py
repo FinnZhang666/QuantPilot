@@ -1,7 +1,6 @@
 from sqlalchemy import desc, or_, select
 
-from app.database.models import CompanionAnalysis, PortfolioHolding, TradePlan, TradeReview
-from app.market_snapshot.repository import bare_symbol
+from app.database.models import CompanionAnalysis, TradeReview
 
 
 class SymbolOverviewRepository:
@@ -9,19 +8,6 @@ class SymbolOverviewRepository:
 
     def __init__(self, db):
         self.db = db
-
-    def latest_plan(self, symbol, market="US"):
-        code = bare_symbol(symbol)
-        variants = (code, "%s.%s" % (market.upper(), code))
-        return self.db.scalar(select(TradePlan).where(
-            TradePlan.symbol.in_(variants), TradePlan.market == market.upper(),
-        ).order_by(desc(TradePlan.updated_at), desc(TradePlan.id)).limit(1))
-
-    def latest_holding(self, symbol, market="US"):
-        return self.db.scalar(select(PortfolioHolding).where(
-            PortfolioHolding.symbol == bare_symbol(symbol),
-            PortfolioHolding.market == market.upper(),
-        ).order_by(desc(PortfolioHolding.opened_at), desc(PortfolioHolding.id)).limit(1))
 
     def latest_review(self, plan_id=None, holding=None):
         conditions = []

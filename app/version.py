@@ -6,8 +6,8 @@ from pathlib import Path
 from sqlalchemy import text
 
 PRODUCT = "Trade Companion"
-VERSION = "1.0.0-beta"
-SPRINT = "38"
+VERSION = "1.0.0-rc1"
+SPRINT = "39"
 BUILD_TIME = datetime.now(timezone.utc).isoformat()
 
 

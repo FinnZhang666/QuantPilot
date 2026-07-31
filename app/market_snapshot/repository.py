@@ -13,6 +13,7 @@ from app.database.models import (
     PortfolioWatchlist,
     TradePlan,
 )
+from app.strategy.constants import STRATEGY_NAME, STRATEGY_VERSION
 
 
 def bare_symbol(value: str) -> str:
@@ -38,7 +39,10 @@ class MarketSnapshotRepository:
             FeatureValueRecord.symbol.in_(variants), FeatureValueRecord.quality_status == "VALID",
         ).order_by(FeatureValueRecord.timestamp_utc.desc(), FeatureValueRecord.id.desc()).limit(1))
         candidate = self.db.scalar(select(CandidateSignal).where(
-            CandidateSignal.symbol.in_(variants), CandidateSignal.status == "VALID",
+            CandidateSignal.symbol.in_(variants), CandidateSignal.market == market,
+            CandidateSignal.status == "VALID",
+            CandidateSignal.strategy_name == STRATEGY_NAME,
+            CandidateSignal.strategy_version == STRATEGY_VERSION,
         ).order_by(CandidateSignal.bar_timestamp.desc(), CandidateSignal.id.desc()).limit(1))
         plan = self.db.scalar(select(TradePlan).where(TradePlan.symbol.in_(variants))
                               .order_by(TradePlan.updated_at.desc(), TradePlan.id.desc()).limit(1))

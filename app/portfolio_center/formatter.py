@@ -1,23 +1,16 @@
-import re
-from decimal import Decimal
-
-
-MAX_MESSAGE_LENGTH = 4000
+from app.telegram_product.base import decimal_text, escape_markdown, limit_message
 
 
 def _safe(value) -> str:
-    text = "未记录" if value is None or value == "" else str(value)
-    return re.sub(r"([_*\[\]()~`>#+\-=|{}.!])", r"\\\1", text)
+    return escape_markdown(value)
 
 
 def _decimal(value) -> str:
-    if value is None: return "未记录"
-    normalized = Decimal(str(value)).normalize()
-    return format(normalized, "f")
+    return decimal_text(value)
 
 
 def _limit(text: str) -> str:
-    return text if len(text) <= MAX_MESSAGE_LENGTH else text[:MAX_MESSAGE_LENGTH - 1] + "…"
+    return limit_message(text)
 
 
 def format_portfolio_summary(portfolio, statistics) -> str:

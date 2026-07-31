@@ -1,27 +1,18 @@
-import re
-from decimal import Decimal, InvalidOperation
-
+from app.telegram_product.base import MAX_MESSAGE_LENGTH, decimal_text, escape_markdown, limit_message
 from app.telegram_product.deep_links import deep_link
 from app.telegram_product.i18n import translations
 from app.telegram_product.models import TelegramActionButton, TelegramSymbolOverview
 
 
-MAX_MESSAGE_LENGTH = 4000
 SCHEMA_VERSION = "telegram-symbol-overview-v1"
 
 
 def _safe(value):
-    text = "" if value is None else str(value)
-    return re.sub(r"([_*\[\]()~`>#+\-=|{}.!])", r"\\\1", text)
+    return escape_markdown(value, "")
 
 
 def _number(value, missing):
-    if value is None or value == "":
-        return missing
-    try:
-        return _safe(format(Decimal(str(value)).normalize(), "f"))
-    except InvalidOperation:
-        return _safe(value)
+    return decimal_text(value, missing, markdown_safe=True)
 
 
 class TelegramPresenter:
@@ -63,10 +54,7 @@ class TelegramPresenter:
             parts.extend(("", section["title"], section["value"]))
         parts.extend(("", t["disclaimer"]))
         text = "\n".join(parts)
-        if len(text) <= MAX_MESSAGE_LENGTH:
-            return text
-        ending = "\n\n" + t["disclaimer"]
-        return text[:MAX_MESSAGE_LENGTH - len(ending) - 1] + "…" + ending
+        return limit_message(text, t["disclaimer"])
 
     def preview(self, overview, language="zh-CN"):
         view_model = self.symbol_overview(overview, language)

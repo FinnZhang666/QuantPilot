@@ -20,19 +20,27 @@ class MarketSnapshotService:
         self.repository = MarketSnapshotRepository(db)
         self.portfolios = PortfolioService(db)
         self._cache: Dict[str, MarketSnapshot] = {}
+        self._source_cache: Dict[str, dict] = {}
 
     def get_snapshot(self, symbol: str, market: str = "US", portfolio_id: Optional[int] = None) -> MarketSnapshot:
+        return self.get_snapshot_context(symbol, market, portfolio_id)[0]
+
+    def get_snapshot_context(self, symbol: str, market: str = "US", portfolio_id: Optional[int] = None):
+        """Return the DTO and its already-loaded sources for read-model composition."""
         symbol, market = clean_symbol(bare_symbol(symbol)), clean_market(market)
         if portfolio_id is not None:
             self.portfolios.get(portfolio_id)
         key = "%s:%s:%s" % (portfolio_id, market, symbol)
-        if key not in self._cache:
+        raw = self._source_cache.get(key)
+        if raw is None:
             raw = self.repository.get_snapshot(symbol, market, portfolio_id)
-            if not any((raw["instrument"], raw["bar"], raw["feature"], raw["candidate"],
-                        raw["plan"], raw["holdings"], raw["watch"])):
-                raise SnapshotNotFound("Market Snapshot不存在。")
+            self._source_cache[key] = raw
+        if not any((raw["instrument"], raw["bar"], raw["feature"], raw["candidate"],
+                    raw["plan"], raw["holdings"], raw["watch"])):
+            raise SnapshotNotFound("Market Snapshot不存在。")
+        if key not in self._cache:
             self._cache[key] = self._build(raw)
-        return self._cache[key]
+        return self._cache[key], raw
 
     def list_snapshots(self, symbol=None, market=None, holding=None, watching=None,
                        candidate_signal=None, trade_plan=None, strategy_status=None,
@@ -103,7 +111,7 @@ class MarketSnapshotService:
             }.get(candidate.signal_type, "NONE")
         plan, bar, feature, watch = raw["plan"], raw["bar"], raw["feature"], raw["watch"]
         watching = "WATCHING" if watch else "NOT_WATCHING"
-        if plan: strategy_status = "ACTIVE"
+        if plan and plan.lifecycle_stage in {"PLAN", "COMPANION"}: strategy_status = "ACTIVE"
         elif candidate_status != "NONE": strategy_status = "READY"
         elif watching == "WATCHING": strategy_status = "WATCH"
         elif not bar and not feature: strategy_status = "NO_DATA"

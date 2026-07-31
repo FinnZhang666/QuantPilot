@@ -1,5 +1,5 @@
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
@@ -99,6 +99,54 @@ def test_strategy_status_no_data_watch_ready_active(db):
     assert MarketSnapshotService(db).get_snapshot("READY").strategy_status == "READY"
     add_market(db, "ACTIVE"); add_plan(db, "ACTIVE")
     assert MarketSnapshotService(db).get_snapshot("ACTIVE").strategy_status == "ACTIVE"
+
+
+@pytest.mark.parametrize("stage,is_active", [
+    ("PLAN", True), ("COMPANION", True), ("REVIEW", False),
+    ("CANCELLED", False), ("EXPIRED", False),
+])
+def test_trade_plan_stage_truth_and_active_mapping(db, stage, is_active):
+    add_market(db); add_plan(db, stage=stage)
+    row = MarketSnapshotService(db).get_snapshot("SOXL")
+    assert row.trade_plan_status == stage
+    assert (row.strategy_status == "ACTIVE") is is_active
+
+
+def test_no_trade_plan_is_not_active(db):
+    add_market(db)
+    row = MarketSnapshotService(db).get_snapshot("SOXL")
+    assert row.trade_plan_status == "NONE" and row.strategy_status != "ACTIVE"
+
+
+def candidate(db, *, symbol="SOXL", market="US", status="VALID", version="1.0.0",
+              offset=0, signal_type="WATCH", strategy="pullback_restrength"):
+    row = CandidateSignal(
+        symbol=symbol, market=market, timeframe="1d",
+        bar_timestamp=NOW + timedelta(minutes=offset), strategy_name=strategy,
+        strategy_version=version, parameters_hash="audit-%s-%s-%s" % (market, version, offset),
+        signal_type=signal_type, score=80, confidence=90, status=status, summary_zh="audit",
+    )
+    db.add(row); db.commit(); return row
+
+
+def test_candidate_selects_latest_valid_current_strategy(db):
+    add_market(db)
+    candidate(db, offset=1, signal_type="WATCH")
+    candidate(db, offset=2, signal_type="CANDIDATE_BUY")
+    assert MarketSnapshotService(db).get_snapshot("SOXL").candidate_signal == "BUY"
+
+
+@pytest.mark.parametrize("ignored", [
+    {"status": "ERROR", "offset": 5, "signal_type": "CANDIDATE_BUY"},
+    {"status": "EXPIRED", "offset": 5, "signal_type": "CANDIDATE_BUY"},
+    {"market": "HK", "offset": 5, "signal_type": "CANDIDATE_BUY"},
+    {"symbol": "QQQ", "offset": 5, "signal_type": "CANDIDATE_BUY"},
+    {"version": "0.9.0", "offset": 5, "signal_type": "CANDIDATE_BUY"},
+    {"strategy": "other_strategy", "offset": 5, "signal_type": "CANDIDATE_BUY"},
+])
+def test_candidate_ignores_invalid_expired_or_wrong_identity(db, ignored):
+    add_market(db); candidate(db, signal_type="WATCH"); candidate(db, **ignored)
+    assert MarketSnapshotService(db).get_snapshot("SOXL").candidate_signal == "WATCH"
 
 
 @pytest.mark.parametrize("kind,expected", [

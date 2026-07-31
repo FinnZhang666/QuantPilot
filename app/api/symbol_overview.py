@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from app.dashboard.auth import require_admin, require_read
 from app.database.session import get_db
 from app.market_snapshot.service import SnapshotNotFound
+from app.portfolio_center.errors import ValidationError
 from app.symbol_overview.service import SymbolOverviewService
 
 
@@ -34,6 +35,8 @@ def symbol_overview(symbol: str, market: str = "US", db=Depends(get_db)):
         return SymbolOverviewService.serialize(value)
     except SnapshotNotFound as exc:
         raise HTTPException(404, str(exc))
+    except ValidationError as exc:
+        raise HTTPException(422, str(exc))
 
 
 @internal_router.post("/{symbol}/ai-analysis", include_in_schema=False)
@@ -43,7 +46,7 @@ def symbol_ai_entry(symbol: str, request: AIEntryRequest, db=Depends(get_db)):
         result = SymbolOverviewService(db).ai_entry(symbol, request.market, **options)
     except SnapshotNotFound as exc:
         raise HTTPException(404, str(exc))
-    except (KeyError, ValueError) as exc:
+    except (KeyError, ValidationError, ValueError) as exc:
         raise HTTPException(422, str(exc).strip("'"))
     analysis = result.get("analysis")
     if analysis is not None:

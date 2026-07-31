@@ -12,9 +12,9 @@ class SymbolOverviewService:
         self.repository = SymbolOverviewRepository(db)
 
     def get(self, symbol, market="US"):
-        snapshot = self.snapshots.get_snapshot(symbol, market)
-        plan = self.repository.latest_plan(snapshot.symbol, snapshot.market)
-        holding = self.repository.latest_holding(snapshot.symbol, snapshot.market)
+        snapshot, sources = self.snapshots.get_snapshot_context(symbol, market)
+        plan = sources["plan"]
+        holding = sources["holdings"][0] if sources["holdings"] else None
         review = self.repository.latest_review(plan.id if plan else None, holding)
         analyses = self.repository.analyses(
             plan.id if plan else None, holding, review.id if review else None,

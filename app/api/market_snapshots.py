@@ -28,7 +28,7 @@ def list_snapshots(
             symbol, market, holding, watching, candidate_signal,
             trade_plan, strategy_status, page, page_size,
         )
-    except Exception as exc:
+    except (SnapshotNotFound, PortfolioNotFound, ValidationError) as exc:
         _raise(exc)
     return {"items": [snapshot_dict(row) for row in rows], "total": total,
             "page": page, "page_size": page_size}
@@ -38,7 +38,7 @@ def list_snapshots(
 def get_snapshot(symbol: str, market: str = "US", db: Session = Depends(get_db)):
     try:
         return snapshot_dict(MarketSnapshotService(db).get_snapshot(symbol, market))
-    except Exception as exc:
+    except (SnapshotNotFound, PortfolioNotFound, ValidationError) as exc:
         _raise(exc)
 
 
@@ -49,7 +49,7 @@ def watchlist_snapshots(
 ):
     try:
         rows, total = MarketSnapshotService(db).list_watchlist_snapshots(portfolio_id, page, page_size)
-    except Exception as exc:
+    except (SnapshotNotFound, PortfolioNotFound, ValidationError) as exc:
         _raise(exc)
     return {"items": [snapshot_dict(row) for row in rows], "total": total,
             "page": page, "page_size": page_size}

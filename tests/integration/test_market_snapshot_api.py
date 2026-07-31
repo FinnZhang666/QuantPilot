@@ -175,3 +175,25 @@ def test_telegram_preview_dashboard_and_openapi(monkeypatch, tmp_path):
         assert page.status_code == 200 and 'data-page="telegram-preview"' in page.text
         paths = api.get("/openapi.json").json()["paths"]
         assert "/api/telegram-preview/{symbol}" in paths
+
+
+def test_recent_aggregation_apis_map_domain_errors_consistently(monkeypatch, tmp_path):
+    with client(monkeypatch, tmp_path) as api:
+        for path in (
+            "/api/market-snapshots/BAD_SYMBOL",
+            "/api/symbols/BAD_SYMBOL/overview",
+            "/api/telegram-preview/BAD_SYMBOL",
+        ):
+            response = api.get(path, headers=HEADERS)
+            assert response.status_code == 422
+            assert response.json()["detail"] == "证券代码格式无效。"
+
+
+def test_overview_and_preview_never_expose_secrets(monkeypatch, tmp_path):
+    with client(monkeypatch, tmp_path) as api:
+        add_market("SOXL")
+        for path in ("/api/symbols/SOXL/overview", "/api/telegram-preview/SOXL"):
+            text = api.get(path, headers=HEADERS).text
+            assert "admin-test" not in text
+            assert "TELEGRAM_BOT_TOKEN" not in text
+            assert "AI_COMPANION_API_KEY" not in text
