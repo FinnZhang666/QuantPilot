@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional
@@ -23,3 +23,11 @@ class MarketSnapshot:
     trade_plan_id: Optional[str] = None
     holding_id: Optional[int] = None
     portfolio_id: Optional[int] = None
+
+
+def snapshot_dict(snapshot: MarketSnapshot):
+    """Stable public representation shared by product integrations."""
+    value = asdict(snapshot)
+    for field in ("latest_price", "holding_quantity", "average_cost"):
+        value[field] = str(value[field]) if value[field] is not None else None
+    return value

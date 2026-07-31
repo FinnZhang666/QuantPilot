@@ -140,6 +140,11 @@ def market_snapshot_detail(symbol: str, request: Request, settings: Settings = D
     return _page(request, settings, "market-snapshot-detail")
 
 
+@router.get("/dashboard/symbols/{symbol}")
+def symbol_overview(symbol: str, request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "symbol-overview")
+
+
 @router.get("/dashboard/watchlists/{portfolio_id}/snapshot")
 def watchlist_snapshot(portfolio_id: int, request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "watchlist-snapshot")

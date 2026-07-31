@@ -1,4 +1,3 @@
-from dataclasses import asdict
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -7,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.dashboard.auth import require_admin
 from app.database.session import get_db
 from app.market_snapshot.service import MarketSnapshotService, SnapshotNotFound
+from app.market_snapshot.models import snapshot_dict
 from app.portfolio_center.errors import PortfolioNotFound, ValidationError
 
 
@@ -30,14 +30,14 @@ def list_snapshots(
         )
     except Exception as exc:
         _raise(exc)
-    return {"items": [_serialize(row) for row in rows], "total": total,
+    return {"items": [snapshot_dict(row) for row in rows], "total": total,
             "page": page, "page_size": page_size}
 
 
 @router.get("/market-snapshots/{symbol}")
 def get_snapshot(symbol: str, market: str = "US", db: Session = Depends(get_db)):
     try:
-        return _serialize(MarketSnapshotService(db).get_snapshot(symbol, market))
+        return snapshot_dict(MarketSnapshotService(db).get_snapshot(symbol, market))
     except Exception as exc:
         _raise(exc)
 
@@ -51,7 +51,7 @@ def watchlist_snapshots(
         rows, total = MarketSnapshotService(db).list_watchlist_snapshots(portfolio_id, page, page_size)
     except Exception as exc:
         _raise(exc)
-    return {"items": [_serialize(row) for row in rows], "total": total,
+    return {"items": [snapshot_dict(row) for row in rows], "total": total,
             "page": page, "page_size": page_size}
 
 
@@ -61,10 +61,3 @@ def _raise(exc):
     if isinstance(exc, ValidationError):
         raise HTTPException(422, str(exc))
     raise exc
-
-
-def _serialize(row):
-    value = asdict(row)
-    for field in ("latest_price", "holding_quantity", "average_cost"):
-        value[field] = str(value[field]) if value[field] is not None else None
-    return value

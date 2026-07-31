@@ -353,3 +353,11 @@ Feature 或 Signal，不调用 AI、Broker、OpenD 或 Telegram，也不写入�
 Dashboard：`/dashboard/market-snapshots`。只读 API：`GET /api/market-snapshots`、
 `GET /api/market-snapshots/{symbol}` 和 `GET /api/watchlists/{portfolio_id}/snapshots`。完整说明见
 [`docs/SPRINT_36_MARKET_SNAPSHOT.md`](docs/SPRINT_36_MARKET_SNAPSHOT.md)。
+
+## Sprint 37：Experience Integration
+
+`GET /api/symbols/{symbol}/overview` 与 `/dashboard/symbols/{symbol}` 以 Symbol 为入口，将只读
+Snapshot、Trade Plan、Portfolio Holding、Trade Review 和已缓存 AI Companion Analysis 汇总为
+统一工作流。各详情页共享 Related Objects 导航；缺失对象明确显示 `Not Available`。AI 入口统一
+委托现有 `CompanionService`，不改变 Prompt、Provider 或策略决策。详见
+[`docs/SPRINT_37_EXPERIENCE_INTEGRATION.md`](docs/SPRINT_37_EXPERIENCE_INTEGRATION.md)。
