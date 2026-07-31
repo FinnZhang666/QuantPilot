@@ -1105,3 +1105,67 @@ class ResearchInvestigation(TimestampMixin, Base):
     evidence_ids_json: Mapped[list] = mapped_column(JSON, default=list)
     result_json: Mapped[dict] = mapped_column(JSON, default=dict)
     approved_by: Mapped[Optional[str]] = mapped_column(String(128))
+
+
+class TradePlan(TimestampMixin, Base):
+    __tablename__ = "trade_plans"
+    __table_args__ = (
+        UniqueConstraint("signal_id", "direction", name="uq_trade_plan_signal_direction"),
+        Index("ix_trade_plans_symbol_created", "symbol", "created_at"),
+        Index("ix_trade_plans_stage_status", "lifecycle_stage", "plan_status"),
+        Index("ix_trade_plans_strategy", "strategy_name", "strategy_version"),
+        CheckConstraint(
+            "lifecycle_stage IN ('DISCOVER','PLAN','COMPANION','REVIEW','CANCELLED','EXPIRED')",
+            name="ck_trade_plan_lifecycle_stage",
+        ),
+        CheckConstraint("direction IN ('LONG','SHORT')", name="ck_trade_plan_direction"),
+        CheckConstraint(
+            "score IS NULL OR (score >= 0 AND score <= 100)",
+            name="ck_trade_plan_score",
+        ),
+        CheckConstraint(
+            "confidence IS NULL OR (confidence >= 0 AND confidence <= 100)",
+            name="ck_trade_plan_confidence",
+        ),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    plan_id: Mapped[str] = mapped_column(String(36), unique=True, index=True)
+    symbol: Mapped[str] = mapped_column(String(32))
+    market: Mapped[str] = mapped_column(String(16), default="US")
+    strategy_name: Mapped[str] = mapped_column(String(64))
+    strategy_version: Mapped[str] = mapped_column(String(16))
+    signal_id: Mapped[Optional[int]] = mapped_column(ForeignKey("candidate_signals.id"))
+    lifecycle_stage: Mapped[str] = mapped_column(String(24), default="DISCOVER")
+    direction: Mapped[str] = mapped_column(String(8))
+    timeframe: Mapped[str] = mapped_column(String(8))
+    reference_price: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    buy_zone_lower: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    buy_zone_upper: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    trend_add_on_zone_lower: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    trend_add_on_zone_upper: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    breakout_zone_lower: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    breakout_zone_upper: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    stop_loss_price: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    target_prices_json: Mapped[list] = mapped_column(JSON, default=list)
+    invalidation_condition: Mapped[Optional[str]] = mapped_column(Text)
+    confidence: Mapped[Optional[int]] = mapped_column(Integer)
+    score: Mapped[Optional[int]] = mapped_column(Integer)
+    plan_status: Mapped[str] = mapped_column(String(24), default="ACTIVE")
+    source_metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    user_participation_status: Mapped[str] = mapped_column(String(32), default="NOT_DECLARED")
+    review_status: Mapped[str] = mapped_column(String(32), default="NOT_STARTED")
+
+
+class TradePlanTransition(TimestampMixin, Base):
+    __tablename__ = "trade_plan_transitions"
+    __table_args__ = (
+        Index("ix_trade_plan_transitions_plan_time", "trade_plan_id", "transitioned_at"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    trade_plan_id: Mapped[int] = mapped_column(ForeignKey("trade_plans.id"))
+    previous_stage: Mapped[Optional[str]] = mapped_column(String(24))
+    new_stage: Mapped[str] = mapped_column(String(24))
+    transitioned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    reason: Mapped[str] = mapped_column(Text)
+    source: Mapped[str] = mapped_column(String(64))
+    metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)

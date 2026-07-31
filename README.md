@@ -277,3 +277,15 @@ python -m app.cli research similarity --id 1
 Dashboard：`/dashboard/research`。完整说明见
 [`docs/SPRINT_13_RESEARCH_CENTER.md`](docs/SPRINT_13_RESEARCH_CENTER.md)。
 Research Center 不会自动修改策略或代码，不会调用Codex、创建Git Issue或交易。
+
+## Sprint 30：Trade Lifecycle Foundation
+
+Trade Lifecycle 将既有 Strategy Engine 输出结构化为可追踪的 Trade Plan，
+支持 `DISCOVER → PLAN → COMPANION → REVIEW` 及取消、过期终态。
+本层不计算新信号，不推导Strategy Engine未提供的价格区间，也不生成订单。
+
+Dashboard：`/dashboard/trade-plans`
+
+Read-only API：`GET /api/trade-plans`、`GET /api/trade-plans/{plan_id}` 和
+`GET /api/trade-plans/{plan_id}/history`。详见
+[`docs/SPRINT_30_TRADE_LIFECYCLE_FOUNDATION.md`](docs/SPRINT_30_TRADE_LIFECYCLE_FOUNDATION.md)。

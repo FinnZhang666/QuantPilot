@@ -46,6 +46,8 @@ from app.database.models.entities import (
     ResearchNote,
     ResearchAttachment,
     ResearchInvestigation,
+    TradePlan,
+    TradePlanTransition,
 )
 
 __all__ = [
@@ -96,4 +98,6 @@ __all__ = [
     "ResearchNote",
     "ResearchAttachment",
     "ResearchInvestigation",
+    "TradePlan",
+    "TradePlanTransition",
 ]
