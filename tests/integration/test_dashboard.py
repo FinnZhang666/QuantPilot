@@ -272,7 +272,7 @@ def test_product_architecture_primary_navigation(monkeypatch, tmp_path):
             "📱 产品运营", "🧪 Strategy Lab", "⚙ 更多",
         ):
             assert label in html + script
-        for label in ("市场监控", "模拟持仓", "策略成绩榜", "用户反馈", "系统监控"):
+        for label in ("市场监控", "我的持仓", "策略成绩榜", "用户反馈", "系统监控"):
             assert label in html
         assert 'data-nav="opportunities"' not in html
         assert 'data-nav="positions"' not in html
@@ -337,8 +337,8 @@ def test_part_d_dashboard_ui_contract(monkeypatch, tmp_path):
         assert "tc-nav-group-" in ui and 'aria-expanded' in ui
         assert "homeFinal" in script and "pageFailure" in script
         assert "retry-page" in script
-        assert "System Paper Positions" in script
-        assert "User Positions and Portfolio Holdings are not substituted" in script
+        assert "My Positions" in script
+        assert "user holdings and broker data are not substituted" in script
         assert "Strategy Lab" in script and "Parameter experiments" in script
         assert "Safe Log View" in script
         assert "Telegram Runtime is unavailable" in script

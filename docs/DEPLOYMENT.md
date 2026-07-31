@@ -67,3 +67,17 @@ profile asset. `/start` uses text and buttons only; it does not send a welcome i
 
 The synchronization tool is dry-run by default. `--apply` performs real Telegram API requests and is reserved for
 the Windows deployment stage.
+
+## Paper Trading Dashboard KPI (Windows runtime handoff)
+
+After the audited Paper Trading Runtime is implemented and validated on Windows, the administrator Dashboard
+represents the system account by default. Its primary KPIs must be Total Equity, Today's P/L, Total Return,
+Positions, Win Rate and Runtime status. The Portfolio view must derive cash, position market value, realized and
+unrealized P/L, and total return exclusively from Paper Positions plus the latest stored market data. It must never
+substitute Broker Positions, User Positions or users' real accounts.
+
+The intended runtime chain is OpenD read-only market data → Feature Engine → Strategy Engine → Candidate → Trade
+Plan → Paper Trading Runtime → Paper Position → automated paper exits → Trade Review → Strategy Scoreboard → AI
+Review. This future runtime remains paper-only and must never submit a real broker order. The Dashboard should also
+add an Equity Curve sourced from system-account equity history. Until those sources exist, the UI must display an
+honest unavailable state instead of sample balances, returns or positions.

@@ -12,9 +12,18 @@ router = APIRouter(tags=["公司工作台"])
 ROOT = Path(__file__).resolve().parent
 
 
+def _template(name: str) -> str:
+    html = (ROOT / "templates" / name).read_text(encoding="utf-8")
+    static_root = ROOT / "static"
+    fingerprints = [
+        path.stat().st_mtime_ns for path in static_root.rglob("*") if path.is_file()
+    ]
+    return html.replace("__ASSET_VERSION__", str(max(fingerprints, default=0)))
+
+
 @router.get("/dashboard/login", response_class=HTMLResponse)
 def login_page():
-    return (ROOT / "templates" / "login.html").read_text(encoding="utf-8")
+    return _template("login.html")
 
 
 @router.post("/dashboard/login")
@@ -26,7 +35,7 @@ async def login(request: Request, settings: Settings = Depends(get_settings)):
         not secrets.compare_digest(token, settings.dashboard_admin_token)
     ):
         return HTMLResponse(
-            (ROOT / "templates" / "login.html").read_text(encoding="utf-8").replace(
+            _template("login.html").replace(
                 "<!--ERROR-->", '<p class="error">管理员Token无效。</p>',
             ),
             status_code=401,
@@ -46,7 +55,7 @@ def logout():
 def _page(request: Request, settings: Settings, page: str):
     if not settings.dashboard_readonly_public and not is_admin(request, settings):
         return RedirectResponse("/dashboard/login", status_code=303)
-    html = (ROOT / "templates" / "dashboard.html").read_text(encoding="utf-8")
+    html = _template("dashboard.html")
     return HTMLResponse(html.replace("__PAGE__", page))
 
 

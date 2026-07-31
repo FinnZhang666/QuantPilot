@@ -6,7 +6,7 @@
       tagline: "陪你把每一笔交易做完",
       "nav.workspace": "🏠 工作台", "nav.home": "工作台", "nav.market": "📈 市场",
       "nav.regime": "市场状态", "nav.marketMonitor": "市场监控", "nav.candidates": "候选池",
-      "nav.strategy": "📊 策略", "nav.plans": "交易计划", "nav.paperPositions": "模拟持仓",
+      "nav.strategy": "📊 策略", "nav.plans": "交易计划", "nav.paperPositions": "我的持仓",
       "nav.tradeReviews": "交易复盘", "nav.scoreboard": "策略成绩榜", "nav.ai": "🤖 AI",
       "nav.companion": "AI 交易解读", "nav.aiReviews": "AI 策略复盘", "nav.telegram": "Telegram 预览",
       "nav.product": "📱 产品运营", "nav.feedback": "用户反馈", "nav.behavior": "用户行为",
@@ -14,6 +14,7 @@
       "nav.experiments": "策略实验", "nav.parameters": "参数比较", "nav.researchCenter": "研究中心",
       "nav.more": "⚙ 更多", "nav.system": "版本中心", "nav.systemMonitor": "系统监控", "nav.logs": "运行日志",
       "action.logout": "退出登录", "workspace.eyebrow": "TRADE COMPANION 工作台",
+      "workspace.admin": "管理员",
       "state.loading": "正在读取本地数据…", "footer.boundary": "研究与交易生命周期工作台 · 不提供自动下单",
       "action.refresh": "刷新页面", "action.filter": "筛选", "action.search": "搜索",
       "state.empty": "当前没有可显示的数据。", "state.notAvailable": "暂不可用",
@@ -22,7 +23,7 @@
       tagline: "Your AI Trade Companion",
       "nav.workspace": "🏠 Workspace", "nav.home": "Dashboard", "nav.market": "📈 Market",
       "nav.regime": "Market Regime", "nav.marketMonitor": "Market Monitor", "nav.candidates": "Candidate Pool",
-      "nav.strategy": "📊 Strategy", "nav.plans": "Trade Plans", "nav.paperPositions": "Paper Positions",
+      "nav.strategy": "📊 Strategy", "nav.plans": "Trade Plans", "nav.paperPositions": "My Positions",
       "nav.tradeReviews": "Trade Reviews", "nav.scoreboard": "Strategy Scoreboard", "nav.ai": "🤖 AI",
       "nav.companion": "AI Trade Interpretation", "nav.aiReviews": "AI Strategy Review", "nav.telegram": "Telegram Preview",
       "nav.product": "📱 Product Operations", "nav.feedback": "User Feedback", "nav.behavior": "User Behavior",
@@ -30,6 +31,7 @@
       "nav.experiments": "Strategy Experiments", "nav.parameters": "Parameter Comparison", "nav.researchCenter": "Research Center",
       "nav.more": "⚙ More", "nav.system": "Version Center", "nav.systemMonitor": "System Monitor", "nav.logs": "Runtime Logs",
       "action.logout": "Sign out", "workspace.eyebrow": "TRADE COMPANION WORKSPACE",
+      "workspace.admin": "Administrator",
       "state.loading": "Loading local data…", "footer.boundary": "Trade research lifecycle workspace · No automatic order submission",
       "action.refresh": "Refresh", "action.filter": "Filter", "action.search": "Search",
       "state.empty": "No data is currently available.", "state.notAvailable": "Not available",
@@ -50,7 +52,7 @@
       "research-detail": "研究工作区", runtime: "运行状态", strategies: "策略观察",
       "strategy-detail": "策略详情", "data-quality": "数据质量", reports: "历史报告",
       development: "开发看板", "development-detail": "Issue 详情", system: "版本中心",
-      "market-monitor": "市场监控", "paper-positions": "模拟持仓", "strategy-scoreboard": "策略成绩榜",
+      "market-monitor": "市场监控", "paper-positions": "我的持仓", "strategy-scoreboard": "策略成绩榜",
       "product-feedback": "用户反馈", "product-behavior": "用户行为", "bot-statistics": "Bot 统计",
       "user-intelligence": "用户洞察", "strategy-parameters": "参数比较", "system-monitor": "系统监控",
       "runtime-logs": "运行日志",
@@ -68,7 +70,7 @@
       "research-detail": "Research Workspace", runtime: "Runtime", strategies: "Strategy Monitor",
       "strategy-detail": "Strategy Details", "data-quality": "Data Quality", reports: "Reports",
       development: "Development Board", "development-detail": "Issue Details", system: "Version Center",
-      "market-monitor": "Market Monitor", "paper-positions": "Paper Positions", "strategy-scoreboard": "Strategy Scoreboard",
+      "market-monitor": "Market Monitor", "paper-positions": "My Positions", "strategy-scoreboard": "Strategy Scoreboard",
       "product-feedback": "User Feedback", "product-behavior": "User Behavior", "bot-statistics": "Bot Statistics",
       "user-intelligence": "User Intelligence", "strategy-parameters": "Parameter Comparison", "system-monitor": "System Monitor",
       "runtime-logs": "Runtime Logs",
@@ -76,8 +78,8 @@
   };
 
   const statusCopy = {
-    "zh-CN": {CONNECTED:"已连接",RUNNING:"运行中",ACTIVE:"有效",NOTIFIED:"已通知",COMPLETED:"已完成",DEGRADED:"降级",DETECTED:"已发现",INBOX:"待处理",OPEN:"开放",INVESTIGATING:"处理中",IN_PROGRESS:"处理中",PLANNED:"已规划",RELEASED:"已发布",WAITING_APPROVAL:"等待批准",FAILED:"失败",INVALID:"无效",INVALIDATED:"已失效",REJECTED:"已拒绝",CANCELLED:"已取消",EXPIRED:"已过期",STOPPED:"已停止",DISCONNECTED:"已断开",DISABLED:"未启用",VALID:"正常",WARMUP:"预热中",MISSING_FEATURE:"缺少特征",INSUFFICIENT_DATA:"数据不足",NO_SIGNAL:"暂无信号",LONG:"做多",SHORT:"做空",HIGH:"高",MEDIUM:"中",LOW:"低",CRITICAL:"紧急",UNKNOWN:"未知",NO_DATA:"无数据",PLAN:"计划中",COMPANION:"陪伴中",REVIEW:"复盘中",READY:"已就绪",CLOSED:"已关闭",WATCH:"观察中",PENDING:"待处理",NONE:"无"},
-    "en-US": {CONNECTED:"Connected",RUNNING:"Running",ACTIVE:"Active",NOTIFIED:"Notified",COMPLETED:"Completed",DEGRADED:"Degraded",DETECTED:"Detected",INBOX:"Inbox",OPEN:"Open",INVESTIGATING:"In progress",IN_PROGRESS:"In progress",PLANNED:"Planned",RELEASED:"Released",WAITING_APPROVAL:"Waiting approval",FAILED:"Failed",INVALID:"Invalid",INVALIDATED:"Invalidated",REJECTED:"Rejected",CANCELLED:"Cancelled",EXPIRED:"Expired",STOPPED:"Stopped",DISCONNECTED:"Disconnected",DISABLED:"Disabled",VALID:"Valid",WARMUP:"Warming up",MISSING_FEATURE:"Missing feature",INSUFFICIENT_DATA:"Insufficient data",NO_SIGNAL:"No signal",LONG:"Long",SHORT:"Short",HIGH:"High",MEDIUM:"Medium",LOW:"Low",CRITICAL:"Critical",UNKNOWN:"Unknown",NO_DATA:"No data",PLAN:"Plan",COMPANION:"Companion",REVIEW:"Review",READY:"Ready",CLOSED:"Closed",WATCH:"Watch",PENDING:"Pending",NONE:"None"},
+    "zh-CN": {CONNECTED:"已连接",RUNNING:"运行中",ACTIVE:"有效",NOTIFIED:"已通知",COMPLETED:"已完成",DEGRADED:"降级",DETECTED:"已发现",INBOX:"待处理",OPEN:"开放",INVESTIGATING:"处理中",IN_PROGRESS:"处理中",PLANNED:"已规划",RELEASED:"已发布",WAITING_APPROVAL:"等待批准",FAILED:"失败",ERROR:"错误",WARNING:"警告",INVALID:"无效",INVALIDATED:"已失效",REJECTED:"已拒绝",CANCELLED:"已取消",EXPIRED:"已过期",STOPPED:"已停止",STALE:"状态过期",DISCONNECTED:"已断开",DISABLED:"未启用",VALID:"正常",WARMUP:"预热中",MISSING_FEATURE:"缺少特征",INSUFFICIENT_DATA:"数据不足",NO_SIGNAL:"暂无信号",LONG:"做多",SHORT:"做空",HIGH:"高",MEDIUM:"中",LOW:"低",CRITICAL:"紧急",UNKNOWN:"未知",NO_DATA:"无数据",PLAN:"计划中",COMPANION:"陪伴中",REVIEW:"复盘中",READY:"已就绪",CLOSED:"已关闭",WATCH:"观察中",PENDING:"待处理",NONE:"无",HOLDING:"持有中",NOT_HOLDING:"未持有",WATCHING:"关注中",NOT_WATCHING:"未关注",NEUTRAL:"中性",BULLISH:"偏多",BEARISH:"偏空"},
+    "en-US": {CONNECTED:"Connected",RUNNING:"Running",ACTIVE:"Active",NOTIFIED:"Notified",COMPLETED:"Completed",DEGRADED:"Degraded",DETECTED:"Detected",INBOX:"Inbox",OPEN:"Open",INVESTIGATING:"In progress",IN_PROGRESS:"In progress",PLANNED:"Planned",RELEASED:"Released",WAITING_APPROVAL:"Waiting approval",FAILED:"Failed",ERROR:"Error",WARNING:"Warning",INVALID:"Invalid",INVALIDATED:"Invalidated",REJECTED:"Rejected",CANCELLED:"Cancelled",EXPIRED:"Expired",STOPPED:"Stopped",STALE:"Stale",DISCONNECTED:"Disconnected",DISABLED:"Disabled",VALID:"Valid",WARMUP:"Warming up",MISSING_FEATURE:"Missing feature",INSUFFICIENT_DATA:"Insufficient data",NO_SIGNAL:"No signal",LONG:"Long",SHORT:"Short",HIGH:"High",MEDIUM:"Medium",LOW:"Low",CRITICAL:"Critical",UNKNOWN:"Unknown",NO_DATA:"No data",PLAN:"Plan",COMPANION:"Companion",REVIEW:"Review",READY:"Ready",CLOSED:"Closed",WATCH:"Watch",PENDING:"Pending",NONE:"None",HOLDING:"Holding",NOT_HOLDING:"Not holding",WATCHING:"Watching",NOT_WATCHING:"Not watching",NEUTRAL:"Neutral",BULLISH:"Bullish",BEARISH:"Bearish"},
   };
 
   const supported = new Set(["zh-CN", "en-US"]);
