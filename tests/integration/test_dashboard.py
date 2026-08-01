@@ -169,7 +169,7 @@ def test_dashboard_product_shell_and_all_routes(monkeypatch, tmp_path):
             response = client.get(path)
             assert response.status_code == 200
             assert "Trade Companion" in response.text
-            assert "quantpilot-logo.png" in response.text
+            assert "branding/trade-companion-logo-en.png" in response.text
             assert "ui.js" in response.text
     finally:
         client.__exit__(None, None, None)

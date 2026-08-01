@@ -72,9 +72,9 @@ Telegram request, sends no message, and starts no Polling or Webhook.
 
 ## Logo tracking
 
-- Main asset: `app/dashboard/static/quantpilot-logo.png`
-- Telegram profile asset: `app/dashboard/static/branding/telegram/trade-companion-profile-512.png`
-- Login, Sidebar, favicon and Version Center reuse the existing main static asset.
+- Official English asset: `app/dashboard/static/branding/trade-companion-logo-en.png`
+- Login, Sidebar, favicon, Version Center, README and Telegram profile configuration reuse this asset.
+- Telegram avatar upload remains a manual BotFather operation; the sync tool does not upload it.
 
 ## Screenshot paths
 

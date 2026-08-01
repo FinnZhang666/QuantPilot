@@ -133,7 +133,7 @@ def _profile(alias, purpose, language, market_scope, token, enabled):
         commands=ZH_COMMANDS if chinese else EN_COMMANDS,
         main_menu=ZH_MAIN_MENU if chinese else EN_MAIN_MENU,
         more_menu=ZH_MORE_MENU if chinese else EN_MORE_MENU,
-        profile_photo="app/dashboard/static/branding/telegram/trade-companion-profile-512.png",
+        profile_photo="app/dashboard/static/branding/trade-companion-logo-en.png",
         welcome_uses_image=False,
         token=token, enabled=enabled,
     )
