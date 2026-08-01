@@ -6,6 +6,7 @@
 .aider.tags.cache.v4/
 .playwright-cli/
 downloads/
+output/playwright/
 __pycache__/
 *.py[cod]
 .pytest_cache/

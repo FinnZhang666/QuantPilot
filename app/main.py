@@ -40,6 +40,7 @@ from app.api.market_snapshots import router as market_snapshots_router
 from app.api.symbol_overview import internal_router as internal_symbol_overview_router
 from app.api.symbol_overview import router as symbol_overview_router
 from app.api.telegram_preview import router as telegram_preview_router
+from app.api.paper_runtime import router as paper_runtime_router
 from app.dashboard.routes import router as dashboard_router
 from app.api.routes import router as api_router
 from app.core.config import get_settings
@@ -49,6 +50,7 @@ from app.database.session import get_engine
 from app.realtime.factory import peek_realtime_manager
 from app.core.enums import RealtimeServiceState
 from app.runtime.realtime_runtime import get_runtime
+from app.paper_runtime.manager import get_runtime_manager
 from app.version import PRODUCT, VERSION
 
 
@@ -60,12 +62,17 @@ async def lifespan(app: FastAPI):
         settings.log_max_bytes, settings.log_backup_count,
     )
     create_schema(get_engine())
+    paper_runtime = get_runtime_manager(settings)
+    if settings.runtime_manager_enabled and settings.paper_trading_autostart:
+        paper_runtime.start()
     try:
         yield
     finally:
         runtime = get_runtime()
         if runtime.status != "STOPPED":
             runtime.stop()
+        if paper_runtime.status != "STOPPED":
+            paper_runtime.stop()
         manager = peek_realtime_manager()
         if manager and manager.status != RealtimeServiceState.STOPPED:
             manager.stop()
@@ -122,6 +129,7 @@ app.include_router(market_snapshots_router)
 app.include_router(symbol_overview_router)
 app.include_router(internal_symbol_overview_router)
 app.include_router(telegram_preview_router)
+app.include_router(paper_runtime_router)
 app.include_router(dashboard_router)
 app.mount(
     "/dashboard/static",

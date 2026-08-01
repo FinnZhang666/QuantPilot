@@ -32,10 +32,10 @@ def test_release_documents_exist_and_use_product_name():
         assert "Trade Companion" in text and len(text) > 300
 
 
-def test_release_does_not_add_migration_after_0019():
+def test_release_includes_phase4_migrations():
     versions = ROOT / "alembic" / "versions"
-    assert any("0019" in path.name for path in versions.glob("*.py"))
-    assert not any(re.match(r"002[0-9]", path.name) for path in versions.glob("*.py"))
+    assert any("0021" in path.name for path in versions.glob("*.py"))
+    assert not any(re.match(r"002[2-9]", path.name) for path in versions.glob("*.py"))
 
 
 def test_readme_known_limitations_are_current():
@@ -44,10 +44,10 @@ def test_readme_known_limitations_are_current():
     assert "当前不含Moomoo模拟下单、策略、回测、前端" not in text
 
 
-def test_public_openapi_release_surface_is_frozen_and_internal_hidden():
+def test_public_openapi_phase4_surface_and_internal_hidden():
     paths = app.openapi()["paths"]
-    assert len(paths) == 158
-    assert sum(len(operations) for operations in paths.values()) == 167
+    assert len(paths) == 168
+    assert sum(len(operations) for operations in paths.values()) == 177
     assert not any(path.startswith("/internal") for path in paths)
 
 

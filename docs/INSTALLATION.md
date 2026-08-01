@@ -59,7 +59,7 @@ alembic upgrade head
 alembic current
 ```
 
-Release Candidate Head is `0019`. Do not copy a live SQLite database while it is being written; use the backup
+Windows Phase 4 Head is `0021`. Do not copy a live SQLite database while it is being written; use the backup
 command described in `BACKUP_AND_RECOVERY.md`.
 
 ## Start Dashboard and API

@@ -141,6 +141,18 @@ class Settings(BaseSettings):
     display_timezone: str = "Asia/Shanghai"
     default_slippage_bps: int = Field(default=8, ge=0, le=1000)
     default_portfolio_cash: float = Field(default=100000, gt=0)
+    runtime_manager_enabled: bool = False
+    paper_trading_enabled: bool = False
+    paper_trading_autostart: bool = False
+    paper_trading_initial_cash: float = Field(default=100000, gt=0)
+    paper_trading_allow_fractional: bool = False
+    paper_trading_allow_leverage: bool = False
+    paper_trading_fee_per_order: float = Field(default=0, ge=0)
+    paper_trading_slippage_bps: int = Field(default=8, ge=0, le=1000)
+    paper_trading_position_pct: float = Field(default=0.1, gt=0, le=1)
+    paper_trading_poll_seconds: float = Field(default=60, ge=1, le=86400)
+    review_runtime_enabled: bool = False
+    strategy_scoreboard_enabled: bool = False
 
     @model_validator(mode="after")
     def validate_safety(self) -> "Settings":
@@ -203,6 +215,11 @@ class Settings(BaseSettings):
             "default_timezone": self.default_timezone,
             "display_timezone": self.display_timezone,
             "default_slippage_bps": self.default_slippage_bps,
+            "runtime_manager_enabled": self.runtime_manager_enabled,
+            "paper_trading_enabled": self.paper_trading_enabled,
+            "paper_trading_autostart": self.paper_trading_autostart,
+            "review_runtime_enabled": self.review_runtime_enabled,
+            "strategy_scoreboard_enabled": self.strategy_scoreboard_enabled,
         }
 
     def realtime_symbol_list(self) -> List[str]:

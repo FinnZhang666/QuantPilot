@@ -54,6 +54,11 @@ from app.database.models.entities import (
     InvestmentPortfolio,
     PortfolioHolding,
     PortfolioWatchlist,
+    SystemPaperAccount,
+    SystemPaperOrder,
+    SystemPaperFill,
+    SystemPaperPosition,
+    SystemEquitySnapshot,
 )
 
 __all__ = [
@@ -112,4 +117,9 @@ __all__ = [
     "InvestmentPortfolio",
     "PortfolioHolding",
     "PortfolioWatchlist",
+    "SystemPaperAccount",
+    "SystemPaperOrder",
+    "SystemPaperFill",
+    "SystemPaperPosition",
+    "SystemEquitySnapshot",
 ]

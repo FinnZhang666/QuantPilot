@@ -400,6 +400,15 @@ Trade Companion 1.0.0-rc2 冻结 Public API、Dashboard、数据库和业务逻�
 备份恢复、已知问题和发布检查清单。RC2 离线基线不包含 Windows、OpenD Runtime、Telegram Runtime、
 Broker 或外部 AI Provider 的生产联调。
 
+## Windows Phase 4: System Paper Runtime
+
+Phase 4 adds an isolated system paper ledger, deterministic `paper-fill-v1`,
+account valuation/equity curve, stop/target exits, automatic objective review,
+strategy scoreboard, Dashboard views, and Telegram Preview. All runtime flags
+default to disabled. Broker trading, OpenD realtime, Telegram transport and
+external AI transport remain out of scope. See
+[`docs/WINDOWS_PHASE4_PAPER_RUNTIME.md`](docs/WINDOWS_PHASE4_PAPER_RUNTIME.md).
+
 ## Sprint 41 Part D：Dashboard Route Repair 与 Mac 交接
 
 最终 Dashboard 信息架构的所有 Sidebar 页面均有真实、受登录保护的 HTML Route。市场监控、策略成绩、

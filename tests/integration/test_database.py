@@ -14,8 +14,8 @@ def test_database_migration(monkeypatch, tmp_path):
     assert {"portfolios", "paper_orders", "trades", "system_events"}.issubset(tables)
 
 
-def test_fresh_0019_schema_matches_git_metadata(monkeypatch, tmp_path):
-    url = f"sqlite:///{tmp_path / 'fresh-0019.db'}"
+def test_fresh_0021_schema_matches_git_metadata(monkeypatch, tmp_path):
+    url = f"sqlite:///{tmp_path / 'fresh-0021.db'}"
     monkeypatch.setenv("DATABASE_URL", url)
     config = Config("alembic.ini")
     command.upgrade(config, "head")
@@ -31,7 +31,7 @@ def test_fresh_0019_schema_matches_git_metadata(monkeypatch, tmp_path):
     with engine.connect() as connection:
         assert connection.exec_driver_sql(
             "SELECT version_num FROM alembic_version"
-        ).scalar_one() == "0019"
+        ).scalar_one() == "0021"
 
 
 def test_trade_lifecycle_migration_upgrade_downgrade(monkeypatch, tmp_path):
@@ -121,3 +121,43 @@ def test_portfolio_center_migration_upgrade_downgrade(monkeypatch, tmp_path):
     assert set(inspect(engine).get_table_names()) == before
     command.upgrade(config, "0019")
     assert "portfolio_holdings" in inspect(engine).get_table_names()
+
+
+def test_system_paper_migration_upgrade_downgrade(monkeypatch, tmp_path):
+    url = "sqlite:///" + str(tmp_path / "system-paper-migration.db")
+    monkeypatch.setenv("DATABASE_URL", url)
+    config = Config("alembic.ini")
+    command.upgrade(config, "0019")
+    engine = create_engine(url)
+    names = (
+        "system_equity_snapshots", "system_paper_positions", "system_paper_fills",
+        "system_paper_orders", "system_paper_accounts",
+    )
+    for name in names:
+        Base.metadata.tables[name].drop(engine, checkfirst=True)
+    before = set(inspect(engine).get_table_names())
+    command.upgrade(config, "0020")
+    assert set(names) <= set(inspect(engine).get_table_names())
+    command.downgrade(config, "0019")
+    assert set(inspect(engine).get_table_names()) == before
+    command.upgrade(config, "0020")
+    assert "system_paper_accounts" in inspect(engine).get_table_names()
+
+
+def test_paper_exit_order_migration_upgrade_downgrade(monkeypatch, tmp_path):
+    url = "sqlite:///" + str(tmp_path / "paper-exit-migration.db")
+    monkeypatch.setenv("DATABASE_URL", url)
+    config = Config("alembic.ini")
+    command.upgrade(config, "head")
+    engine = create_engine(url)
+    assert "closing_order_id" in {
+        row["name"] for row in inspect(engine).get_columns("system_paper_positions")
+    }
+    command.downgrade(config, "0020")
+    assert "closing_order_id" not in {
+        row["name"] for row in inspect(engine).get_columns("system_paper_positions")
+    }
+    command.upgrade(config, "0021")
+    assert "closing_order_id" in {
+        row["name"] for row in inspect(engine).get_columns("system_paper_positions")
+    }

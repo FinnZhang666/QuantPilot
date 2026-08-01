@@ -1350,3 +1350,120 @@ class PortfolioWatchlist(TimestampMixin, Base):
     market: Mapped[str] = mapped_column(String(8))
     display_order: Mapped[int] = mapped_column(Integer, default=0)
     notes: Mapped[Optional[str]] = mapped_column(Text)
+
+
+class SystemPaperAccount(TimestampMixin, Base):
+    """System-owned simulation ledger; never a user or broker account."""
+
+    __tablename__ = "system_paper_accounts"
+    __table_args__ = (
+        UniqueConstraint("account_key", name="uq_system_paper_account_key"),
+        CheckConstraint("initial_cash >= 0", name="ck_system_paper_initial_cash"),
+        CheckConstraint("available_cash >= 0", name="ck_system_paper_available_cash"),
+        CheckConstraint("reserved_cash >= 0", name="ck_system_paper_reserved_cash"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    account_key: Mapped[str] = mapped_column(String(64), default="system-paper")
+    base_currency: Mapped[str] = mapped_column(String(8), default="USD")
+    initial_cash: Mapped[object] = mapped_column(Numeric(24, 8))
+    available_cash: Mapped[object] = mapped_column(Numeric(24, 8))
+    reserved_cash: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    position_market_value: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    total_equity: Mapped[object] = mapped_column(Numeric(24, 8))
+    realized_pnl: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    unrealized_pnl: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    daily_pnl: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    total_return: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
+    last_valuation_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(16), default="ACTIVE")
+
+
+class SystemPaperOrder(TimestampMixin, Base):
+    __tablename__ = "system_paper_orders"
+    __table_args__ = (
+        UniqueConstraint("idempotency_key", name="uq_system_paper_order_idempotency"),
+        Index("ix_system_paper_orders_plan", "trade_plan_id"),
+        Index("ix_system_paper_orders_status", "status"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("system_paper_accounts.id"))
+    trade_plan_id: Mapped[int] = mapped_column(ForeignKey("trade_plans.id"))
+    symbol: Mapped[str] = mapped_column(String(32))
+    market: Mapped[str] = mapped_column(String(8), default="US")
+    strategy_name: Mapped[str] = mapped_column(String(128))
+    strategy_version: Mapped[str] = mapped_column(String(64))
+    direction: Mapped[str] = mapped_column(String(8))
+    order_side: Mapped[str] = mapped_column(String(8))
+    order_type: Mapped[str] = mapped_column(String(16))
+    requested_price: Mapped[object] = mapped_column(Numeric(24, 8))
+    quantity: Mapped[object] = mapped_column(Numeric(24, 8))
+    status: Mapped[str] = mapped_column(String(32), default="PENDING")
+    source: Mapped[str] = mapped_column(String(32), default="TRADE_PLAN")
+    idempotency_key: Mapped[str] = mapped_column(String(255))
+    fill_model_version: Mapped[str] = mapped_column(String(32), default="paper-fill-v1")
+    filled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    cancelled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class SystemPaperFill(Base):
+    __tablename__ = "system_paper_fills"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("system_paper_orders.id"), index=True)
+    price: Mapped[object] = mapped_column(Numeric(24, 8))
+    quantity: Mapped[object] = mapped_column(Numeric(24, 8))
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    bar_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    slippage: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    fee: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    source: Mapped[str] = mapped_column(String(32), default="HISTORICAL_BAR")
+
+
+class SystemPaperPosition(TimestampMixin, Base):
+    __tablename__ = "system_paper_positions"
+    __table_args__ = (
+        Index("ix_system_paper_positions_status", "status"),
+        Index("ix_system_paper_positions_symbol", "symbol"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("system_paper_accounts.id"))
+    trade_plan_id: Mapped[int] = mapped_column(ForeignKey("trade_plans.id"))
+    opening_order_id: Mapped[int] = mapped_column(ForeignKey("system_paper_orders.id"))
+    closing_order_id: Mapped[Optional[int]] = mapped_column(ForeignKey("system_paper_orders.id"))
+    symbol: Mapped[str] = mapped_column(String(32))
+    market: Mapped[str] = mapped_column(String(8), default="US")
+    direction: Mapped[str] = mapped_column(String(8))
+    strategy_name: Mapped[str] = mapped_column(String(128))
+    strategy_version: Mapped[str] = mapped_column(String(64))
+    quantity: Mapped[object] = mapped_column(Numeric(24, 8))
+    average_entry: Mapped[object] = mapped_column(Numeric(24, 8))
+    open_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    current_price: Mapped[object] = mapped_column(Numeric(24, 8))
+    market_value: Mapped[object] = mapped_column(Numeric(24, 8))
+    unrealized_pnl: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    realized_pnl: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    stop_price: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    targets_json: Mapped[list] = mapped_column(JSON, default=list)
+    highest_price: Mapped[object] = mapped_column(Numeric(24, 8))
+    lowest_price: Mapped[object] = mapped_column(Numeric(24, 8))
+    mfe: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
+    mae: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
+    status: Mapped[str] = mapped_column(String(24), default="OPEN")
+    close_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    exit_price: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    exit_reason: Mapped[Optional[str]] = mapped_column(String(64))
+
+
+class SystemEquitySnapshot(Base):
+    __tablename__ = "system_equity_snapshots"
+    __table_args__ = (Index("ix_system_equity_snapshot_time", "account_id", "timestamp"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("system_paper_accounts.id"))
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    cash: Mapped[object] = mapped_column(Numeric(24, 8))
+    reserved_cash: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    position_value: Mapped[object] = mapped_column(Numeric(24, 8))
+    equity: Mapped[object] = mapped_column(Numeric(24, 8))
+    daily_pnl: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    total_return: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
+    drawdown: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
