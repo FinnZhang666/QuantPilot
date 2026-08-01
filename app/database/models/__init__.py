@@ -59,6 +59,9 @@ from app.database.models.entities import (
     SystemPaperFill,
     SystemPaperPosition,
     SystemEquitySnapshot,
+    SystemPaperAuditEvent,
+    SystemPaperSchedulerJob,
+    SystemPaperRuntimeLock,
 )
 
 __all__ = [
@@ -122,4 +125,7 @@ __all__ = [
     "SystemPaperFill",
     "SystemPaperPosition",
     "SystemEquitySnapshot",
+    "SystemPaperAuditEvent",
+    "SystemPaperSchedulerJob",
+    "SystemPaperRuntimeLock",
 ]

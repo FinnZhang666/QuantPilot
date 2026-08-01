@@ -1215,6 +1215,9 @@ class TradeReview(TimestampMixin, Base):
     review_key: Mapped[str] = mapped_column(String(64))
     trade_plan_id: Mapped[int] = mapped_column(ForeignKey("trade_plans.id"))
     user_position_id: Mapped[Optional[int]] = mapped_column(ForeignKey("user_positions.id"))
+    system_paper_position_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("system_paper_positions.id"), index=True,
+    )
     review_type: Mapped[str] = mapped_column(String(16))
     result: Mapped[str] = mapped_column(String(16))
     entry_price: Mapped[object] = mapped_column(Numeric(24, 8))
@@ -1224,6 +1227,13 @@ class TradeReview(TimestampMixin, Base):
     holding_minutes: Mapped[int] = mapped_column(BigInteger)
     target_hit: Mapped[bool] = mapped_column(Boolean, default=False)
     stop_hit: Mapped[bool] = mapped_column(Boolean, default=False)
+    realized_return: Mapped[Optional[object]] = mapped_column(Numeric(18, 8))
+    exit_reason: Mapped[Optional[str]] = mapped_column(String(64))
+    strategy_name: Mapped[Optional[str]] = mapped_column(String(128))
+    strategy_version: Mapped[Optional[str]] = mapped_column(String(64))
+    fill_model_version: Mapped[Optional[str]] = mapped_column(String(32))
+    data_quality: Mapped[Optional[str]] = mapped_column(String(16))
+    source_snapshot_json: Mapped[dict] = mapped_column(JSON, default=dict)
     review_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
@@ -1374,6 +1384,8 @@ class SystemPaperAccount(TimestampMixin, Base):
     unrealized_pnl: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
     daily_pnl: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
     total_return: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
+    peak_equity: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    max_drawdown: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
     last_valuation_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     status: Mapped[str] = mapped_column(String(16), default="ACTIVE")
 
@@ -1403,6 +1415,10 @@ class SystemPaperOrder(TimestampMixin, Base):
     fill_model_version: Mapped[str] = mapped_column(String(32), default="paper-fill-v1")
     filled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     cancelled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    rejection_code: Mapped[Optional[str]] = mapped_column(String(64))
+    trigger_price: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    trigger_bar_timestamp: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    rule_version: Mapped[str] = mapped_column(String(32), default="paper-exit-v1")
     metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
@@ -1435,9 +1451,13 @@ class SystemPaperPosition(TimestampMixin, Base):
     direction: Mapped[str] = mapped_column(String(8))
     strategy_name: Mapped[str] = mapped_column(String(128))
     strategy_version: Mapped[str] = mapped_column(String(64))
+    trade_style: Mapped[str] = mapped_column(String(32), default="PULLBACK")
+    timeframe: Mapped[str] = mapped_column(String(8), default="1d")
     quantity: Mapped[object] = mapped_column(Numeric(24, 8))
+    initial_quantity: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
     average_entry: Mapped[object] = mapped_column(Numeric(24, 8))
     open_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    entry_bar_timestamp: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     current_price: Mapped[object] = mapped_column(Numeric(24, 8))
     market_value: Mapped[object] = mapped_column(Numeric(24, 8))
     unrealized_pnl: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
@@ -1448,6 +1468,15 @@ class SystemPaperPosition(TimestampMixin, Base):
     lowest_price: Mapped[object] = mapped_column(Numeric(24, 8))
     mfe: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
     mae: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
+    fill_model_version: Mapped[str] = mapped_column(String(32), default="paper-fill-v1")
+    exit_rule_version: Mapped[str] = mapped_column(String(32), default="paper-exit-v1")
+    target_index: Mapped[int] = mapped_column(Integer, default=0)
+    bars_held: Mapped[int] = mapped_column(Integer, default=0)
+    last_market_timestamp: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    market_data_status: Mapped[str] = mapped_column(String(16), default="CURRENT")
+    data_quality: Mapped[str] = mapped_column(String(16), default="HIGH")
+    last_exit_trigger_price: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    last_exit_trigger_bar: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     status: Mapped[str] = mapped_column(String(24), default="OPEN")
     close_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     exit_price: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
@@ -1465,5 +1494,54 @@ class SystemEquitySnapshot(Base):
     position_value: Mapped[object] = mapped_column(Numeric(24, 8))
     equity: Mapped[object] = mapped_column(Numeric(24, 8))
     daily_pnl: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    daily_return: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
     total_return: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
+    cumulative_return: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
+    peak_equity: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
     drawdown: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
+    max_drawdown: Mapped[object] = mapped_column(Numeric(18, 8), default=0)
+    source: Mapped[str] = mapped_column(String(32), default="RUNTIME_VALUATION")
+
+
+class SystemPaperAuditEvent(Base):
+    __tablename__ = "system_paper_audit_events"
+    __table_args__ = (
+        Index("ix_system_paper_audit_event_time", "event_type", "timestamp"),
+        Index("ix_system_paper_audit_position", "position_id", "timestamp"),
+        Index("ix_system_paper_audit_plan", "trade_plan_id", "timestamp"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_type: Mapped[str] = mapped_column(String(64))
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    candidate_id: Mapped[Optional[int]] = mapped_column(ForeignKey("candidate_signals.id"))
+    trade_plan_id: Mapped[Optional[int]] = mapped_column(ForeignKey("trade_plans.id"))
+    order_id: Mapped[Optional[int]] = mapped_column(ForeignKey("system_paper_orders.id"))
+    fill_id: Mapped[Optional[int]] = mapped_column(ForeignKey("system_paper_fills.id"))
+    position_id: Mapped[Optional[int]] = mapped_column(ForeignKey("system_paper_positions.id"))
+    review_id: Mapped[Optional[int]] = mapped_column(ForeignKey("trade_reviews.id"))
+    correlation_id: Mapped[Optional[str]] = mapped_column(String(64))
+    details_json: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class SystemPaperSchedulerJob(Base):
+    __tablename__ = "system_paper_scheduler_jobs"
+    __table_args__ = (Index("ix_system_paper_scheduler_status", "status"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    job_key: Mapped[str] = mapped_column(String(64), unique=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    status: Mapped[str] = mapped_column(String(24), default="NEVER_RUN")
+    last_run_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    next_run_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    duration_ms: Mapped[Optional[int]] = mapped_column(BigInteger)
+    result_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    last_error: Mapped[Optional[str]] = mapped_column(String(512))
+
+
+class SystemPaperRuntimeLock(Base):
+    __tablename__ = "system_paper_runtime_locks"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    lock_key: Mapped[str] = mapped_column(String(64), unique=True)
+    owner_id: Mapped[str] = mapped_column(String(128))
+    process_id: Mapped[int] = mapped_column(Integer)
+    acquired_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

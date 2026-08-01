@@ -236,7 +236,7 @@ def test_dashboard_version_uses_central_source(monkeypatch, tmp_path):
         assert version["product"] == openapi["info"]["title"] == "Trade Companion"
         assert version["version"] == openapi["info"]["version"] == "1.0.0-rc2"
         assert version["sprint"] == "40"
-        assert version["migration"] in {"0021", "unknown"}
+        assert version["migration"] in {"0022", "unknown"}
         assert "/api/platform/version" in script
         assert 'id="footer-version"' in html
         assert "1.0.0-rc1" not in html + script

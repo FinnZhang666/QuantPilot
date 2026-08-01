@@ -402,12 +402,13 @@ Broker 或外部 AI Provider 的生产联调。
 
 ## Windows Phase 4: System Paper Runtime
 
-Phase 4 adds an isolated system paper ledger, deterministic `paper-fill-v1`,
-account valuation/equity curve, stop/target exits, automatic objective review,
-strategy scoreboard, Dashboard views, and Telegram Preview. All runtime flags
-default to disabled. Broker trading, OpenD realtime, Telegram transport and
-external AI transport remain out of scope. See
-[`docs/WINDOWS_PHASE4_PAPER_RUNTIME.md`](docs/WINDOWS_PHASE4_PAPER_RUNTIME.md).
+Phase 4 adds an isolated system paper ledger, deterministic LONG/SHORT
+`paper-fill-v1`, bounded position sizing, partial/full exits, stale-data aware
+valuation and equity curve, immutable objective review, complete strategy
+scoreboard, non-overlapping Scheduler, audit trace, Dashboard views, and
+Telegram Preview. All runtime flags default to disabled. Broker trading, OpenD
+realtime, Telegram transport and external AI transport remain off. See
+[`docs/WINDOWS_PHASE4_RUNTIME_PAPER_TRADING.md`](docs/WINDOWS_PHASE4_RUNTIME_PAPER_TRADING.md).
 
 ## Sprint 41 Part D：Dashboard Route Repair 与 Mac 交接
 

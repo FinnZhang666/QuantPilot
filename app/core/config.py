@@ -150,7 +150,24 @@ class Settings(BaseSettings):
     paper_trading_fee_per_order: float = Field(default=0, ge=0)
     paper_trading_slippage_bps: int = Field(default=8, ge=0, le=1000)
     paper_trading_position_pct: float = Field(default=0.1, gt=0, le=1)
+    paper_trading_sizing_mode: str = "PERCENT_EQUITY"
+    paper_trading_fixed_cash_per_trade: float = Field(default=10000, gt=0)
+    paper_trading_max_position_count: int = Field(default=5, ge=1, le=100)
+    paper_trading_max_entries_per_run: int = Field(default=3, ge=1, le=20)
+    paper_trading_max_symbol_exposure_pct: float = Field(default=0.2, gt=0, le=1)
+    paper_trading_max_strategy_exposure_pct: float = Field(default=0.5, gt=0, le=1)
+    paper_trading_max_gross_exposure_pct: float = Field(default=1.0, gt=0, le=2)
+    paper_trading_min_cash_reserve_pct: float = Field(default=0.1, ge=0, lt=1)
+    paper_trading_allow_same_symbol_multiple: bool = False
+    paper_trading_allow_strategy_coexistence: bool = False
+    paper_trading_target1_reduce_pct: float = Field(default=0.5, gt=0, lt=1)
+    paper_trading_max_holding_bars: int = Field(default=0, ge=0, le=10000)
+    paper_trading_stale_intraday_seconds: int = Field(default=900, ge=60, le=86400)
+    paper_trading_stale_daily_seconds: int = Field(default=604800, ge=86400, le=2592000)
+    paper_trading_sqlite_lock_retries: int = Field(default=3, ge=0, le=10)
+    paper_trading_sqlite_lock_backoff_seconds: float = Field(default=0.1, ge=0, le=5)
     paper_trading_poll_seconds: float = Field(default=60, ge=1, le=86400)
+    paper_scheduler_enabled: bool = False
     review_runtime_enabled: bool = False
     strategy_scoreboard_enabled: bool = False
 
@@ -179,6 +196,10 @@ class Settings(BaseSettings):
                 raise ValueError("External AI Companion已启用，但缺少API Key或模型名称。")
         if self.trading_mode == TradingMode.MOOMOO_PAPER and not self.enable_moomoo_paper:
             raise ValueError("TRADING_MODE=MOOMOO_PAPER requires ENABLE_MOOMOO_PAPER=true.")
+        if self.paper_trading_sizing_mode not in {"PERCENT_EQUITY", "FIXED_CASH"}:
+            raise ValueError(
+                "PAPER_TRADING_SIZING_MODE必须是PERCENT_EQUITY或FIXED_CASH。"
+            )
         return self
 
     def safe_dict(self) -> Dict[str, Any]:
@@ -218,6 +239,7 @@ class Settings(BaseSettings):
             "runtime_manager_enabled": self.runtime_manager_enabled,
             "paper_trading_enabled": self.paper_trading_enabled,
             "paper_trading_autostart": self.paper_trading_autostart,
+            "paper_scheduler_enabled": self.paper_scheduler_enabled,
             "review_runtime_enabled": self.review_runtime_enabled,
             "strategy_scoreboard_enabled": self.strategy_scoreboard_enabled,
         }

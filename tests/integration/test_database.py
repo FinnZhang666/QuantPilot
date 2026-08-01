@@ -14,8 +14,8 @@ def test_database_migration(monkeypatch, tmp_path):
     assert {"portfolios", "paper_orders", "trades", "system_events"}.issubset(tables)
 
 
-def test_fresh_0021_schema_matches_git_metadata(monkeypatch, tmp_path):
-    url = f"sqlite:///{tmp_path / 'fresh-0021.db'}"
+def test_fresh_0022_schema_matches_git_metadata(monkeypatch, tmp_path):
+    url = f"sqlite:///{tmp_path / 'fresh-0022.db'}"
     monkeypatch.setenv("DATABASE_URL", url)
     config = Config("alembic.ini")
     command.upgrade(config, "head")
@@ -26,12 +26,14 @@ def test_fresh_0021_schema_matches_git_metadata(monkeypatch, tmp_path):
         "review_key", "trade_plan_id", "user_position_id", "review_type",
         "result", "entry_price", "exit_price", "mfe", "mae",
         "holding_minutes", "target_hit", "stop_hit", "review_time",
-        "created_at", "updated_at",
+        "created_at", "updated_at", "system_paper_position_id",
+        "realized_return", "exit_reason", "fill_model_version",
+        "data_quality", "source_snapshot_json",
     }
     with engine.connect() as connection:
         assert connection.exec_driver_sql(
             "SELECT version_num FROM alembic_version"
-        ).scalar_one() == "0021"
+        ).scalar_one() == "0022"
 
 
 def test_trade_lifecycle_migration_upgrade_downgrade(monkeypatch, tmp_path):
@@ -161,3 +163,26 @@ def test_paper_exit_order_migration_upgrade_downgrade(monkeypatch, tmp_path):
     assert "closing_order_id" in {
         row["name"] for row in inspect(engine).get_columns("system_paper_positions")
     }
+
+
+def test_complete_paper_lifecycle_migration_round_trip(monkeypatch, tmp_path):
+    url = "sqlite:///" + str(tmp_path / "complete-paper-lifecycle.db")
+    monkeypatch.setenv("DATABASE_URL", url)
+    config = Config("alembic.ini")
+    command.upgrade(config, "head")
+    engine = create_engine(url)
+    expected_tables = {
+        "system_paper_audit_events", "system_paper_scheduler_jobs",
+        "system_paper_runtime_locks",
+    }
+    assert expected_tables <= set(inspect(engine).get_table_names())
+    assert "market_data_status" in {
+        item["name"] for item in inspect(engine).get_columns("system_paper_positions")
+    }
+    command.downgrade(config, "0021")
+    assert not (expected_tables & set(inspect(engine).get_table_names()))
+    assert "market_data_status" not in {
+        item["name"] for item in inspect(engine).get_columns("system_paper_positions")
+    }
+    command.upgrade(config, "head")
+    assert expected_tables <= set(inspect(engine).get_table_names())

@@ -189,8 +189,20 @@ def paper_positions(request: Request, settings: Settings = Depends(get_settings)
     return _page(request, settings, "paper-positions")
 
 
+@router.get("/dashboard/paper-positions/{position_id}", include_in_schema=False)
+def paper_position_detail(
+    position_id: int, request: Request, settings: Settings = Depends(get_settings),
+):
+    return _page(request, settings, "paper-position-detail")
+
+
 @router.get("/dashboard/strategy-scoreboard", include_in_schema=False)
 def strategy_scoreboard(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "strategy-scoreboard")
+
+
+@router.get("/dashboard/trading-performance", include_in_schema=False)
+def trading_performance(request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "strategy-scoreboard")
 
 

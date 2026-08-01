@@ -82,6 +82,7 @@ def _serialize(row, plan):
         "id": row.id, "review_key": row.review_key,
         "trade_plan_id": plan.plan_id if plan else row.trade_plan_id,
         "user_position_id": row.user_position_id,
+        "system_paper_position_id": row.system_paper_position_id,
         "symbol": plan.symbol if plan else None,
         "strategy_name": plan.strategy_name if plan else None,
         "strategy_version": plan.strategy_version if plan else None,
@@ -92,6 +93,10 @@ def _serialize(row, plan):
         "mfe": _value(row.mfe), "mae": _value(row.mae),
         "holding_minutes": row.holding_minutes,
         "target_hit": row.target_hit, "stop_hit": row.stop_hit,
+        "realized_return": _value(row.realized_return),
+        "exit_reason": row.exit_reason,
+        "fill_model_version": row.fill_model_version,
+        "data_quality": row.data_quality,
         "review_time": row.review_time,
         "created_at": row.created_at, "updated_at": row.updated_at,
     }

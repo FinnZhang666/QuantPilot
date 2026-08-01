@@ -40,6 +40,7 @@ from app.api.market_snapshots import router as market_snapshots_router
 from app.api.symbol_overview import internal_router as internal_symbol_overview_router
 from app.api.symbol_overview import router as symbol_overview_router
 from app.api.telegram_preview import router as telegram_preview_router
+from app.api.paper_runtime import internal_router as internal_paper_runtime_router
 from app.api.paper_runtime import router as paper_runtime_router
 from app.dashboard.routes import router as dashboard_router
 from app.api.routes import router as api_router
@@ -130,6 +131,7 @@ app.include_router(symbol_overview_router)
 app.include_router(internal_symbol_overview_router)
 app.include_router(telegram_preview_router)
 app.include_router(paper_runtime_router)
+app.include_router(internal_paper_runtime_router)
 app.include_router(dashboard_router)
 app.mount(
     "/dashboard/static",

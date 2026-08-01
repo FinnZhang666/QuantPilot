@@ -7,7 +7,8 @@ from sqlalchemy import func, select, text
 from app.core.config import get_settings
 from app.database.models import (
     SystemEquitySnapshot, SystemPaperAccount, SystemPaperFill,
-    SystemPaperOrder, SystemPaperPosition,
+    SystemPaperAuditEvent, SystemPaperOrder, SystemPaperPosition,
+    SystemPaperSchedulerJob, TradeReview,
 )
 from app.database.session import get_session_factory
 from app.paper_runtime.manager import RuntimeManager
@@ -19,6 +20,7 @@ def main():
         "runtime_manager_enabled": True,
         "paper_trading_enabled": True,
         "paper_trading_autostart": False,
+        "paper_scheduler_enabled": False,
         "review_runtime_enabled": True,
         "strategy_scoreboard_enabled": True,
         "telegram_enabled": False,
@@ -28,12 +30,14 @@ def main():
         "moomoo_live_trading_enabled": False,
     })
     manager = RuntimeManager(settings, get_session_factory())
-    result = manager.process_once()
+    dry_run = manager.dry_run(max_entries=3)
+    result = manager.process_once(max_entries=3)
     db = get_session_factory()()
     try:
         models = (
             SystemPaperAccount, SystemPaperOrder, SystemPaperFill,
-            SystemPaperPosition, SystemEquitySnapshot,
+            SystemPaperPosition, SystemEquitySnapshot, TradeReview,
+            SystemPaperAuditEvent, SystemPaperSchedulerJob,
         )
         counts = {
             model.__tablename__: db.scalar(select(func.count()).select_from(model))
@@ -54,9 +58,12 @@ def main():
     finally:
         db.close()
     print(json.dumps({
-        "status": "ok", "paper": result["paper"], "review": result["review"],
-        "statistics": result["statistics"],
+        "status": "ok", "dry_run": dry_run, "controlled_run_once": result,
         "external_transport": {"telegram": False, "gemini": False, "opend_realtime": False},
+        "safety_calls": {
+            "real_orders": 0, "telegram_sends": 0,
+            "gemini_external": 0, "opend_trade": 0,
+        },
         "counts": counts, "integrity": integrity,
         "foreign_key_issues": foreign_key_issues,
     }, ensure_ascii=False, default=str))
