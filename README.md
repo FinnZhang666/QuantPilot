@@ -419,3 +419,10 @@ realtime, Telegram transport and external AI transport remain off. See
 同时准备了 5 个 Telegram Bot 的脱敏 Profile、定稿中英文 `/start` 文案、Commands、菜单、512×512 头像与
 默认 dry-run 同步工具。Mac 不执行真实同步、不发送消息、不启动 Telegram Runtime；详见
 [`docs/SPRINT_41_PART_D_DASHBOARD_ROUTE_REPAIR.md`](docs/SPRINT_41_PART_D_DASHBOARD_ROUTE_REPAIR.md)。
+# Trade Companion Telegram Runtime (Windows Phase 5)
+
+The unified, configuration-backed multi-Bot runtime is documented in
+[`docs/WINDOWS_PHASE5_TELEGRAM_RUNTIME.md`](docs/WINDOWS_PHASE5_TELEGRAM_RUNTIME.md).
+Bot tokens remain local in `.env`; `config/telegram_bots.json` contains public profile
+copy only. Preview and real delivery share one renderer, and Bot avatars remain a
+manual BotFather step.

@@ -1,8 +1,19 @@
+"""Configuration-backed Telegram bot registry.
+
+Tokens are resolved from Settings only. They are never stored in the registry file,
+database, logs, sync results, or API responses.
+"""
+
+import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from app.core.config import Settings
+from app.database.models import TelegramAdminRecord, TelegramBotProfileRecord
 
 
 @dataclass(frozen=True)
@@ -20,159 +31,151 @@ class BotMenuItem:
 @dataclass(frozen=True)
 class TelegramBotProfile:
     alias: str
-    purpose: str
     language: str
-    market_scope: str
     display_name: str
     short_description: str
     description: str
     welcome: str
     commands: Tuple[BotCommand, ...]
     main_menu: Tuple[BotMenuItem, ...]
-    more_menu: Tuple[BotMenuItem, ...]
-    profile_photo: str
-    welcome_uses_image: bool
+    token_setting: str
+    fallback_token_setting: Optional[str]
     token: str
     enabled: bool
+    profile_photo: str = "app/dashboard/static/branding/trade-companion-logo-en.png"
+
+    @property
+    def more_menu(self) -> Tuple[BotMenuItem, ...]:
+        if self.language == "zh-CN":
+            return (
+                BotMenuItem("我的关注", "watchlist"), BotMenuItem("当前持仓", "holding"),
+                BotMenuItem("历史记录", "history"), BotMenuItem("交易复盘", "review"),
+                BotMenuItem("用户反馈", "feedback"),
+            )
+        return (
+            BotMenuItem("Watchlist", "watchlist"), BotMenuItem("Holdings", "holding"),
+            BotMenuItem("History", "history"), BotMenuItem("Reviews", "review"),
+            BotMenuItem("Feedback", "feedback"),
+        )
+
+    @property
+    def welcome_uses_image(self) -> bool:
+        return False
+
+    @property
+    def purpose(self) -> str:
+        return "trade_companion"
+
+    @property
+    def market_scope(self) -> str:
+        return "US"
 
     def safe_summary(self) -> Dict[str, object]:
         return {
-            "alias": self.alias, "purpose": self.purpose,
-            "language": self.language, "market_scope": self.market_scope,
-            "display_name": self.display_name, "enabled": self.enabled,
-            "token_configured": bool(self.token), "profile_photo": self.profile_photo,
-            "welcome_uses_image": self.welcome_uses_image,
+            "alias": self.alias,
+            "language": self.language,
+            "display_name": self.display_name,
+            "enabled": self.enabled,
+            "token_configured": bool(self.token),
+            "profile_photo": self.profile_photo,
+            "avatar_sync": "MANUAL_REQUIRED",
         }
 
 
-ZH_COMMANDS = (
-    BotCommand("start", "开始使用"), BotCommand("analyze", "分析股票"),
-    BotCommand("watchlist", "我的关注"), BotCommand("portfolio", "我的投资"),
-    BotCommand("market", "市场快照"), BotCommand("help", "使用帮助"),
-    BotCommand("feedback", "提交建议"), BotCommand("language", "切换语言"),
-)
-EN_COMMANDS = (
-    BotCommand("start", "Start"), BotCommand("analyze", "Analyze a stock"),
-    BotCommand("watchlist", "My watchlist"), BotCommand("portfolio", "My investments"),
-    BotCommand("market", "Market snapshot"), BotCommand("help", "Help"),
-    BotCommand("feedback", "Send feedback"), BotCommand("language", "Change language"),
-)
-ZH_MAIN_MENU = (
-    BotMenuItem("📈 AI分析", "analyze"), BotMenuItem("💼 我的投资", "portfolio"),
-    BotMenuItem("🌍 市场快照", "market"), BotMenuItem("💡 更多", "more"),
-)
-EN_MAIN_MENU = (
-    BotMenuItem("📈 AI Analysis", "analyze"), BotMenuItem("💼 My Investments", "portfolio"),
-    BotMenuItem("🌍 Market Snapshot", "market"), BotMenuItem("💡 More", "more"),
-)
-ZH_MORE_MENU = (
-    BotMenuItem("关于我们", "about"), BotMenuItem("使用帮助", "help"),
-    BotMenuItem("提交建议", "feedback"), BotMenuItem("更新日志", "changelog"),
-    BotMenuItem("切换语言", "language"),
-)
-EN_MORE_MENU = (
-    BotMenuItem("About", "about"), BotMenuItem("Help", "help"),
-    BotMenuItem("Send Feedback", "feedback"), BotMenuItem("Changelog", "changelog"),
-    BotMenuItem("Change Language", "language"),
-)
-
-ZH_WELCOME = """👋 欢迎来到 Trade Companion
-
-陪你走过每一次交易，而不是只推送一个买卖点。
-
-无论你是刚开始投资，还是已经拥有自己的交易体系，我都会帮助你：
-
-📈 发现值得关注的交易机会
-🧠 理解市场，而不仅仅是看到涨跌
-📋 制定并跟踪交易计划
-💼 管理你的投资与持仓
-🔔 在关键时刻提醒你
-📊 与你一起复盘每一次交易，不断优化策略
-
-Trade Companion 不替你做决定，只帮助你做出更好的决定。
-
-投资是一场长期旅程，我会一直陪伴你。
-
-请选择下面开始。"""
-
-EN_WELCOME = """👋 Welcome to Trade Companion
-
-With you through every trade, not just another buy or sell signal.
-
-I’ll help you:
-
-📈 Discover new opportunities
-🧠 Understand the market
-📋 Build better trade plans
-💼 Track your investments
-🔔 Stay informed at the right time
-📊 Review every trade and continuously improve
-
-Trade Companion doesn’t replace your decisions. It helps you make better ones.
-
-Investing is a long journey. I’ll be with you every step of the way.
-
-Choose where to start."""
+def _registry_path(settings: Settings, repository_root: Optional[Path] = None) -> Path:
+    path = Path(settings.telegram_registry_path)
+    if path.is_absolute():
+        return path
+    root = repository_root or Path(__file__).resolve().parents[2]
+    return root / path
 
 
-def _profile(alias, purpose, language, market_scope, token, enabled):
-    chinese = language == "zh-CN"
-    return TelegramBotProfile(
-        alias=alias, purpose=purpose, language=language, market_scope=market_scope,
-        display_name="Trade Companion",
-        short_description=("AI 交易分析、计划跟踪与持仓陪伴" if chinese else
-                           "AI trade analysis, planning and position companion"),
-        description=(
-            "提供市场分析、关注股票、交易计划、AI 解读、关键提醒与交易反馈。"
-            "不替你做决定，只帮助你做出更好的决定。"
-            if chinese else
-            "Market analysis, watchlists, trade plans, AI explanations, alerts, and feedback. "
-            "It does not replace your decisions; it helps you make better ones."
-        ),
-        welcome=ZH_WELCOME if chinese else EN_WELCOME,
-        commands=ZH_COMMANDS if chinese else EN_COMMANDS,
-        main_menu=ZH_MAIN_MENU if chinese else EN_MAIN_MENU,
-        more_menu=ZH_MORE_MENU if chinese else EN_MORE_MENU,
-        profile_photo="app/dashboard/static/branding/trade-companion-logo-en.png",
-        welcome_uses_image=False,
-        token=token, enabled=enabled,
-    )
-
-
-def load_bot_profiles(settings: Settings) -> List[TelegramBotProfile]:
-    return [
-        _profile("trade_companion_ai_en", "primary_english_companion", "en-US", "US",
-                 settings.telegram_bot_token_trade_companion_ai_en,
-                 settings.telegram_bot_enabled_trade_companion_ai_en),
-        _profile("quantpilot_ai_en", "legacy_english_companion", "en-US", "US",
-                 settings.telegram_bot_token_quantpilot_ai_en,
-                 settings.telegram_bot_enabled_quantpilot_ai_en),
-        _profile("ai_stock_analyze_en", "english_stock_analysis", "en-US", "US",
-                 settings.telegram_bot_token_ai_stock_analyze_en,
-                 settings.telegram_bot_enabled_ai_stock_analyze_en),
-        _profile("trade_companion_zh", "primary_chinese_companion", "zh-CN", "US",
-                 settings.telegram_bot_token_trade_companion_zh,
-                 settings.telegram_bot_enabled_trade_companion_zh),
-        _profile("stock_analysis_zh", "chinese_stock_analysis", "zh-CN", "US",
-                 settings.telegram_bot_token_stock_analysis_zh,
-                 settings.telegram_bot_enabled_stock_analysis_zh),
-    ]
+def load_bot_profiles(
+    settings: Settings, repository_root: Optional[Path] = None,
+) -> List[TelegramBotProfile]:
+    path = _registry_path(settings, repository_root)
+    data = json.loads(path.read_text(encoding="utf-8"))
+    profiles = []
+    aliases = set()
+    raw_items = data.get("bots", [])
+    templates = {str(item["alias"]): item for item in raw_items}
+    for source in raw_items:
+        item = dict(source)
+        template_alias = item.get("template")
+        if template_alias:
+            inherited = dict(templates[str(template_alias)])
+            inherited.update(item)
+            item = inherited
+        alias = str(item["alias"]).strip()
+        if alias in aliases:
+            raise ValueError("Duplicate Telegram bot alias: %s" % alias)
+        aliases.add(alias)
+        token_setting = str(item["token_setting"])
+        fallback = item.get("fallback_token_setting")
+        token = str(getattr(settings, token_setting, "") or "")
+        if not token and fallback:
+            token = str(getattr(settings, str(fallback), "") or "")
+        profiles.append(TelegramBotProfile(
+            alias=alias,
+            language=str(item["language"]),
+            display_name=str(item["name"]),
+            short_description=str(item["about"]),
+            description=str(item["description"]),
+            welcome=str(item["welcome_template"]),
+            commands=tuple(BotCommand(**command) for command in item.get("commands", [])),
+            main_menu=tuple(BotMenuItem(**menu) for menu in item.get("menu", [])),
+            token_setting=token_setting,
+            fallback_token_setting=str(fallback) if fallback else None,
+            token=token,
+            enabled=bool(item.get("runtime_enabled", False)),
+        ))
+    return profiles
 
 
 def validate_profile(profile: TelegramBotProfile, repository_root: Path) -> List[str]:
     errors = []
+    if profile.language not in {"zh-CN", "en-US"}:
+        errors.append("invalid_language")
     if len(profile.short_description) > 120:
         errors.append("short_description_too_long")
     if len(profile.description) > 512:
         errors.append("description_too_long")
     if len(profile.welcome) > 4096:
         errors.append("welcome_too_long")
-    if any(not item.command.islower() or len(item.command) > 32 for item in profile.commands):
-        errors.append("invalid_command")
-    if any(len(item.description) > 256 for item in profile.commands):
-        errors.append("command_description_too_long")
     if len(profile.main_menu) != 4:
         errors.append("invalid_main_menu")
+    if any(not item.command.islower() or len(item.command) > 32 for item in profile.commands):
+        errors.append("invalid_command")
     if not (repository_root / profile.profile_photo).is_file():
         errors.append("profile_photo_missing")
     return errors
+
+
+def synchronize_registry(db: Session, settings: Settings) -> List[TelegramBotProfile]:
+    profiles = load_bot_profiles(settings)
+    for profile in profiles:
+        row = db.scalar(select(TelegramBotProfileRecord).where(
+            TelegramBotProfileRecord.alias == profile.alias,
+        ))
+        if row is None:
+            row = TelegramBotProfileRecord(alias=profile.alias)
+            db.add(row)
+        row.language = profile.language
+        row.display_name = profile.display_name
+        row.about = profile.short_description
+        row.description = profile.description
+        row.commands_json = [item.__dict__ for item in profile.commands]
+        row.menu_json = [item.__dict__ for item in profile.main_menu]
+        row.welcome_template = profile.welcome
+        row.token_env_key = profile.token_setting
+        row.runtime_enabled = profile.enabled
+    for username, role in (("ADHD360", "SUPER_ADMIN"), ("Kevinchou8", "ADMIN")):
+        admin = db.scalar(select(TelegramAdminRecord).where(
+            TelegramAdminRecord.username == username,
+        ))
+        if admin is None:
+            db.add(TelegramAdminRecord(
+                username=username, display_name="@" + username, role=role, enabled=True,
+            ))
+    db.commit()
+    return profiles

@@ -62,6 +62,13 @@ from app.database.models.entities import (
     SystemPaperAuditEvent,
     SystemPaperSchedulerJob,
     SystemPaperRuntimeLock,
+    TelegramBotProfileRecord,
+    TelegramRuntimeUser,
+    TelegramAdminRecord,
+    TelegramFeedbackRecord,
+    TelegramRuntimeMessageLog,
+    TelegramProfileSyncLog,
+    TelegramAIInvocation,
 )
 
 __all__ = [
@@ -128,4 +135,11 @@ __all__ = [
     "SystemPaperAuditEvent",
     "SystemPaperSchedulerJob",
     "SystemPaperRuntimeLock",
+    "TelegramBotProfileRecord",
+    "TelegramRuntimeUser",
+    "TelegramAdminRecord",
+    "TelegramFeedbackRecord",
+    "TelegramRuntimeMessageLog",
+    "TelegramProfileSyncLog",
+    "TelegramAIInvocation",
 ]

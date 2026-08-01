@@ -42,6 +42,8 @@ from app.api.symbol_overview import router as symbol_overview_router
 from app.api.telegram_preview import router as telegram_preview_router
 from app.api.paper_runtime import internal_router as internal_paper_runtime_router
 from app.api.paper_runtime import router as paper_runtime_router
+from app.telegram_runtime.api import internal_router as internal_telegram_runtime_router
+from app.telegram_runtime.api import router as telegram_runtime_router
 from app.dashboard.routes import router as dashboard_router
 from app.api.routes import router as api_router
 from app.core.config import get_settings
@@ -52,6 +54,7 @@ from app.realtime.factory import peek_realtime_manager
 from app.core.enums import RealtimeServiceState
 from app.runtime.realtime_runtime import get_runtime
 from app.paper_runtime.manager import get_runtime_manager
+from app.telegram_runtime.runtime import get_telegram_runtime
 from app.version import PRODUCT, VERSION
 
 
@@ -64,8 +67,12 @@ async def lifespan(app: FastAPI):
     )
     create_schema(get_engine())
     paper_runtime = get_runtime_manager(settings)
+    telegram_runtime = get_telegram_runtime(settings)
+    telegram_runtime.initialize_registry()
     if settings.runtime_manager_enabled and settings.paper_trading_autostart:
         paper_runtime.start()
+    if settings.telegram_enabled and settings.telegram_runtime_enabled and settings.telegram_runtime_autostart:
+        telegram_runtime.start()
     try:
         yield
     finally:
@@ -74,6 +81,8 @@ async def lifespan(app: FastAPI):
             runtime.stop()
         if paper_runtime.status != "STOPPED":
             paper_runtime.stop()
+        if telegram_runtime.status != "STOPPED":
+            telegram_runtime.stop()
         manager = peek_realtime_manager()
         if manager and manager.status != RealtimeServiceState.STOPPED:
             manager.stop()
@@ -132,6 +141,8 @@ app.include_router(internal_symbol_overview_router)
 app.include_router(telegram_preview_router)
 app.include_router(paper_runtime_router)
 app.include_router(internal_paper_runtime_router)
+app.include_router(telegram_runtime_router)
+app.include_router(internal_telegram_runtime_router)
 app.include_router(dashboard_router)
 app.mount(
     "/dashboard/static",

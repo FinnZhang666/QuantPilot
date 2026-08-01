@@ -119,7 +119,14 @@ class Settings(BaseSettings):
     ai_companion_max_retries: int = Field(default=1, ge=0, le=10)
     ai_companion_max_output_tokens: int = Field(default=2048, ge=128, le=32768)
     ai_companion_default_language: str = "zh-CN"
+    gemini_api_key: str = ""
+    llm_model: str = "gemini-3.1-flash-lite"
     telegram_enabled: bool = False
+    telegram_runtime_enabled: bool = False
+    telegram_runtime_autostart: bool = False
+    telegram_registry_path: str = "config/telegram_bots.json"
+    telegram_poll_timeout_seconds: int = Field(default=20, ge=1, le=50)
+    telegram_poll_interval_seconds: float = Field(default=1.0, ge=0.1, le=60)
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
     telegram_chat_ids: str = ""
@@ -180,7 +187,11 @@ class Settings(BaseSettings):
             raise ValueError("Sprint 01禁止提交Moomoo订单。")
         if self.history_adjustment_type not in {"NONE", "FORWARD", "BACKWARD"}:
             raise ValueError("HISTORY_ADJUSTMENT_TYPE必须是NONE、FORWARD或BACKWARD。")
-        if self.telegram_enabled and (not self.telegram_bot_token or not self.telegram_chat_id_list()):
+        if (
+            self.telegram_enabled
+            and not self.telegram_runtime_enabled
+            and (not self.telegram_bot_token or not self.telegram_chat_id_list())
+        ):
             raise ValueError("Telegram已启用，但缺少TELEGRAM_BOT_TOKEN或TELEGRAM_CHAT_IDS。")
         if self.ai_review_provider not in {"mock", "openai_compatible", "local"}:
             raise ValueError("AI_REVIEW_PROVIDER必须是mock、openai_compatible或local。")
@@ -192,7 +203,9 @@ class Settings(BaseSettings):
         if self.ai_companion_default_language not in {"zh-CN", "en-US"}:
             raise ValueError("AI_COMPANION_DEFAULT_LANGUAGE必须是zh-CN或en-US。")
         if self.ai_companion_enabled and self.ai_companion_provider != "mock":
-            if not self.ai_companion_api_key or not self.ai_companion_model:
+            if not (self.ai_companion_api_key or self.gemini_api_key) or not (
+                self.ai_companion_model or self.llm_model
+            ):
                 raise ValueError("External AI Companion已启用，但缺少API Key或模型名称。")
         if self.trading_mode == TradingMode.MOOMOO_PAPER and not self.enable_moomoo_paper:
             raise ValueError("TRADING_MODE=MOOMOO_PAPER requires ENABLE_MOOMOO_PAPER=true.")
@@ -226,6 +239,8 @@ class Settings(BaseSettings):
             "moomoo_allow_order_submission": False,
             "moomoo_preferred_market": self.moomoo_preferred_market,
             "telegram_enabled": self.telegram_enabled,
+            "telegram_runtime_enabled": self.telegram_runtime_enabled,
+            "telegram_runtime_autostart": self.telegram_runtime_autostart,
             "ai_review_enabled": self.ai_review_enabled,
             "ai_review_provider": self.ai_review_provider,
             "ai_review_model": self.ai_review_model,

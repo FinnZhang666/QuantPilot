@@ -14,6 +14,8 @@ def clean_settings_cache(monkeypatch):
     for key in (
         "TRADING_MODE",
         "TELEGRAM_ENABLED",
+        "TELEGRAM_RUNTIME_ENABLED",
+        "TELEGRAM_RUNTIME_AUTOSTART",
         "TELEGRAM_BOT_TOKEN",
         "TELEGRAM_CHAT_ID",
         "DATABASE_URL",
@@ -28,6 +30,13 @@ def clean_settings_cache(monkeypatch):
         "AI_COMPANION_API_KEY",
     ):
         monkeypatch.delenv(key, raising=False)
+    # Automated tests must never activate a real Telegram or Gemini transport,
+    # even when the developer's ignored local .env enables production smoke tests.
+    monkeypatch.setenv("TELEGRAM_ENABLED", "false")
+    monkeypatch.setenv("TELEGRAM_RUNTIME_ENABLED", "false")
+    monkeypatch.setenv("TELEGRAM_RUNTIME_AUTOSTART", "false")
+    monkeypatch.setenv("AI_COMPANION_ENABLED", "false")
+    monkeypatch.setenv("AI_COMPANION_PROVIDER", "mock")
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()

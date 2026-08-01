@@ -88,8 +88,16 @@ def health_report(db, settings):
         "database": {"status": database, "path": str(db_path), "size_bytes": db_path.stat().st_size if db_path.exists() else 0},
         "runtime": services.get("realtime_runtime", "STOPPED"),
         "opend": services.get("opend", "DISCONNECTED"),
-        "telegram": services.get("telegram", "DISABLED" if not settings.telegram_enabled else "UNKNOWN"),
-        "ai": services.get("ai_review_analyst", "DISABLED" if not settings.ai_review_enabled else "UNKNOWN"),
+        "telegram": services.get(
+            "telegram_runtime", "DISABLED" if not (
+                settings.telegram_enabled and settings.telegram_runtime_enabled
+            ) else "STOPPED",
+        ),
+        "ai": services.get(
+            "ai_review_analyst", "DISABLED" if not (
+                settings.ai_review_enabled or settings.ai_companion_enabled
+            ) else "CONFIGURED",
+        ),
         "scheduler": services.get("opportunity_pipeline", "UNKNOWN"),
         "disk": {"free_gb": round(usage.free / 1024 ** 3, 2), "total_gb": round(usage.total / 1024 ** 3, 2)},
         "memory": {"process_mb": round(memory_mb, 2)},

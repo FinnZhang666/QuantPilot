@@ -9,6 +9,7 @@ from app.telegram_product.profile_sync import TelegramProfileSynchronizer, build
 
 
 TOKENS = {
+    "TELEGRAM_BOT_TOKEN": "test:generic",
     "TELEGRAM_BOT_TOKEN_TRADE_COMPANION_AI_EN": "test:english-primary",
     "TELEGRAM_BOT_TOKEN_QUANTPILOT_AI_EN": "test:english-legacy",
     "TELEGRAM_BOT_TOKEN_AI_STOCK_ANALYZE_EN": "test:english-analysis",
@@ -23,20 +24,20 @@ def profiles(monkeypatch):
     return load_bot_profiles(Settings(_env_file=None))
 
 
-def test_five_bot_profiles_load_without_exposing_tokens(monkeypatch):
+def test_five_config_backed_profiles_load_without_exposing_tokens(monkeypatch):
     items = profiles(monkeypatch)
     assert len(items) == 5
     assert {item.language for item in items} == {"zh-CN", "en-US"}
     assert all(item.token for item in items)
+    assert sum(item.enabled for item in items) == 2
     assert all(item.token not in str(item.safe_summary()) for item in items)
-    assert not any(item.enabled for item in items)
 
 
-def test_profiles_have_valid_commands_copy_menu_and_photo(monkeypatch):
+def test_profiles_have_valid_commands_menu_and_photo(monkeypatch):
     root = Path(__file__).resolve().parents[2]
     for item in profiles(monkeypatch):
         assert validate_profile(item, root) == []
-        assert len(item.commands) == 8
+        assert len(item.commands) == 11
         assert [entry.action for entry in item.main_menu] == [
             "analyze", "portfolio", "market", "more",
         ]
@@ -46,16 +47,19 @@ def test_profiles_have_valid_commands_copy_menu_and_photo(monkeypatch):
         assert "guaranteed" not in item.welcome.lower()
 
 
-def test_final_start_copy_is_language_specific(monkeypatch):
+def test_final_welcome_and_menu_copy_is_language_specific(monkeypatch):
     items = profiles(monkeypatch)
-    chinese = next(item for item in items if item.language == "zh-CN")
-    english = next(item for item in items if item.language == "en-US")
-    assert "👋 欢迎来到 Trade Companion" in chinese.welcome
+    chinese = next(item for item in items if item.alias == "trade_companion_zh")
+    english = next(item for item in items if item.alias == "trade_companion_en")
+    assert "陪你走过每一次交易" in chinese.welcome
     assert "不替你做决定" in chinese.welcome
     assert "投资是一场长期旅程" in chinese.welcome
-    assert "👋 Welcome to Trade Companion" in english.welcome
-    assert "doesn’t replace your decisions" in english.welcome
-    assert "Investing is a long journey" in english.welcome
+    assert [item.label for item in chinese.main_menu] == [
+        "📈 AI分析", "💼 我的投资", "🌍 市场快照", "💡 更多",
+    ]
+    assert "With you through every trade" in english.welcome
+    assert "does not make decisions for you" in english.welcome
+    assert "long-term journey" in english.welcome
 
 
 def test_dry_run_never_calls_network_and_marks_photo_manual(monkeypatch):
@@ -67,7 +71,7 @@ def test_dry_run_never_calls_network_and_marks_photo_manual(monkeypatch):
     assert calls == []
     assert result["status"] == "DRY_RUN"
     assert result["alias"] == item.alias
-    assert not any(item.token in str(value) for value in result.values())
+    assert item.token not in str(result)
     photo = next(step for step in result["steps"] if step["method"] == "setProfilePhoto")
     assert photo["status"] == "MANUAL_REQUIRED"
 

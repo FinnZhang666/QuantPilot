@@ -1545,3 +1545,144 @@ class SystemPaperRuntimeLock(Base):
     process_id: Mapped[int] = mapped_column(Integer)
     acquired_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class TelegramBotProfileRecord(TimestampMixin, Base):
+    __tablename__ = "telegram_bot_profiles"
+    __table_args__ = (
+        UniqueConstraint("alias", name="uq_telegram_bot_profile_alias"),
+        Index("ix_telegram_bot_profiles_runtime", "runtime_enabled", "runtime_status"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    alias: Mapped[str] = mapped_column(String(64))
+    language: Mapped[str] = mapped_column(String(16))
+    display_name: Mapped[str] = mapped_column(String(128))
+    about: Mapped[str] = mapped_column(String(120), default="")
+    description: Mapped[str] = mapped_column(String(512), default="")
+    commands_json: Mapped[list] = mapped_column(JSON, default=list)
+    menu_json: Mapped[list] = mapped_column(JSON, default=list)
+    welcome_template: Mapped[str] = mapped_column(Text)
+    token_env_key: Mapped[str] = mapped_column(String(128))
+    runtime_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    remote_username: Mapped[Optional[str]] = mapped_column(String(128))
+    remote_id: Mapped[Optional[str]] = mapped_column(String(64))
+    sync_status: Mapped[str] = mapped_column(String(24), default="NEVER_SYNCED")
+    runtime_status: Mapped[str] = mapped_column(String(24), default="STOPPED")
+    update_offset: Mapped[int] = mapped_column(BigInteger, default=0)
+    last_sync_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_update_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+
+
+class TelegramRuntimeUser(TimestampMixin, Base):
+    __tablename__ = "telegram_runtime_users"
+    __table_args__ = (
+        UniqueConstraint("telegram_user_id", name="uq_telegram_runtime_user_id"),
+        Index("ix_telegram_runtime_users_language", "language"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    telegram_user_id: Mapped[str] = mapped_column(String(64))
+    chat_id: Mapped[str] = mapped_column(String(64))
+    username: Mapped[Optional[str]] = mapped_column(String(128))
+    first_name: Mapped[Optional[str]] = mapped_column(String(128))
+    last_name: Mapped[Optional[str]] = mapped_column(String(128))
+    language: Mapped[str] = mapped_column(String(16), default="zh-CN")
+    last_bot_alias: Mapped[str] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(24), default="ACTIVE")
+    pending_action: Mapped[Optional[str]] = mapped_column(String(64))
+    pending_context_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class TelegramAdminRecord(TimestampMixin, Base):
+    __tablename__ = "telegram_admins"
+    __table_args__ = (
+        UniqueConstraint("username", name="uq_telegram_admin_username"),
+        UniqueConstraint("telegram_user_id", name="uq_telegram_admin_user_id"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(128))
+    telegram_user_id: Mapped[Optional[str]] = mapped_column(String(64))
+    display_name: Mapped[str] = mapped_column(String(128), default="")
+    role: Mapped[str] = mapped_column(String(24), default="ADMIN")
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    receive_system_alerts: Mapped[bool] = mapped_column(Boolean, default=True)
+    receive_trade_errors: Mapped[bool] = mapped_column(Boolean, default=True)
+    receive_llm_errors: Mapped[bool] = mapped_column(Boolean, default=True)
+    receive_data_sync_errors: Mapped[bool] = mapped_column(Boolean, default=True)
+    receive_daily_report: Mapped[bool] = mapped_column(Boolean, default=True)
+    bound_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+
+
+class TelegramFeedbackRecord(TimestampMixin, Base):
+    __tablename__ = "telegram_feedback"
+    __table_args__ = (
+        Index("ix_telegram_feedback_category_status", "category", "status"),
+        Index("ix_telegram_feedback_created", "created_at"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("telegram_runtime_users.id"))
+    bot_alias: Mapped[str] = mapped_column(String(64))
+    language: Mapped[str] = mapped_column(String(16))
+    category: Mapped[str] = mapped_column(String(32))
+    message: Mapped[str] = mapped_column(Text)
+    related_type: Mapped[Optional[str]] = mapped_column(String(64))
+    related_id: Mapped[Optional[str]] = mapped_column(String(128))
+    status: Mapped[str] = mapped_column(String(24), default="OPEN")
+    reply_status: Mapped[str] = mapped_column(String(24), default="NOT_REPLIED")
+    admin_notified: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class TelegramRuntimeMessageLog(Base):
+    __tablename__ = "telegram_runtime_message_logs"
+    __table_args__ = (
+        Index("ix_telegram_runtime_log_time", "created_at"),
+        Index("ix_telegram_runtime_log_bot_status", "bot_alias", "status"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    bot_alias: Mapped[str] = mapped_column(String(64))
+    direction: Mapped[str] = mapped_column(String(16))
+    event_type: Mapped[str] = mapped_column(String(64))
+    telegram_user_id: Mapped[Optional[str]] = mapped_column(String(64))
+    chat_id: Mapped[Optional[str]] = mapped_column(String(64))
+    update_id: Mapped[Optional[str]] = mapped_column(String(64))
+    telegram_message_id: Mapped[Optional[str]] = mapped_column(String(64))
+    language: Mapped[Optional[str]] = mapped_column(String(16))
+    status: Mapped[str] = mapped_column(String(24))
+    latency_ms: Mapped[Optional[int]] = mapped_column(Integer)
+    error_code: Mapped[Optional[str]] = mapped_column(String(64))
+    error_message: Mapped[Optional[str]] = mapped_column(String(512))
+    payload_summary_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class TelegramProfileSyncLog(Base):
+    __tablename__ = "telegram_profile_sync_logs"
+    __table_args__ = (Index("ix_telegram_profile_sync_time", "bot_alias", "created_at"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    bot_alias: Mapped[str] = mapped_column(String(64))
+    mode: Mapped[str] = mapped_column(String(16))
+    status: Mapped[str] = mapped_column(String(24))
+    steps_json: Mapped[list] = mapped_column(JSON, default=list)
+    remote_snapshot_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    error_code: Mapped[Optional[str]] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class TelegramAIInvocation(Base):
+    __tablename__ = "telegram_ai_invocations"
+    __table_args__ = (Index("ix_telegram_ai_invocation_time", "created_at"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("telegram_runtime_users.id"))
+    bot_alias: Mapped[str] = mapped_column(String(64))
+    operation: Mapped[str] = mapped_column(String(64))
+    symbol: Mapped[Optional[str]] = mapped_column(String(32))
+    provider: Mapped[str] = mapped_column(String(32))
+    model: Mapped[str] = mapped_column(String(128))
+    status: Mapped[str] = mapped_column(String(24))
+    input_hash: Mapped[str] = mapped_column(String(64))
+    latency_ms: Mapped[Optional[int]] = mapped_column(Integer)
+    prompt_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    completion_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    error_code: Mapped[Optional[str]] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

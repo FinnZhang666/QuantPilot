@@ -14,8 +14,8 @@ def test_database_migration(monkeypatch, tmp_path):
     assert {"portfolios", "paper_orders", "trades", "system_events"}.issubset(tables)
 
 
-def test_fresh_0022_schema_matches_git_metadata(monkeypatch, tmp_path):
-    url = f"sqlite:///{tmp_path / 'fresh-0022.db'}"
+def test_fresh_0023_schema_matches_git_metadata(monkeypatch, tmp_path):
+    url = f"sqlite:///{tmp_path / 'fresh-0023.db'}"
     monkeypatch.setenv("DATABASE_URL", url)
     config = Config("alembic.ini")
     command.upgrade(config, "head")
@@ -33,7 +33,29 @@ def test_fresh_0022_schema_matches_git_metadata(monkeypatch, tmp_path):
     with engine.connect() as connection:
         assert connection.exec_driver_sql(
             "SELECT version_num FROM alembic_version"
-        ).scalar_one() == "0022"
+        ).scalar_one() == "0023"
+
+
+def test_telegram_runtime_migration_upgrade_downgrade(monkeypatch, tmp_path):
+    url = "sqlite:///" + str(tmp_path / "telegram-runtime.db")
+    monkeypatch.setenv("DATABASE_URL", url)
+    config = Config("alembic.ini")
+    command.upgrade(config, "0022")
+    engine = create_engine(url)
+    expected = {
+        "telegram_bot_profiles", "telegram_runtime_users", "telegram_admins",
+        "telegram_feedback", "telegram_runtime_message_logs",
+        "telegram_profile_sync_logs", "telegram_ai_invocations",
+    }
+    for name in expected:
+        Base.metadata.tables[name].drop(engine, checkfirst=True)
+    before = set(inspect(engine).get_table_names())
+    command.upgrade(config, "0023")
+    assert expected <= set(inspect(engine).get_table_names())
+    command.downgrade(config, "0022")
+    assert set(inspect(engine).get_table_names()) == before
+    command.upgrade(config, "0023")
+    assert expected <= set(inspect(engine).get_table_names())
 
 
 def test_trade_lifecycle_migration_upgrade_downgrade(monkeypatch, tmp_path):

@@ -11,7 +11,6 @@ from app.database.models import CandidatePoolEntry, RealtimeBar, WatchlistItem, 
 from app.candidate_pool.service import CandidatePoolService
 from app.database.session import get_session_factory
 from app.notifications.telegram import TelegramNotificationProvider
-from app.notifications.telegram_commands import TelegramCommandPoller
 from app.realtime.factory import get_realtime_manager
 from app.runtime.opportunity_pipeline import OpportunityPipeline
 from app.runtime.runtime_state import RuntimeStateRepository
@@ -38,7 +37,6 @@ class RealtimeOpportunityRuntime:
         self.processed_count = 0
         self.error_count = 0
         self._last_opend_connected = None
-        self.telegram_poller = TelegramCommandPoller(self.settings, self.session_factory)
         self.review_scheduler = ReviewScheduler(self.settings, self.session_factory)
         self.ai_review_scheduler = AIReviewScheduler(self.settings, self.session_factory)
         self.trade_plan_scheduler = TradePlanGeneratorScheduler(self.session_factory)
@@ -60,7 +58,6 @@ class RealtimeOpportunityRuntime:
                 target=self._loop, name="moomoo-opportunity-runtime", daemon=False,
             )
             self.thread.start()
-            self.telegram_poller.start()
             self.status = "RUNNING" if self.realtime_manager.status == RealtimeServiceState.CONNECTED else "DEGRADED"
             self._notify_event("Runtime已启动", "实时机会Runtime已启动，当前状态：" + self.status)
             self._save_state(success=True)
@@ -75,7 +72,6 @@ class RealtimeOpportunityRuntime:
                 return self.snapshot(idempotent=True)
             self.stop_event.set()
         self.thread.join(timeout=max(5.0, self.settings.runtime_poll_interval_seconds * 3))
-        self.telegram_poller.stop()
         self.review_scheduler.stop()
         self.ai_review_scheduler.stop()
         self.trade_plan_scheduler.stop()
