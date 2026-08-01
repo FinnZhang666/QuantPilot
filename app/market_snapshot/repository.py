@@ -35,9 +35,19 @@ class MarketSnapshotRepository:
         )).order_by(Instrument.updated_at.desc()).limit(1))
         bar = self.db.scalar(select(MarketBar).where(MarketBar.symbol.in_(variants))
                              .order_by(MarketBar.timestamp_utc.desc(), MarketBar.id.desc()).limit(1))
-        feature = self.db.scalar(select(FeatureValueRecord).where(
-            FeatureValueRecord.symbol.in_(variants), FeatureValueRecord.quality_status == "VALID",
-        ).order_by(FeatureValueRecord.timestamp_utc.desc(), FeatureValueRecord.id.desc()).limit(1))
+        feature = None
+        # Keep each lookup aligned with the composite symbol/interval/time index.
+        # Ordering across every interval forces SQLite to scan the complete feature table.
+        for interval in ("1d", "60m", "15m", "5m", "1m"):
+            feature = self.db.scalar(select(FeatureValueRecord).where(
+                FeatureValueRecord.symbol.in_(variants),
+                FeatureValueRecord.interval == interval,
+                FeatureValueRecord.quality_status == "VALID",
+            ).order_by(
+                FeatureValueRecord.timestamp_utc.desc(), FeatureValueRecord.id.desc(),
+            ).limit(1))
+            if feature is not None:
+                break
         candidate = self.db.scalar(select(CandidateSignal).where(
             CandidateSignal.symbol.in_(variants), CandidateSignal.market == market,
             CandidateSignal.status == "VALID",
@@ -100,8 +110,14 @@ class MarketSnapshotRepository:
 
     def _universe(self, market: Optional[str]):
         keys = set()
-        instruments = self.db.scalars(select(Instrument))
-        keys.update((row.market, bare_symbol(row.code or row.symbol)) for row in instruments)
+        # A snapshot is a data view, so dormant instruments without bars must not
+        # crowd real market rows. Watchlists, holdings, signals and plans remain
+        # explicit opt-ins below even when they do not have history yet.
+        bar_symbols = self.db.scalars(select(MarketBar.symbol).distinct())
+        keys.update((
+            symbol.split(".", 1)[0] if "." in symbol else "US",
+            bare_symbol(symbol),
+        ) for symbol in bar_symbols)
         for model in (PortfolioWatchlist, PortfolioHolding):
             query = select(model)
             if model is PortfolioHolding:

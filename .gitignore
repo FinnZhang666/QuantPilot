@@ -1,5 +1,11 @@
 .env
 .venv/
+.venv-*/
+.aider.chat.history.md
+.aider.input.history
+.aider.tags.cache.v4/
+.playwright-cli/
+downloads/
 __pycache__/
 *.py[cod]
 .pytest_cache/

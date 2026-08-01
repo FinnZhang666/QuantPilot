@@ -232,6 +232,29 @@ def test_duplicate_bar_is_upserted_not_duplicated(db):
     assert db.scalar(select(func.count(MarketBar.id))) == 1
 
 
+def test_large_bar_batch_is_chunked_for_sqlite(db):
+    supported_instrument(db)
+    base = datetime(2026, 1, 1, 14, 30, tzinfo=timezone.utc)
+    bars = [
+        market_bar(
+            interval=BarInterval.MIN_15,
+            timestamp_utc=base + timedelta(minutes=15 * index),
+            timestamp_market=(base + timedelta(minutes=15 * index)).astimezone(NEW_YORK),
+            trading_date=(base + timedelta(minutes=15 * index)).astimezone(NEW_YORK).date(),
+        )
+        for index in range(1200)
+    ]
+    service = HistoricalDataSyncService(db, StaticProvider(bars))
+    start, end = base - timedelta(days=1), base + timedelta(days=20)
+
+    first = service.sync_symbol("US.QQQ", BarInterval.MIN_15, start, end)
+    second = service.sync_symbol("US.QQQ", BarInterval.MIN_15, start, end)
+
+    assert first.rows_inserted == 1200
+    assert second.rows_updated == 1200
+    assert db.scalar(select(func.count(MarketBar.id))) == 1200
+
+
 def test_bar_upsert_updates_values(db):
     supported_instrument(db)
     first = market_bar(close=Decimal("101"))

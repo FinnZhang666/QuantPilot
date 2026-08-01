@@ -19,6 +19,16 @@ def parse_date(value: str, end: bool = False) -> datetime:
     return parsed + timedelta(days=1) - timedelta(microseconds=1) if end else parsed
 
 
+def elapsed_seconds(started_at, finished_at) -> float:
+    if not started_at or not finished_at:
+        return 0.0
+    if started_at.tzinfo is None:
+        started_at = started_at.replace(tzinfo=timezone.utc)
+    if finished_at.tzinfo is None:
+        finished_at = finished_at.replace(tzinfo=timezone.utc)
+    return (finished_at - started_at).total_seconds()
+
+
 def default_start(interval: BarInterval, settings, end: datetime) -> datetime:
     days: Dict[BarInterval, int] = {
         BarInterval.DAY_1: settings.history_daily_years * 365,
@@ -62,10 +72,7 @@ def main() -> int:
                 job = service.sync_symbol(
                     symbol, interval, start, end, adjustment, args.incremental, args.repair
                 )
-                duration = (
-                    (job.finished_at - job.started_at).total_seconds()
-                    if job.started_at and job.finished_at else 0
-                )
+                duration = elapsed_seconds(job.started_at, job.finished_at)
                 print(
                     f"{symbol} {interval.value}：{STATUS_TEXT.get(job.status, job.status)}；"
                     f"接收{job.rows_received}，插入{job.rows_inserted}，更新{job.rows_updated}，"

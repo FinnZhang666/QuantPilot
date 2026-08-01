@@ -197,17 +197,20 @@ class HistoricalDataSyncService:
             self.db.commit()
             return 0, 0, skipped
         times = [bar.timestamp_utc for bar in valid]
-        existing = set(
-            self.db.scalars(
-                select(MarketBar.timestamp_utc).where(
-                    MarketBar.symbol == valid[0].symbol,
-                    MarketBar.interval == valid[0].interval.value,
-                    MarketBar.adjustment_type == valid[0].adjustment_type.value,
-                    MarketBar.data_source == valid[0].data_source,
-                    MarketBar.timestamp_utc.in_(times),
+        batch_size = 500
+        existing = set()
+        for index in range(0, len(times), batch_size):
+            existing.update(
+                self.db.scalars(
+                    select(MarketBar.timestamp_utc).where(
+                        MarketBar.symbol == valid[0].symbol,
+                        MarketBar.interval == valid[0].interval.value,
+                        MarketBar.adjustment_type == valid[0].adjustment_type.value,
+                        MarketBar.data_source == valid[0].data_source,
+                        MarketBar.timestamp_utc.in_(times[index:index + batch_size]),
+                    )
                 )
             )
-        )
         rows = [
             {
                 "instrument_id": instrument.id,
@@ -231,7 +234,6 @@ class HistoricalDataSyncService:
             }
             for bar in valid
         ]
-        batch_size = 500
         for index in range(0, len(rows), batch_size):
             statement = sqlite_insert(MarketBar).values(rows[index:index + batch_size])
             statement = statement.on_conflict_do_update(

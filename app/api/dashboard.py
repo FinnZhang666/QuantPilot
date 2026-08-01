@@ -93,9 +93,13 @@ def dashboard_summary(
             "size_text": _size(database_size),
             "table_count": len(inspect(get_engine()).get_table_names()),
             "core_counts": {
+                "covered_symbols": db.scalar(select(func.count(func.distinct(MarketBar.symbol)))) or 0,
                 "market_bars": db.scalar(select(func.count()).select_from(MarketBar)) or 0,
                 "feature_values": db.scalar(select(func.max(FeatureValueRecord.id))) or 0,
                 "signals": db.scalar(select(func.count()).select_from(CandidateSignal)) or 0,
+                "active_candidates": db.scalar(select(func.count()).select_from(
+                    CandidatePoolEntry,
+                ).where(CandidatePoolEntry.status != "EXPIRED")) or 0,
                 "opportunities": db.scalar(select(func.count()).select_from(Opportunity)) or 0,
             },
             "estimated_counts": ["feature_values"],

@@ -7,6 +7,7 @@ from app.database.models import Instrument
 
 DEFAULT_INSTRUMENTS = [
     ("US.SOXL", "SOXL"),
+    ("US.SOXS", "SOXS"),
     ("US.MULL", "MULL"),
     ("US.TQQQ", "TQQQ"),
     ("US.NVDL", "NVDL"),
@@ -18,6 +19,8 @@ DEFAULT_INSTRUMENTS = [
     ("US.NVDA", "NVDA"),
     ("US.AMD", "AMD"),
     ("US.MU", "MU"),
+    ("US.PLTR", "PLTR"),
+    ("US.ML", "ML"),
     ("US.VIX", "VIX"),
 ]
 

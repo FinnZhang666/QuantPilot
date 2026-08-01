@@ -101,6 +101,24 @@ async function userIntelligenceFinal(){operationalPlaceholderFinal(locale==="zh-
 function pageFailure(error){content.innerHTML=`<section class="card"><div class="error"><b>${locale==="zh-CN"?"页面加载失败":"Page failed to load"}</b><p>${esc(error.message)}</p><button id="retry-page" class="secondary">${locale==="zh-CN"?"重新加载":"Retry"}</button></div></section>`;document.querySelector("#retry-page").onclick=()=>location.reload()}
 async function loadFeedbackBadge(){try{const d=await api("/api/development/issues?source_type=USER_FEEDBACK&status=INBOX&limit=1"),node=document.querySelector("#feedback-count");if(node&&d.total){node.textContent=d.total;node.hidden=false}}catch(e){return}}
 async function loadPlatformChrome(){try{const v=await api("/api/platform/version");const footer=document.querySelector("#footer-version");if(footer)footer.textContent=`${v.version} · Sprint ${v.sprint} · Alembic ${v.migration}`;document.documentElement.dataset.version=v.version}catch(e){const footer=document.querySelector("#footer-version");if(footer)footer.textContent=locale==="zh-CN"?"版本信息不可用":"Version unavailable"}}
+const phase3Home=homeFinal;
+homeFinal=async function(){
+  await phase3Home();
+  const d=await api("/api/dashboard/summary"),counts=d.database?.core_counts||{},target=document.querySelector(".home-kpis");
+  if(!target)return;
+  const dataKpis=locale==="zh-CN"?[
+    ["⌁","市场覆盖数量",counts.covered_symbols??0,"正式历史数据库","/dashboard/market-monitor","blue"],
+    ["▤","历史 K 线总数",counts.market_bars??0,"本地永久保存","/dashboard/data-quality","green"],
+    ["✦","Feature 总数",counts.feature_values??0,"全量重建结果","/dashboard/strategies","gold"],
+    ["♙","活跃 Candidate",counts.active_candidates??0,"当前候选池","/dashboard/candidates","purple"],
+  ]:[
+    ["⌁","Covered Symbols",counts.covered_symbols??0,"Formal history database","/dashboard/market-monitor","blue"],
+    ["▤","Total Bars",counts.market_bars??0,"Persisted locally","/dashboard/data-quality","green"],
+    ["✦","Total Features",counts.feature_values??0,"Full rebuild result","/dashboard/strategies","gold"],
+    ["♙","Active Candidates",counts.active_candidates??0,"Current candidate pool","/dashboard/candidates","purple"],
+  ];
+  target.insertAdjacentHTML("afterbegin",dataKpis.map(x=>homeKpi(...x)).join(""));
+};
 loadPlatformChrome();
 loadFeedbackBadge();
 ({home:homeFinal,opportunities,"opportunity-detail":opportunityDetail,"trade-plans":tradePlans,"trade-plan-detail":tradePlanDetail,positions,"position-detail":positionDetail,portfolios,"portfolio-detail":portfolioDetail,"holding-detail":holdingDetail,"market-snapshots":marketSnapshots,"market-monitor":marketMonitorFinal,"market-snapshot-detail":marketSnapshotDetail,"symbol-overview":symbolOverview,"telegram-preview":telegramPreview,"watchlist-snapshot":watchlistSnapshot,"paper-positions":paperPositionsFinal,"strategy-scoreboard":strategyScoreboardFinal,"trade-reviews":tradeReviews,"trade-review-detail":tradeReviewDetail,companion,"companion-detail":companionDetail,"market-regime":marketRegime,candidates,"candidate-detail":candidateDetail,reviews,"review-detail":reviewDetail,"ai-reviews":aiReviews,"ai-review-detail":aiReviewDetail,research,"research-detail":researchDetail,runtime,strategies,"strategy-detail":()=>strategies(true),"strategy-parameters":strategyParametersFinal,"product-feedback":productFeedback,"product-behavior":productBehaviorFinal,"bot-statistics":botStatisticsFinal,"user-intelligence":userIntelligenceFinal,"data-quality":quality,reports,development,"development-detail":developmentDetail,system,"system-monitor":systemMonitorFinal,"runtime-logs":runtimeLogsFinal}[page]||homeFinal)().then(unifiedExperience).catch(pageFailure);

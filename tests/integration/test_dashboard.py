@@ -70,6 +70,8 @@ def test_empty_summary_and_data_quality(monkeypatch, tmp_path):
         summary = client.get("/api/dashboard/summary")
         assert summary.status_code == 200
         assert summary.json()["today"]["opportunities"] == 0
+        assert summary.json()["database"]["core_counts"]["covered_symbols"] == 0
+        assert summary.json()["database"]["core_counts"]["active_candidates"] == 0
         quality = client.get("/api/dashboard/data-quality")
         assert quality.status_code == 200 and quality.json()["items"] == []
         strategies = client.get("/api/dashboard/strategy-summary").json()
