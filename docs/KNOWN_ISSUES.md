@@ -1,15 +1,14 @@
-# Trade Companion 1.0.0-rc2 Known Issues
+# Trade Companion v1.0.0-beta.1 Known Limitations
 
-- Windows production deployment has not been validated in this RC.
-- Telegram Product Layer supports ViewModel, formatter, buttons, deep links and preview, but is not connected to
-  the Windows Bot Runtime; Preview does not send messages.
-- External AI Companion Provider has not been production-validated; offline Mock/dry-run is the tested baseline.
-- Broker execution and real-money order submission are intentionally unavailable.
-- OpenD-dependent history/realtime tests require a separately running, logged-in local OpenD and are not part of
-  the offline regression baseline.
+- The product is Paper Trading Only. Real broker orders and real position synchronization are intentionally unavailable.
+- Strategy and closed-trade samples remain limited. Trade Plan count may be zero under current deterministic thresholds.
+- Sharpe is not reported because the current sample and observation window are not reliable enough.
+- Long-term Windows service stability and restart recovery still require Beta observation; no 30-day stability claim is made.
+- Telegram Bot profile photos must be set manually through BotFather.
+- Credentials exposed during development must be rotated before formal Beta operation. Values must remain only in local `.env`.
+- OpenD is used for market data only. OpenD-dependent live tests require a separately running, logged-in local OpenD.
 - SQLite supports the intended single-instance deployment. Multi-worker or clustered writes are unsupported.
-- No verified local backup was present during the RC2 audit; create and verify one before deployment.
-- Dashboard authentication is a local administrator token, not a full multi-user identity system.
-- `QuantPilot` repository/package/database compatibility names remain until the dedicated migration release.
-- Starlette currently emits a TestClient per-request cookie deprecation warning in five legacy tests; runtime
-  behavior and test outcomes are unaffected.
+- A full restore rehearsal is pending additional storage capacity; the active database must not be overwritten for testing.
+- The E: drive is currently below the release storage threshold and must be expanded before large backups, VACUUM or rebuilds.
+- `QuantPilot` remains only in internal package, database and repository compatibility identifiers during Beta.
+- Starlette emits a TestClient cookie deprecation warning in five legacy tests; runtime behavior is unaffected.

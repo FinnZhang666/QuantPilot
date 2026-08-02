@@ -19,4 +19,5 @@ data/*.pid
 data/research_attachments/
 logs/*.log*
 backups/
+.runtime/
 .DS_Store

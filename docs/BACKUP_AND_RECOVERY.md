@@ -33,3 +33,18 @@ Copy verified archives to separate storage manually. Cloud upload is not impleme
 
 Never restore over a running database, never mix partial table exports, and never claim recovery until record counts
 and application health have been verified.
+
+## Windows beta.1 storage status
+
+- Active database: `E:\QuantPilotData\quantpilot.db`, Migration Head `0024`.
+- Existing Phase 4 snapshot: `E:\QuantPilotData\backups\quantpilot-phase4-pre-0022-20260802.db`.
+- Telegram pre-finalization metadata export: `E:\QuantPilotData\backups\telegram-phase5-finalization-pre-0024.json`.
+- The Phase 4 snapshot predates current migrations and is not a drop-in replacement for the active beta.1 database.
+- No checksum manifest exists for the raw Phase 4 snapshot; do not claim it as a verified release backup.
+- E: currently has less than 20GB free. Do not create another full backup, run VACUUM or perform a restore rehearsal.
+- Full backup verification and restore dry-run status: **Pending after storage expansion**.
+
+After storage expansion, create an online SQLite backup with a manifest and checksum on a separate target volume. Stop
+all writers before a restore rehearsal, restore only into an isolated temporary path, verify the checksum and migration
+compatibility, run `PRAGMA quick_check`, compare core record counts, and never overwrite the formal database during the
+rehearsal.

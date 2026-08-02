@@ -10,9 +10,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_release_version_is_frozen():
-    assert (PRODUCT, VERSION, SPRINT) == ("Trade Companion", "1.0.0-rc2", "40")
+    assert (PRODUCT, VERSION, SPRINT) == ("Trade Companion", "1.0.0-beta.1", "40")
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    assert 'version = "1.0.0rc2"' in pyproject
+    assert 'version = "1.0.0b1"' in pyproject
 
 
 def test_env_example_exactly_covers_settings_without_real_secrets():
@@ -30,6 +30,26 @@ def test_release_documents_exist_and_use_product_name():
     for name in names:
         text = (ROOT / "docs" / name).read_text(encoding="utf-8")
         assert "Trade Companion" in text and len(text) > 300
+
+
+def test_windows_service_entry_points_are_explicit_and_safe():
+    required = (
+        "scripts/run_dashboard_service.py",
+        "scripts/run_paper_runtime_worker.py",
+        "scripts/run_telegram_runtime_worker.py",
+        "scripts/windows/start-trade-companion.ps1",
+        "scripts/windows/stop-trade-companion.ps1",
+        "scripts/windows/restart-trade-companion.ps1",
+        "docs/WINDOWS_SERVICE_PLAN.md",
+    )
+    for name in required:
+        assert (ROOT / name).is_file()
+    start = (ROOT / "scripts/windows/start-trade-companion.ps1").read_text(encoding="utf-8")
+    stop = (ROOT / "scripts/windows/stop-trade-companion.ps1").read_text(encoding="utf-8")
+    plan = (ROOT / "docs/WINDOWS_SERVICE_PLAN.md").read_text(encoding="utf-8")
+    assert "-WindowStyle Hidden" in start
+    assert "refusing to stop" in stop
+    assert "does not register Windows services" in plan
 
 
 def test_release_includes_phase4_migrations():

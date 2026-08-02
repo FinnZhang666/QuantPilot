@@ -1,39 +1,47 @@
-# Trade Companion 1.0.0-rc2 Release Checklist
+# Trade Companion v1.0.0-beta.1 Release Checklist
 
-## Environment
+## Release identity
 
-- [ ] Python is 3.9.x and virtual environment is active.
-- [ ] `python scripts/check_environment.py` passes.
-- [ ] `python -m pip check` reports no conflicts.
-- [ ] `.env` exists locally, is not tracked, and all optional runtimes are intentionally configured.
-- [ ] Free disk space exceeds configured warning and minimum thresholds.
+- [ ] Product reports `Trade Companion`.
+- [ ] Version Center, OpenAPI, Dashboard footer and browser metadata report `1.0.0-beta.1`.
+- [ ] Alembic current and application health report Migration Head `0024`.
+- [ ] The release is a GitHub Draft and Pre-release; it is not published as stable `v1.0.0`.
 
-## Database and backup
+## Environment and Git
 
-- [ ] Verified backup exists before migration or deployment.
-- [ ] `alembic current` and `alembic heads` both report `0022`.
-- [ ] Core record counts are captured before and after deployment.
-- [ ] SQLite path is writable only by the application operator.
+- [ ] Windows uses Python 3.9.x and the project virtual environment.
+- [ ] `python -m pip check`, compileall and the full pytest suite pass.
+- [ ] `origin` is `https://github.com/FinnZhang666/QuantPilot.git` and branch is `main`.
+- [ ] Push dry-run succeeds; Ahead / Behind is `0 / 0`; the working tree is clean.
+- [ ] `.env`, SQLite databases, backups, runtime logs and secrets are not tracked.
 
-## Dashboard and API
+## Database, disk and recovery
 
-- [ ] Dashboard login, overview, empty states and navigation load.
-- [ ] `/health`, `/docs`, Snapshot, Symbol Overview, Portfolio and Review APIs respond.
-- [ ] Internal endpoints are absent from OpenAPI and require administrator authentication.
-- [ ] API responses do not contain secrets or stack traces.
-- [ ] System Paper account, positions, equity curve and scoreboard use only `system_paper_*` data.
-- [ ] Runtime Manager mutations require administrator authentication and all external transports remain disabled.
+- [ ] Dashboard, CLI and runtimes use `E:\QuantPilotData\quantpilot.db` only.
+- [ ] `PRAGMA quick_check` reports `ok`; no VACUUM or full Feature rebuild is performed.
+- [ ] Disk status follows: under 100GB WARNING, under 50GB CRITICAL, under 20GB EMERGENCY.
+- [ ] Existing backup path and metadata are recorded without copying the active 130GB database.
+- [ ] Restore rehearsal remains pending when storage is insufficient.
 
-## AI and Telegram product layer
+## Dashboard, API and runtime
 
-- [ ] AI Companion Mock/dry-run works without external network requests.
-- [ ] Telegram Preview returns `preview=true` and `sent=false`.
-- [ ] No Telegram Runtime, Polling, Webhook or real send is claimed for this RC.
+- [ ] Dashboard pages, `/docs`, `/openapi.json` and public read-only endpoints return no 404 or 500.
+- [ ] Browser console reports zero errors.
+- [ ] Internal APIs stay outside OpenAPI and require administrator authentication.
+- [ ] Runtime Manager, Paper Account and Run Once health checks pass without manufacturing trades.
+- [ ] Real order calls, Broker writes and real position synchronization remain zero.
 
-## Quality, documentation and Git
+## Telegram and Gemini
 
-- [ ] Full offline regression, compileall and pip check pass.
-- [ ] Live OpenD tests are either explicitly executed against a logged-in OpenD or recorded as unavailable.
-- [ ] Installation, deployment, backup and known-issues documents are current.
-- [ ] Version reports Trade Companion 1.0.0-rc2 / Sprint 40 / Migration 0022.
-- [ ] Working tree is clean; commit is reviewed; no `.env`, database, logs or secrets are staged.
+- [ ] Only `trade_companion_ai` runs; four Reserved Bots remain disabled.
+- [ ] Profile Sync readback, `/start`, language selection, callbacks and Feedback pass UAT.
+- [ ] Administrator notification and Gemini real delivery pass.
+- [ ] Preview and real delivery use the same renderer; output has no Markdown-star leakage.
+- [ ] User-visible output contains Trade Companion branding, not the compatibility name QuantPilot.
+- [ ] The Bot avatar remains a manual BotFather step.
+
+## Beta boundaries
+
+- [ ] Release Notes explicitly state Paper Trading Only and No Real Broker Orders.
+- [ ] Notes disclose limited strategy samples, possibly zero Trade Plans, unavailable reliable Sharpe and pending long-term observation.
+- [ ] Previously exposed Telegram and Gemini credentials are rotated before public Beta operation.

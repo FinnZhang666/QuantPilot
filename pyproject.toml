@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "quantpilot"
-version = "1.0.0rc2"
+version = "1.0.0b1"
 description = "Trade Companion AI-assisted trade lifecycle research workspace"
 requires-python = ">=3.9,<3.10"
 dependencies = [

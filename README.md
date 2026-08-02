@@ -11,6 +11,15 @@ Trade Companion 是一个 AI 辅助的美股研究与交易生命周期工作台
 项目内部包名、数据库文件名和 GitHub 仓库名在 Beta 期间继续保持 `quantpilot`、
 `quantpilot.db` 与 `FinnZhang666/QuantPilot`，以保持部署和导入兼容性。
 
+## 当前发布状态
+
+- Product：Trade Companion
+- Release：`v1.0.0-beta.1`
+- Stage：Beta
+- Database Migration Head：`0024`
+- 范围：Paper Trading Only，不连接真实券商下单，不同步真实持仓。
+- Beta 仍需观察长期稳定性；当前策略样本有限，Trade Plan 可能为 0，Sharpe 暂无可靠样本。
+
 ## V1 安全边界
 
 - 不支持真实账户下单，`LIVE` 在配置、Broker 与数据库层永久阻止。
@@ -21,8 +30,8 @@ Trade Companion 是一个 AI 辅助的美股研究与交易生命周期工作台
 
 ## 当前运行基线
 
-- macOS 本机运行
-- Python 3.9.6（项目要求 `>=3.9,<3.10`）
+- Windows 主要运行环境，保持 macOS / Linux 跨平台兼容
+- Python 3.9.x（项目要求 `>=3.9,<3.10`）
 - pip + venv
 - Docker 可选；当前开发机未安装、未验证，不是 V1 运行前提
 - 不要求 uv

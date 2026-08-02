@@ -7,6 +7,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from app.core.config import Settings, get_settings
 from app.dashboard.auth import is_admin
+from app.version import VERSION
 
 router = APIRouter(tags=["公司工作台"])
 ROOT = Path(__file__).resolve().parent
@@ -18,7 +19,10 @@ def _template(name: str) -> str:
     fingerprints = [
         path.stat().st_mtime_ns for path in static_root.rglob("*") if path.is_file()
     ]
-    return html.replace("__ASSET_VERSION__", str(max(fingerprints, default=0)))
+    return (
+        html.replace("__ASSET_VERSION__", str(max(fingerprints, default=0)))
+        .replace("__PRODUCT_VERSION__", VERSION)
+    )
 
 
 @router.get("/dashboard/login", response_class=HTMLResponse)
