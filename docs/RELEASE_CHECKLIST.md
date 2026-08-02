@@ -33,10 +33,11 @@
 
 ## Telegram and Gemini
 
-- [ ] Only `trade_companion_ai` runs; four Reserved Bots remain disabled.
+- [ ] All five configured Bots run under one unified Runtime and report configured tokens.
 - [ ] Profile Sync readback, `/start`, language selection, callbacks and Feedback pass UAT.
 - [ ] Administrator notification and Gemini real delivery pass.
-- [ ] Preview and real delivery use the same renderer; output has no Markdown-star leakage.
+- [ ] Preview and real delivery use the same renderer; output has no raw `*` or `#` leakage.
+- [ ] Watchlist symbol addition, batch analysis and contextual AI follow-up pass.
 - [ ] User-visible output contains Trade Companion branding, not the compatibility name QuantPilot.
 - [ ] The Bot avatar remains a manual BotFather step.
 

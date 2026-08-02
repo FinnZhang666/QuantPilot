@@ -1,4 +1,5 @@
 import html
+import re
 import time
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
@@ -28,6 +29,7 @@ from app.telegram_runtime.renderer import (
     TelegramMessage,
     about_message,
     ai_message,
+    callback_keyboard,
     feedback_categories,
     help_message,
     language_picker,
@@ -37,6 +39,8 @@ from app.telegram_runtime.renderer import (
     welcome,
 )
 from app.telegram_runtime.transport import TelegramBotTransport
+from app.portfolio_center.errors import DuplicateSymbol, ValidationError
+from app.portfolio_center.service import PortfolioService, WatchlistService
 
 
 FEEDBACK_CATEGORIES = {"BUG", "FEATURE", "STRATEGY", "HELPFUL", "NOT_HELPFUL"}
@@ -118,10 +122,13 @@ class TelegramProductService:
         if not self._language_selected(user):
             return language_picker()
         if user.pending_action == "ANALYZE":
-            symbol = text.upper().replace("US.", "").strip()
             user.pending_action = None
             self.db.commit()
-            return self._ai_message(profile, user, "STOCK_ANALYSIS", symbol)
+            return self._stock_analysis_message(profile, user, text)
+        if user.pending_action == "WATCHLIST_ADD":
+            user.pending_action = None
+            self.db.commit()
+            return self._add_watchlist_symbol(user, text)
         if user.pending_action and user.pending_action.startswith("FEEDBACK:"):
             category = user.pending_action.split(":", 1)[1]
             user.pending_action = None
@@ -136,9 +143,12 @@ class TelegramProductService:
                 "反馈已提交，谢谢。" if user.language == "zh-CN" else "Feedback submitted. Thank you.",
                 main_menu(user.language),
             )
-        symbol = text.upper().replace("US.", "").strip()
-        if 1 <= len(symbol) <= 12 and symbol.replace(".", "").isalnum():
-            return self._ai_message(profile, user, "STOCK_ANALYSIS", symbol)
+        context = dict(user.pending_context_json or {})
+        if context.get("ai_followup_active"):
+            return self._ai_followup_message(profile, user, text, context)
+        symbols = self._parse_symbols(text)
+        if symbols:
+            return self._stock_analysis_message(profile, user, text)
         return welcome(profile, user.language)
 
     def _action(
@@ -147,17 +157,20 @@ class TelegramProductService:
     ) -> TelegramMessage:
         action = action.lower()
         if action == "start":
+            self._clear_ai_followup(user)
             return welcome(profile, user.language) if self._language_selected(user) else language_picker()
         if not self._language_selected(user) and not action.startswith("language:"):
             return language_picker()
+        self._clear_ai_followup(user)
         if action in {"analyze", "ai_analysis"}:
             if argument:
-                return self._ai_message(profile, user, "STOCK_ANALYSIS", argument.upper())
+                return self._stock_analysis_message(profile, user, argument)
             user.pending_action = "ANALYZE"
             self.db.commit()
             return TelegramMessage(
-                "请输入股票代码，例如 PLTR。" if user.language == "zh-CN" else
-                "Enter a symbol, for example PLTR.",
+                "请输入股票代码，例如 PLTR；批量可输入 PLTR, MULL, SOXL（最多 5 个）。"
+                if user.language == "zh-CN" else
+                "Enter a symbol such as PLTR, or up to 5 symbols: PLTR, MULL, SOXL.",
             )
         if action in {"portfolio", "investments"}:
             return self._portfolio(user)
@@ -173,6 +186,16 @@ class TelegramProductService:
             return about_message(user.language)
         if action == "watchlist":
             return self._watchlist(user)
+        if action == "watchlist:add":
+            user.pending_action = "WATCHLIST_ADD"
+            self.db.commit()
+            return TelegramMessage(
+                "请输入股票代码，例如 PLTR。" if user.language == "zh-CN" else
+                "Enter a stock symbol, for example PLTR.",
+                callback_keyboard([[
+                    ("取消" if user.language == "zh-CN" else "Cancel", "watchlist"),
+                ]]),
+            )
         if action == "holding":
             return self._holdings(user)
         if action == "history":
@@ -239,6 +262,87 @@ class TelegramProductService:
             self._notify_admin_event(profile, "AI_ERROR", "AI Companion used fallback.")
         return ai_message(result, user.language)
 
+    @staticmethod
+    def _parse_symbols(value: str) -> List[str]:
+        parts = re.split(r"[\s,，;；]+", str(value or "").upper().strip())
+        result = []
+        for raw in parts:
+            symbol = raw.removeprefix("US.").strip()
+            if not symbol or not (1 <= len(symbol) <= 12):
+                continue
+            if not symbol.replace(".", "").replace("-", "").isalnum():
+                continue
+            if symbol not in result:
+                result.append(symbol)
+        return result[:5]
+
+    def _stock_analysis_message(
+        self, profile: TelegramBotProfile, user: TelegramRuntimeUser, value: str,
+    ) -> TelegramMessage:
+        symbols = self._parse_symbols(value)
+        if not symbols:
+            return TelegramMessage(
+                "未识别到有效股票代码，请重新输入。" if user.language == "zh-CN" else
+                "No valid stock symbol was found. Please try again.",
+            )
+        if len(symbols) == 1:
+            result = self._ai_message(profile, user, "STOCK_ANALYSIS", symbols[0])
+            self._remember_ai_context(user, symbols)
+            return result
+        sections = []
+        for symbol in symbols:
+            result = self.ai.explain(
+                "STOCK_ANALYSIS", user.language, profile.alias, user.id, symbol,
+            )
+            sections.append("## %s\n%s" % (symbol, result))
+        self._remember_ai_context(user, symbols)
+        return ai_message("\n\n".join(sections), user.language)
+
+    def _ai_followup_message(
+        self, profile: TelegramBotProfile, user: TelegramRuntimeUser,
+        question: str, context: Dict[str, object],
+    ) -> TelegramMessage:
+        symbols = [str(value) for value in context.get("last_analysis_symbols") or []][:5]
+        safe_question = self._safe_followup_question(question)
+        if not safe_question:
+            return TelegramMessage(
+                "请输入与最近分析相关的问题。" if user.language == "zh-CN" else
+                "Enter a question about the latest analysis.",
+            )
+        result = self.ai.explain(
+            "STOCK_FOLLOW_UP", user.language, profile.alias, user.id,
+            symbols[0] if symbols else None,
+            question=safe_question, related_symbols=symbols,
+        )
+        return ai_message(result, user.language)
+
+    def _remember_ai_context(
+        self, user: TelegramRuntimeUser, symbols: List[str],
+    ) -> None:
+        context = dict(user.pending_context_json or {})
+        context["ai_followup_active"] = True
+        context["last_analysis_symbols"] = list(symbols[:5])
+        user.pending_context_json = context
+        self.db.commit()
+
+    def _clear_ai_followup(self, user: TelegramRuntimeUser) -> None:
+        context = dict(user.pending_context_json or {})
+        context.pop("ai_followup_active", None)
+        context.pop("last_analysis_symbols", None)
+        user.pending_context_json = context
+        self.db.commit()
+
+    @staticmethod
+    def _safe_followup_question(value: str) -> str:
+        text = str(value or "").strip()[:1000]
+        text = re.sub(r"\b\d{8,12}:[A-Za-z0-9_-]{20,}\b", "[REDACTED]", text)
+        text = re.sub(r"\b(?:AIza|AQ\.)[A-Za-z0-9_.-]{20,}\b", "[REDACTED]", text)
+        text = re.sub(
+            r"(?i)\b(password|cookie|api[_ -]?key|token)\s*[:=]\s*\S+",
+            r"\1=[REDACTED]", text,
+        )
+        return text
+
     def _portfolio(self, user: TelegramRuntimeUser) -> TelegramMessage:
         portfolio_ids = list(self.db.scalars(select(InvestmentPortfolio.id).where(
             InvestmentPortfolio.user_id == user.telegram_user_id,
@@ -276,7 +380,45 @@ class TelegramProductService:
             PortfolioWatchlist.portfolio_id.in_(portfolio_ids),
         ).order_by(PortfolioWatchlist.display_order).limit(20))) if portfolio_ids else []
         symbols = ", ".join(row.symbol for row in rows) or ("暂无" if user.language == "zh-CN" else "None")
-        return TelegramMessage(("⭐ 我的关注\n\n" if user.language == "zh-CN" else "⭐ Watchlist\n\n") + symbols)
+        return TelegramMessage(
+            ("⭐ 我的关注\n\n" if user.language == "zh-CN" else "⭐ Watchlist\n\n") + symbols,
+            callback_keyboard([
+                [("➕ 添加股票" if user.language == "zh-CN" else "➕ Add Symbol", "watchlist:add")],
+                [("返回" if user.language == "zh-CN" else "Back", "more")],
+            ]),
+        )
+
+    def _add_watchlist_symbol(
+        self, user: TelegramRuntimeUser, raw_symbol: str,
+    ) -> TelegramMessage:
+        symbol = str(raw_symbol or "").upper().replace("US.", "").strip()
+        portfolios = PortfolioService(self.db)
+        portfolio = portfolios.get_default(user.telegram_user_id)
+        if portfolio is None:
+            portfolio = portfolios.create_portfolio(
+                user.telegram_user_id, "Telegram Watchlist", is_default=True,
+            )
+        try:
+            WatchlistService(self.db).add_symbol(
+                portfolio.id, symbol, market="US", owner_id=user.telegram_user_id,
+            )
+        except DuplicateSymbol:
+            return TelegramMessage(
+                "%s 已在关注列表。" % symbol if user.language == "zh-CN" else
+                "%s is already on your watchlist." % symbol,
+                callback_keyboard([[
+                    ("返回我的关注" if user.language == "zh-CN" else "Back to Watchlist", "watchlist"),
+                ]]),
+            )
+        except ValidationError:
+            return TelegramMessage(
+                "股票代码无效，请重新添加。" if user.language == "zh-CN" else
+                "Invalid stock symbol. Please try again.",
+                callback_keyboard([[
+                    ("重新添加" if user.language == "zh-CN" else "Try Again", "watchlist:add"),
+                ]]),
+            )
+        return self._watchlist(user)
 
     def _holdings(self, user: TelegramRuntimeUser) -> TelegramMessage:
         rows = list(self.db.scalars(select(SystemPaperPosition).where(

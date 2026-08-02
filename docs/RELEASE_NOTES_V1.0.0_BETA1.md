@@ -22,7 +22,8 @@ Migration Head: `0024`
 
 - Dashboard provides Market Snapshot, Symbol Overview, Trade Plans, positions, reviews, scoreboards and runtime status.
 - AI Companion uses Gemini structured context and safe Telegram HTML rendering.
-- Telegram Runtime uses a Single Bot Multi-language flow with persistent Chinese/English selection; four additional Bots remain Reserved.
+- Telegram Runtime manages five enabled multilingual Bot profiles through one shared Runtime, service and renderer.
+- Watchlist addition, analysis of up to five symbols per message, and contextual AI follow-up are available in every Bot.
 - User Feedback and Admin Notifications are stored and auditable, including multi-administrator delivery.
 
 ## Platform

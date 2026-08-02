@@ -56,8 +56,8 @@ def test_sync_dry_run_is_admin_only_and_hidden_from_openapi(monkeypatch, tmp_pat
         assert response.status_code == 200
         assert response.json()["total"] == 5
         assert all(item["avatar"] == "MANUAL_REQUIRED" for item in response.json()["items"])
-        assert sum(item["status"] == "DRY_RUN" for item in response.json()["items"]) == 1
-        assert sum(item["status"] == "RESERVED" for item in response.json()["items"]) == 4
+        assert sum(item["status"] == "DRY_RUN" for item in response.json()["items"]) == 5
+        assert sum(item["status"] == "RESERVED" for item in response.json()["items"]) == 0
         schema = api.get("/openapi.json").json()
         assert "/internal/telegram/sync" not in schema["paths"]
         assert "/api/telegram/runtime" in schema["paths"]

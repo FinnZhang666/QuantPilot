@@ -87,8 +87,14 @@ class TelegramAIService:
     def explain(
         self, operation: str, language: str, bot_alias: str,
         user_id: Optional[int], symbol: Optional[str] = None,
+        question: Optional[str] = None,
+        related_symbols: Optional[list] = None,
     ) -> str:
         context = self._context(operation, symbol)
+        if related_symbols:
+            context["related_symbols"] = [str(value)[:12] for value in related_symbols[:5]]
+        if question:
+            context["user_question"] = str(question)[:1000]
         prompt = "%s\nLanguage: %s\nOperation: %s\nSystem context: %s" % (
             SYSTEM_RULE, language, operation, json.dumps(context, ensure_ascii=False, default=str),
         )

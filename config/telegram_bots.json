@@ -37,27 +37,27 @@
       "template": "trade_companion_ai",
       "token_setting": "telegram_bot_token_quantpilot_ai",
       "fallback_token_settings": ["telegram_bot_token_quantpilot_ai_en", "telegram_bot_token"],
-      "runtime_enabled": false
+      "runtime_enabled": true
     },
     {
       "alias": "ai_stock_analyze",
       "template": "trade_companion_ai",
       "token_setting": "telegram_bot_token_ai_stock_analyze",
       "fallback_token_settings": ["telegram_bot_token_ai_stock_analyze_en"],
-      "runtime_enabled": false
+      "runtime_enabled": true
     },
     {
       "alias": "jiaoyi_banlv",
       "template": "trade_companion_ai",
       "token_setting": "telegram_bot_token_jiaoyi_banlv",
-      "runtime_enabled": false
+      "runtime_enabled": true
     },
     {
       "alias": "fenxi_gupiao",
       "template": "trade_companion_ai",
       "token_setting": "telegram_bot_token_fenxi_gupiao",
       "fallback_token_settings": ["telegram_bot_token_stock_analysis_zh"],
-      "runtime_enabled": false
+      "runtime_enabled": true
     }
   ]
 }

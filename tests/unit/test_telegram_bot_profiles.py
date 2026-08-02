@@ -25,13 +25,16 @@ def profiles(monkeypatch):
     return load_bot_profiles(Settings(_env_file=None))
 
 
-def test_five_config_backed_profiles_use_one_production_runtime(monkeypatch):
+def test_five_config_backed_profiles_are_enabled_in_one_runtime(monkeypatch):
     items = profiles(monkeypatch)
     assert len(items) == 5
     assert {item.language for item in items} == {"multi"}
     assert all(item.token for item in items)
-    assert [item.alias for item in items if item.enabled] == ["trade_companion_ai"]
-    assert sum(item.safe_summary()["lifecycle_state"] == "RESERVED" for item in items) == 4
+    assert [item.alias for item in items if item.enabled] == [
+        "trade_companion_ai", "quantpilot_ai", "ai_stock_analyze",
+        "jiaoyi_banlv", "fenxi_gupiao",
+    ]
+    assert sum(item.safe_summary()["lifecycle_state"] == "PRODUCTION" for item in items) == 5
     assert all(item.token not in str(item.safe_summary()) for item in items)
 
 

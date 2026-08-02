@@ -184,7 +184,7 @@ def _inline_markdown_to_html(value: str) -> str:
     escaped = html.escape(value, quote=False)
     escaped = _BOLD.sub(r"<b>\1</b>", escaped)
     escaped = _ITALIC.sub(r"<i>\1</i>", escaped)
-    return escaped.replace("*", "∗")
+    return escaped.replace("*", "").replace("#", "")
 
 
 def _render_markdown_line(line: str) -> str:
@@ -217,11 +217,12 @@ def render_ai_html(text: str, language: str, limit: int = TELEGRAM_TEXT_LIMIT) -
             continue
         remaining = budget - used - (1 if rendered else 0)
         if remaining > 1:
-            plain = html.escape(raw_line[: max(0, remaining - 1)], quote=False).replace("*", "∗")
+            plain = html.escape(raw_line[: max(0, remaining - 1)], quote=False)
+            plain = plain.replace("*", "").replace("#", "")
             rendered.append(plain + "…")
         break
     body = "\n".join(rendered).strip()
-    return (body + footer)[:limit]
+    return (body + footer)[:limit].replace("*", "").replace("#", "")
 
 
 def ai_message(text: str, language: str) -> TelegramMessage:
