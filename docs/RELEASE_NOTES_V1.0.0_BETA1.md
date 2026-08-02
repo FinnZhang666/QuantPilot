@@ -1,7 +1,8 @@
 # Trade Companion v1.0.0 Beta
 
-Release tag: `v1.0.0-beta.1`  
-Stage: Beta Draft / Pre-release  
+Release tag: `v1.0.0-beta.1`
+
+Stage: Beta Draft / Pre-release
 Migration Head: `0024`
 
 ## Core

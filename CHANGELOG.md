@@ -25,4 +25,3 @@
 - Reliable Sharpe is not available.
 - Telegram avatar setup is manual through BotFather.
 - Long-term stability and full restore rehearsal remain Beta validation work.
-
