@@ -17,6 +17,7 @@ from app.telegram_runtime.renderer import (
     render_ai_html,
     welcome,
 )
+from app.telegram_runtime.ai import TelegramAIService
 from app.telegram_runtime.service import TelegramProductService
 from app.telegram_runtime.transport import TelegramBotTransport, TelegramTransportError
 
@@ -342,3 +343,32 @@ def test_transport_redacts_failures():
         assert "secret-token" not in str(exc)
     else:
         raise AssertionError("expected transport error")
+
+
+def test_ai_prompt_uses_plain_language_analyst_contract_and_renderer_strips_markers(db):
+    class FakeAdapter:
+        def __init__(self):
+            self.prompt = ""
+
+        def generate(self, prompt):
+            self.prompt = prompt
+            return {
+                "text": "# **Decision**\n* Worth watching\n* Wait for an entry",
+                "model": "mock-gemini", "prompt_tokens": 1, "completion_tokens": 1,
+            }
+
+    cfg = Settings(
+        _env_file=None, ai_companion_enabled=True, ai_companion_provider="gemini",
+        ai_companion_api_key="fake-key", ai_companion_model="mock-test",
+    )
+    adapter = FakeAdapter()
+    service = TelegramAIService(db, cfg, adapter=adapter)
+    raw = service.explain(
+        "STOCK_ANALYSIS", "en-US", "trade_companion_ai", None, symbol="PLTR",
+    )
+    assert "Separate Stock quality" in adapter.prompt
+    assert "A good stock is not automatically a good entry" in adapter.prompt
+    assert "Do not output asterisk or hash characters anywhere" in adapter.prompt
+    rendered = render_ai_html(raw, "en-US")
+    assert "*" not in rendered and "#" not in rendered
+    assert "Worth watching" in rendered and "Wait for an entry" in rendered

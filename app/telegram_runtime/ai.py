@@ -23,7 +23,23 @@ SYSTEM_RULE = (
     "All numbers are supplied by the system. Do not recalculate, change, or invent "
     "numbers, statistics, prices, returns, scores, MFE, or MAE. Explain only. "
     "Never claim to place trades and never present content as financial advice. "
-    "Use numbered headings and the bullet character •. Do not use Markdown asterisks."
+    "Use numbered headings and the Unicode bullet character. Never output Markdown "
+    "asterisks or hash characters."
+)
+
+ANALYST_RESPONSE_CONTRACT = (
+    "Translate technical data into plain language for an ordinary investor. Start with "
+    "a direct analyst conclusion. Separate Stock quality (whether it is worth watching) "
+    "from Entry timing (whether now is a reasonable time to consider entry). Use only "
+    "these decision labels, translated into the requested language: Worth watching; "
+    "Wait for an entry; Small-position trial; Not suitable now; Hold and observe; "
+    "Consider reducing; High risk and avoid. Then explain: why; why not to buy now when "
+    "applicable; who this setup suits; what system-provided conditions to watch next; "
+    "and data limitations. A good stock is not automatically a good entry. If data is "
+    "missing or signals conflict, say so and avoid a strong conclusion. Never invent an "
+    "entry price, stop, target, probability, forecast, or new statistic. Do not output "
+    "asterisk or hash characters anywhere. Use plain numbered section titles and Unicode "
+    "bullet points only."
 )
 
 
@@ -95,8 +111,9 @@ class TelegramAIService:
             context["related_symbols"] = [str(value)[:12] for value in related_symbols[:5]]
         if question:
             context["user_question"] = str(question)[:1000]
-        prompt = "%s\nLanguage: %s\nOperation: %s\nSystem context: %s" % (
-            SYSTEM_RULE, language, operation, json.dumps(context, ensure_ascii=False, default=str),
+        prompt = "%s\n%s\nLanguage: %s\nOperation: %s\nSystem context: %s" % (
+            SYSTEM_RULE, ANALYST_RESPONSE_CONTRACT, language, operation,
+            json.dumps(context, ensure_ascii=False, default=str),
         )
         fingerprint = hashlib.sha256(prompt.encode("utf-8")).hexdigest()
         started = time.perf_counter()
