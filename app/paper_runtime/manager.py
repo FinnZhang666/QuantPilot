@@ -25,7 +25,14 @@ class RuntimeManager:
     def __init__(self, settings: Optional[Settings] = None, session_factory=None):
         self.settings = settings or get_settings()
         self.session_factory = session_factory or get_session_factory()
-        self.scheduler = PaperScheduler(self.settings, self.session_factory)
+        from app.runtime.paper_notifications import PaperEventNotificationDispatcher
+        self.notification_dispatcher = PaperEventNotificationDispatcher(
+            self.settings, self.session_factory,
+        )
+        self.scheduler = PaperScheduler(
+            self.settings, self.session_factory,
+            notification_callback=self.notification_dispatcher.dispatch_pending,
+        )
         self.stop_event = threading.Event()
         self.thread: Optional[threading.Thread] = None
         self.status = "STOPPED"

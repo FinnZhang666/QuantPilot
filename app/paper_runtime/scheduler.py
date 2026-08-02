@@ -20,12 +20,13 @@ class PaperScheduler:
         "market_data_refresh", "feature_incremental", "candidate_scan",
         "trade_plan_generation", "paper_entry_evaluation", "exit_evaluation",
         "position_valuation", "review_generation", "scoreboard_refresh",
-        "equity_snapshot",
+        "equity_snapshot", "paper_trade_notifications",
     )
 
-    def __init__(self, settings, session_factory):
+    def __init__(self, settings, session_factory, notification_callback=None):
         self.settings = settings
         self.session_factory = session_factory
+        self.notification_callback = notification_callback
         self._run_lock = threading.Lock()
         self.current_task: Optional[str] = None
 
@@ -51,6 +52,7 @@ class PaperScheduler:
                 ("review_generation", self._reviews),
                 ("scoreboard_refresh", self._scoreboard),
                 ("equity_snapshot", self._equity_snapshot),
+                ("paper_trade_notifications", self._notifications),
             )
             for job_key, callback in jobs:
                 self.current_task = job_key
@@ -197,6 +199,11 @@ class PaperScheduler:
             raise
         finally:
             db.close()
+
+    def _notifications(self):
+        if self.notification_callback is None:
+            return {"status": "DISABLED", "sent": 0, "skipped": 0, "failed": 0}
+        return self.notification_callback()
 
     def _save_job(self, job_key, result, duration_ms, enabled, error=None):
         db = self.session_factory()

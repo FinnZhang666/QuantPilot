@@ -181,7 +181,10 @@ class RealtimeOpportunityRuntime:
         status = "DEGRADED"
         error = None
         try:
-            result = asyncio.run(TelegramNotificationProvider(self.settings).send_text("【%s】\n%s" % (subject, text)))
+            coroutine = TelegramNotificationProvider(self.settings).send_text(
+                "【%s】\n%s" % (subject, text),
+            )
+            result = self._run_async(coroutine)
             status = "CONNECTED" if result.status == "sent" else (
                 "DISABLED" if result.status == "disabled" else "DEGRADED"
             )
@@ -196,6 +199,28 @@ class RealtimeOpportunityRuntime:
             )
         finally:
             db.close()
+
+    @staticmethod
+    def _run_async(coroutine):
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(coroutine)
+        result = []
+        failure = []
+
+        def runner():
+            try:
+                result.append(asyncio.run(coroutine))
+            except Exception as exc:
+                failure.append(exc)
+
+        thread = threading.Thread(target=runner, name="runtime-notification", daemon=True)
+        thread.start()
+        thread.join()
+        if failure:
+            raise failure[0]
+        return result[0]
 
     def _save_state(self, error: Optional[str] = None, success: bool = False):
         db = self.session_factory()
