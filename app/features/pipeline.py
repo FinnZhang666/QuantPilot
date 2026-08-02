@@ -60,6 +60,9 @@ class FeatureCalculationService:
                 ]
                 if all(latest_values):
                     output_start = min(latest_values)
+                    effective_start = self._warmup_start(
+                        output_start, interval, warmup,
+                    )
             bars = self.repository.load_bars(symbol, interval.value, effective_start, end, realtime)
             job.input_rows = len(bars)
             if bars.empty:
@@ -125,6 +128,20 @@ class FeatureCalculationService:
 
     def incremental_update(self, symbol: str, interval: BarInterval, feature_names=None, realtime: bool = False):
         return self.calculate_symbol(symbol, interval, feature_names, job_type=FeatureJobType.INCREMENTAL, realtime=realtime)
+
+    @staticmethod
+    def _warmup_start(latest: datetime, interval: BarInterval, bars: int) -> datetime:
+        """Bound incremental reads while retaining enough input for rolling features."""
+        unit = {
+            BarInterval.MIN_1: timedelta(minutes=1),
+            BarInterval.MIN_5: timedelta(minutes=5),
+            BarInterval.MIN_15: timedelta(minutes=15),
+            BarInterval.MIN_30: timedelta(minutes=30),
+            BarInterval.HOUR_1: timedelta(hours=1),
+            # Calendar gaps require a wider window than `bars` trading days.
+            BarInterval.DAY_1: timedelta(days=3),
+        }[interval]
+        return latest - unit * max(bars + 5, 10)
 
     def repair_range(self, symbol: str, interval: BarInterval, start: datetime, end: datetime, feature_names=None):
         return self.calculate_symbol(symbol, interval, feature_names, start, end, FeatureJobType.REPAIR)

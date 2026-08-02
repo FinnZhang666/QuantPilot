@@ -59,6 +59,7 @@ class RealtimeOpportunityRuntime:
             )
             self.thread.start()
             self.status = "RUNNING" if self.realtime_manager.status == RealtimeServiceState.CONNECTED else "DEGRADED"
+            self._save_pipeline_active()
             self._notify_event("Runtime已启动", "实时机会Runtime已启动，当前状态：" + self.status)
             self._save_state(success=True)
             return self.snapshot()
@@ -207,6 +208,16 @@ class RealtimeOpportunityRuntime:
                     "last_processed": {key: value.isoformat() for key, value in self.last_processed.items()},
                 },
                 error=error, success=success,
+            )
+        finally:
+            db.close()
+
+    def _save_pipeline_active(self):
+        db = self.session_factory()
+        try:
+            RuntimeStateRepository(db).update(
+                "opportunity_pipeline", "RUNNING",
+                metadata={"waiting_for_closed_bar": True}, success=True,
             )
         finally:
             db.close()

@@ -67,18 +67,20 @@ async def lifespan(app: FastAPI):
     )
     create_schema(get_engine())
     paper_runtime = get_runtime_manager(settings)
+    opportunity_runtime = get_runtime(settings)
     telegram_runtime = get_telegram_runtime(settings)
     telegram_runtime.initialize_registry()
     if settings.runtime_manager_enabled and settings.paper_trading_autostart:
         paper_runtime.start()
+    if settings.realtime_runtime_enabled:
+        opportunity_runtime.start()
     if settings.telegram_enabled and settings.telegram_runtime_enabled and settings.telegram_runtime_autostart:
         telegram_runtime.start()
     try:
         yield
     finally:
-        runtime = get_runtime()
-        if runtime.status != "STOPPED":
-            runtime.stop()
+        if opportunity_runtime.status != "STOPPED":
+            opportunity_runtime.stop()
         if paper_runtime.status != "STOPPED":
             paper_runtime.stop()
         if telegram_runtime.status != "STOPPED":
