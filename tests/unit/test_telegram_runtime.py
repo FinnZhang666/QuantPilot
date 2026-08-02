@@ -191,6 +191,25 @@ def test_watchlist_add_flow_rejects_duplicate(db, monkeypatch):
     assert len(list(db.scalars(select(PortfolioWatchlist)))) == 1
 
 
+def test_watchlist_add_accepts_space_comma_and_newline_batch(db, monkeypatch):
+    cfg = settings(monkeypatch)
+    profile = synchronize_registry(db, cfg)[0]
+    service = TelegramProductService(db, cfg, TelegramBotTransport(sender=FakeTelegram()))
+    service.handle_update(profile, start_update("normal_user"))
+    select_language(service, profile, "en-US")
+    service.handle_update(profile, callback_update("watchlist:add"))
+    _, result = service.handle_update(profile, {
+        "update_id": 12,
+        "message": {
+            "text": "MULL, SPCX\nNOK", "chat": {"id": 100},
+            "from": {"id": 100, "username": "normal_user"},
+        },
+    })
+    rows = list(db.scalars(select(PortfolioWatchlist).order_by(PortfolioWatchlist.symbol)))
+    assert [row.symbol for row in rows] == ["MULL", "NOK", "SPCX"]
+    assert all(symbol in result.text for symbol in ("MULL", "SPCX", "NOK"))
+
+
 def test_feedback_is_persisted_and_admin_notification_is_attempted(db, monkeypatch):
     cfg = settings(monkeypatch)
     profile = synchronize_registry(db, cfg)[0]

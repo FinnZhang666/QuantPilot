@@ -399,6 +399,43 @@ class TelegramProductService:
     def _add_watchlist_symbol(
         self, user: TelegramRuntimeUser, raw_symbol: str,
     ) -> TelegramMessage:
+        batch_symbols = list(dict.fromkeys(
+            value.upper().replace("US.", "")
+            for value in re.split(r"[\s,;，；]+", str(raw_symbol or "").strip())
+            if value.strip()
+        ))[:20]
+        if len(batch_symbols) > 1:
+            portfolios = PortfolioService(self.db)
+            portfolio = portfolios.get_default(user.telegram_user_id)
+            if portfolio is None:
+                portfolio = portfolios.create_portfolio(
+                    user.telegram_user_id, "Telegram Watchlist", is_default=True,
+                )
+            added, existing, invalid = [], [], []
+            service = WatchlistService(self.db)
+            for batch_symbol in batch_symbols:
+                try:
+                    service.add_symbol(
+                        portfolio.id, batch_symbol, market="US",
+                        owner_id=user.telegram_user_id,
+                    )
+                    added.append(batch_symbol)
+                except DuplicateSymbol:
+                    existing.append(batch_symbol)
+                except ValidationError:
+                    invalid.append(batch_symbol)
+            labels = (
+                ("关注列表处理完成：", "已添加", "已存在", "无效代码")
+                if user.language == "zh-CN" else
+                ("Watchlist update complete:", "Added", "Already listed", "Invalid")
+            )
+            lines = [labels[0]]
+            for label, values in zip(labels[1:], (added, existing, invalid)):
+                if values:
+                    lines.append("• %s：%s" % (label, ", ".join(values)))
+            return TelegramMessage("\n".join(lines), callback_keyboard([[
+                ("返回我的关注" if user.language == "zh-CN" else "Back to Watchlist", "watchlist"),
+            ]]))
         symbol = str(raw_symbol or "").upper().replace("US.", "").strip()
         portfolios = PortfolioService(self.db)
         portfolio = portfolios.get_default(user.telegram_user_id)
