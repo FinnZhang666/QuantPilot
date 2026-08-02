@@ -72,7 +72,7 @@ Telegram request, sends no message, and starts no Polling or Webhook.
 
 ## Logo tracking
 
-- Official English asset: `app/dashboard/static/branding/trade-companion-logo-en.png`
+- Official English asset: `app/dashboard/static/branding/trade-companion-logo.png`
 - Login, Sidebar, favicon, Version Center, README and Telegram profile configuration reuse this asset.
 - Telegram avatar upload remains a manual BotFather operation; the sync tool does not upload it.
 

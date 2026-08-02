@@ -139,6 +139,11 @@ class Settings(BaseSettings):
     telegram_bot_token_ai_stock_analyze_en: str = ""
     telegram_bot_token_trade_companion_zh: str = ""
     telegram_bot_token_stock_analysis_zh: str = ""
+    telegram_bot_token_trade_companion_ai: str = ""
+    telegram_bot_token_quantpilot_ai: str = ""
+    telegram_bot_token_ai_stock_analyze: str = ""
+    telegram_bot_token_jiaoyi_banlv: str = ""
+    telegram_bot_token_fenxi_gupiao: str = ""
     telegram_bot_enabled_trade_companion_ai_en: bool = False
     telegram_bot_enabled_quantpilot_ai_en: bool = False
     telegram_bot_enabled_ai_stock_analyze_en: bool = False

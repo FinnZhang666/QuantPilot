@@ -1,6 +1,6 @@
 # Trade Companion
 
-![Trade Companion Logo](app/dashboard/static/branding/trade-companion-logo-en.png)
+![Trade Companion Logo](app/dashboard/static/branding/trade-companion-logo.png)
 
 **陪你把每一笔交易做完 · Your AI Trade Companion**
 

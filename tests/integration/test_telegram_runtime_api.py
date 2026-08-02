@@ -24,8 +24,9 @@ def test_public_runtime_registry_preview_feedback_and_statistics(monkeypatch, tm
         for path in (
             "/api/telegram/runtime", "/api/telegram/bots",
             "/api/telegram/statistics", "/api/telegram/feedback",
-            "/api/telegram/preview/trade_companion_zh/welcome",
-            "/api/telegram/preview/trade_companion_en/more",
+            "/api/telegram/admins",
+            "/api/telegram/preview/trade_companion_ai/welcome?language=zh-CN",
+            "/api/telegram/preview/trade_companion_ai/more?language=en-US",
         ):
             response = api.get(path)
             assert response.status_code == 200, (path, response.text)
@@ -35,9 +36,14 @@ def test_public_runtime_registry_preview_feedback_and_statistics(monkeypatch, tm
             assert "aiza" not in lowered
         bots = api.get("/api/telegram/bots").json()
         assert bots["total"] == 5 and bots["secrets_exposed"] is False
-        preview = api.get("/api/telegram/preview/trade_companion_zh/welcome").json()
+        preview = api.get(
+            "/api/telegram/preview/trade_companion_ai/welcome?language=zh-CN"
+        ).json()
         assert preview["preview_equals_real"] is True
         assert "陪你走过每一次交易" in preview["text"]
+        assert api.get("/api/telegram/admins").json()["items"][1]["binding_status"] == (
+            "WAITING_FOR_START"
+        )
 
 
 def test_sync_dry_run_is_admin_only_and_hidden_from_openapi(monkeypatch, tmp_path):
@@ -50,6 +56,8 @@ def test_sync_dry_run_is_admin_only_and_hidden_from_openapi(monkeypatch, tmp_pat
         assert response.status_code == 200
         assert response.json()["total"] == 5
         assert all(item["avatar"] == "MANUAL_REQUIRED" for item in response.json()["items"])
+        assert sum(item["status"] == "DRY_RUN" for item in response.json()["items"]) == 1
+        assert sum(item["status"] == "RESERVED" for item in response.json()["items"]) == 4
         schema = api.get("/openapi.json").json()
         assert "/internal/telegram/sync" not in schema["paths"]
         assert "/api/telegram/runtime" in schema["paths"]

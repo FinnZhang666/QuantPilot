@@ -59,7 +59,7 @@ profile asset. `/start` uses text and buttons only; it does not send a welcome i
 4. Check each alias, intended language, market scope and explicit enabled flag.
 5. Apply supported profile fields one Bot at a time with `--bot ALIAS --apply` only after approval.
 6. Set the profile photo manually through BotFather using the official English asset
-   `app/dashboard/static/branding/trade-companion-logo-en.png`; Bot API cannot upload it.
+   `app/dashboard/static/branding/trade-companion-logo.png`; Bot API cannot upload it.
 7. Start the Telegram Runtime only after profile synchronization and environment validation.
 8. Test `/start`, localized Commands, the four-item menu and every Callback.
 9. Validate administrator feedback notifications without exposing ordinary user details.

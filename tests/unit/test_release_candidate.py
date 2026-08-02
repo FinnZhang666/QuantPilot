@@ -36,7 +36,8 @@ def test_release_includes_phase4_migrations():
     versions = ROOT / "alembic" / "versions"
     assert any("0022" in path.name for path in versions.glob("*.py"))
     assert any("0023" in path.name for path in versions.glob("*.py"))
-    assert not any(re.match(r"002[4-9]", path.name) for path in versions.glob("*.py"))
+    assert any("0024" in path.name for path in versions.glob("*.py"))
+    assert not any(re.match(r"002[5-9]", path.name) for path in versions.glob("*.py"))
 
 
 def test_readme_known_limitations_are_current():
@@ -47,8 +48,8 @@ def test_readme_known_limitations_are_current():
 
 def test_public_openapi_phase4_surface_and_internal_hidden():
     paths = app.openapi()["paths"]
-    assert len(paths) == 175
-    assert sum(len(operations) for operations in paths.values()) == 184
+    assert len(paths) == 176
+    assert sum(len(operations) for operations in paths.values()) == 185
     assert not any(path.startswith("/internal") for path in paths)
 
 

@@ -14,8 +14,8 @@ def test_database_migration(monkeypatch, tmp_path):
     assert {"portfolios", "paper_orders", "trades", "system_events"}.issubset(tables)
 
 
-def test_fresh_0023_schema_matches_git_metadata(monkeypatch, tmp_path):
-    url = f"sqlite:///{tmp_path / 'fresh-0023.db'}"
+def test_fresh_0024_schema_matches_git_metadata(monkeypatch, tmp_path):
+    url = f"sqlite:///{tmp_path / 'fresh-0024.db'}"
     monkeypatch.setenv("DATABASE_URL", url)
     config = Config("alembic.ini")
     command.upgrade(config, "head")
@@ -33,7 +33,7 @@ def test_fresh_0023_schema_matches_git_metadata(monkeypatch, tmp_path):
     with engine.connect() as connection:
         assert connection.exec_driver_sql(
             "SELECT version_num FROM alembic_version"
-        ).scalar_one() == "0023"
+        ).scalar_one() == "0024"
 
 
 def test_telegram_runtime_migration_upgrade_downgrade(monkeypatch, tmp_path):
@@ -56,6 +56,26 @@ def test_telegram_runtime_migration_upgrade_downgrade(monkeypatch, tmp_path):
     assert set(inspect(engine).get_table_names()) == before
     command.upgrade(config, "0023")
     assert expected <= set(inspect(engine).get_table_names())
+
+
+def test_single_bot_language_migration_upgrade_downgrade(monkeypatch, tmp_path):
+    url = "sqlite:///" + str(tmp_path / "single-bot-language.db")
+    monkeypatch.setenv("DATABASE_URL", url)
+    config = Config("alembic.ini")
+    command.upgrade(config, "0023")
+    engine = create_engine(url)
+    command.upgrade(config, "0024")
+    with engine.connect() as connection:
+        assert connection.exec_driver_sql(
+            "SELECT version_num FROM alembic_version"
+        ).scalar_one() == "0024"
+    command.downgrade(config, "0023")
+    with engine.connect() as connection:
+        assert connection.exec_driver_sql(
+            "SELECT version_num FROM alembic_version"
+        ).scalar_one() == "0023"
+    command.upgrade(config, "0024")
+    assert "telegram_runtime_users" in inspect(engine).get_table_names()
 
 
 def test_trade_lifecycle_migration_upgrade_downgrade(monkeypatch, tmp_path):

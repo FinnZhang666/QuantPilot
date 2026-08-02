@@ -12,22 +12,23 @@ database. It does not add another Bot management UI or another notification cent
 Unified Telegram Runtime
   -> configuration-backed Bot Registry
   -> shared update router
-  -> QuantPilot services and repositories
+  -> Trade Companion services and repositories
   -> shared message renderer
   -> Telegram Bot API transport
 ```
 
-One runtime thread polls every enabled configured Bot. A Bot never starts its own
-independent runtime. Bot tokens are resolved from local Settings and are never stored
+One runtime thread polls the single production Bot. A Bot never starts its own
+independent runtime. The same Bot persists each user's `zh-CN` or `en-US` choice and
+renders every later interaction in that language. Bot tokens are resolved from local Settings and are never stored
 in JSON, SQLite, logs, API responses, previews, or Git.
 
 ## Bot Registry
 
 `config/telegram_bots.json` stores alias, language, public profile copy, commands,
 menu, welcome template, runtime flag, and the Settings field that holds its token.
-It contains no token. Five aliases remain available for compatibility; the primary
-Chinese and English profiles are enabled in the registry, while additional profiles
-can be activated after their Telegram credentials are provisioned.
+It contains no token. `trade_companion_ai` is the only production alias. Four other
+profiles remain `RESERVED` for configuration/history compatibility and are not polled
+or synchronized.
 
 ## Runtime lifecycle
 
@@ -56,10 +57,11 @@ language are registry/runtime properties and are audited locally.
 
 ## Product flows
 
-The `/start` path creates or updates a Telegram runtime user and renders the same
-welcome/menu used by Preview. Required callbacks route to real backend data for AI
-analysis, portfolio, market snapshot, watchlist, holding, history, and reviews.
-Language switches immediately between `zh-CN` and `en-US`.
+The first `/start` creates or updates a Telegram runtime user and requires a language
+selection. The choice survives runtime restarts. Later `/start` calls render the saved
+welcome/menu directly, with a Change Language callback kept under More. Required
+callbacks route to real backend data for AI analysis, portfolio, market snapshot,
+watchlist, holding, history, reviews, help, updates, feedback, and about.
 
 ## AI Companion
 
@@ -68,6 +70,12 @@ strategy review, and market summary. It sends only selected business context. Th
 prompt prohibits recalculation or invention of numbers. Failure returns a deterministic
 system-data fallback and records a redacted invocation audit. Automated tests inject a
 fake transport and never consume Gemini quota.
+
+Gemini text is passed through a shared HTML renderer. The renderer escapes all model
+HTML, converts Markdown headings and lists to Telegram-safe HTML/Unicode, replaces
+remaining asterisks with the mathematical star glyph, appends a fixed Trade Companion
+disclaimer, and enforces Telegram's 4096-character limit. Preview and real delivery use
+the same renderer.
 
 ## Feedback and administrator notifications
 
@@ -85,7 +93,8 @@ Telegram request.
 
 ## Windows operations
 
-1. Put each token in the matching local `.env` field.
+1. Put each token in its matching local `.env` field. Do not paste tokens into logs,
+   documentation, tests, or Git.
 2. Keep `TELEGRAM_RUNTIME_AUTOSTART=false` for the first validation.
 3. Run an authenticated dry-run sync.
 4. Run an apply sync and inspect exact remote readback.
@@ -105,7 +114,8 @@ Never commit `.env`, databases, runtime logs, or Telegram credentials.
 
 ## Known limitations
 
-- A Bot without a locally configured token stays `TOKEN_MISSING` and cannot sync or run.
+- The production Bot without a locally configured token stays `TOKEN_MISSING` and cannot sync or run.
+- Reserved Bots are intentionally not synchronized or started.
 - Administrator notification delivery starts only after `/start` binds an ID.
 - Long polling is a single-process Beta implementation; no multi-host leader election.
 - Avatar must be updated manually in BotFather.

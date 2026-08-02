@@ -1,6 +1,5 @@
 """Controlled real Gemini -> Telegram delivery smoke test for a bound admin."""
 
-import html
 import time
 
 from sqlalchemy import desc, select
@@ -10,7 +9,7 @@ from app.database.models import TelegramAdminRecord, TelegramAIInvocation, Teleg
 from app.database.session import get_session_factory
 from app.telegram_product.bot_profiles import load_bot_profiles
 from app.telegram_runtime.ai import TelegramAIService
-from app.telegram_runtime.renderer import TelegramMessage
+from app.telegram_runtime.renderer import ai_message
 from app.telegram_runtime.transport import TelegramBotTransport
 
 
@@ -36,16 +35,16 @@ def main():
             TelegramRuntimeUser.telegram_user_id == admin.telegram_user_id,
         ))
         started = time.perf_counter()
+        language = user.language if user else settings.ai_companion_default_language
         analysis = TelegramAIService(db, settings).explain(
-            "STOCK_ANALYSIS", user.language if user else profile.language,
+            "STOCK_ANALYSIS", language,
             profile.alias, user.id if user else None, "PLTR",
         )
         invocation = db.scalar(select(TelegramAIInvocation).order_by(
             desc(TelegramAIInvocation.id),
         ).limit(1))
-        transport.send_message(profile.token, TelegramMessage(
-            "<b>PLTR · Trade Companion AI</b>\n\n" + html.escape(analysis),
-        ).as_payload(admin.telegram_user_id))
+        message = ai_message(analysis, language)
+        transport.send_message(profile.token, message.as_payload(admin.telegram_user_id))
         print({
             "status": "SUCCESS", "provider": invocation.provider,
             "model": invocation.model, "ai_status": invocation.status,
@@ -53,6 +52,8 @@ def main():
             "prompt_tokens": invocation.prompt_tokens,
             "completion_tokens": invocation.completion_tokens,
             "telegram_sent": True,
+            "star_free": "*" not in message.text,
+            "trade_companion_brand": "Trade Companion" in message.text,
         })
     return 0
 

@@ -26,10 +26,14 @@ from app.telegram_product.bot_profiles import TelegramBotProfile
 from app.telegram_runtime.ai import TelegramAIService
 from app.telegram_runtime.renderer import (
     TelegramMessage,
+    about_message,
+    ai_message,
     feedback_categories,
+    help_message,
     language_picker,
     main_menu,
     more,
+    updates_message,
     welcome,
 )
 from app.telegram_runtime.transport import TelegramBotTransport
@@ -80,7 +84,9 @@ class TelegramProductService:
         if user is None:
             user = TelegramRuntimeUser(
                 telegram_user_id=telegram_user_id, chat_id=chat_id,
-                language=profile.language, last_bot_alias=profile.alias,
+                language=self.settings.ai_companion_default_language,
+                last_bot_alias=profile.alias,
+                pending_context_json={"language_selected": False},
             )
             self.db.add(user)
         user.chat_id = chat_id
@@ -109,6 +115,8 @@ class TelegramProductService:
             command = parts[0].split("@", 1)[0].lstrip("/").lower()
             argument = parts[1].strip() if len(parts) > 1 else None
             return self._action(profile, user, command, argument)
+        if not self._language_selected(user):
+            return language_picker()
         if user.pending_action == "ANALYZE":
             symbol = text.upper().replace("US.", "").strip()
             user.pending_action = None
@@ -126,12 +134,12 @@ class TelegramProductService:
             self._notify_admins(profile, feedback, user)
             return TelegramMessage(
                 "反馈已提交，谢谢。" if user.language == "zh-CN" else "Feedback submitted. Thank you.",
-                main_menu(profile),
+                main_menu(user.language),
             )
         symbol = text.upper().replace("US.", "").strip()
         if 1 <= len(symbol) <= 12 and symbol.replace(".", "").isalnum():
             return self._ai_message(profile, user, "STOCK_ANALYSIS", symbol)
-        return welcome(profile)
+        return welcome(profile, user.language)
 
     def _action(
         self, profile: TelegramBotProfile, user: TelegramRuntimeUser,
@@ -139,7 +147,9 @@ class TelegramProductService:
     ) -> TelegramMessage:
         action = action.lower()
         if action == "start":
-            return welcome(profile)
+            return welcome(profile, user.language) if self._language_selected(user) else language_picker()
+        if not self._language_selected(user) and not action.startswith("language:"):
+            return language_picker()
         if action in {"analyze", "ai_analysis"}:
             if argument:
                 return self._ai_message(profile, user, "STOCK_ANALYSIS", argument.upper())
@@ -153,8 +163,14 @@ class TelegramProductService:
             return self._portfolio(user)
         if action == "market":
             return self._market(user)
-        if action == "more" or action == "help":
+        if action == "more":
             return more(user.language)
+        if action == "help":
+            return help_message(user.language)
+        if action == "updates":
+            return updates_message(user.language)
+        if action == "about":
+            return about_message(user.language)
         if action == "watchlist":
             return self._watchlist(user)
         if action == "holding":
@@ -179,7 +195,7 @@ class TelegramProductService:
                 self._notify_admins(profile, feedback, user)
                 return TelegramMessage(
                     "已记录，谢谢。" if user.language == "zh-CN" else "Recorded. Thank you.",
-                    main_menu(profile),
+                    main_menu(user.language),
                 )
             user.pending_action = "FEEDBACK:" + category
             self.db.commit()
@@ -192,11 +208,11 @@ class TelegramProductService:
             language = {"zh-cn": "zh-CN", "en-us": "en-US"}.get(action.split(":", 1)[1])
             if language:
                 user.language = language
+                context = dict(user.pending_context_json or {})
+                context["language_selected"] = True
+                user.pending_context_json = context
                 self.db.commit()
-            return TelegramMessage(
-                "语言已切换为中文。" if user.language == "zh-CN" else "Language changed to English.",
-                main_menu(profile),
-            )
+            return welcome(profile, user.language)
         if action.startswith("position_explain:"):
             return self._ai_message(profile, user, "POSITION_EXPLAIN", action.split(":", 1)[1])
         if action.startswith("trade_explain:"):
@@ -206,6 +222,10 @@ class TelegramProductService:
         if action == "market_summary":
             return self._ai_message(profile, user, "MARKET_SUMMARY", None)
         return more(user.language)
+
+    @staticmethod
+    def _language_selected(user: TelegramRuntimeUser) -> bool:
+        return bool((user.pending_context_json or {}).get("language_selected"))
 
     def _ai_message(
         self, profile: TelegramBotProfile, user: TelegramRuntimeUser,
@@ -217,9 +237,7 @@ class TelegramProductService:
         ).order_by(desc(TelegramAIInvocation.id)).limit(1))
         if invocation and invocation.status == "FALLBACK" and self.settings.ai_companion_enabled:
             self._notify_admin_event(profile, "AI_ERROR", "AI Companion used fallback.")
-        if result.startswith("AI ") or result.startswith("AI is"):
-            return TelegramMessage(result)
-        return TelegramMessage(html.escape(result), parse_mode="HTML")
+        return ai_message(result, user.language)
 
     def _portfolio(self, user: TelegramRuntimeUser) -> TelegramMessage:
         portfolio_ids = list(self.db.scalars(select(InvestmentPortfolio.id).where(
@@ -288,17 +306,17 @@ class TelegramProductService:
         self, profile: TelegramBotProfile, feedback: TelegramFeedbackRecord,
         user: TelegramRuntimeUser,
     ) -> None:
-        admins = list(self.db.scalars(select(TelegramAdminRecord).where(
-            TelegramAdminRecord.enabled.is_(True),
-            TelegramAdminRecord.telegram_user_id.is_not(None),
-        )))
+        admins = self._bound_admins()
         text = "Trade Companion Feedback\nCategory: %s\nUser ID: %s\nMessage: %s" % (
             feedback.category, user.telegram_user_id, feedback.message[:2000],
         )
         success = False
         for admin in admins:
             try:
-                self.transport.send_message(profile.token, TelegramMessage(text).as_payload(admin.telegram_user_id))
+                self.transport.send_message(
+                    profile.token,
+                    TelegramMessage(html.escape(text, quote=False)).as_payload(admin.telegram_user_id),
+                )
                 success = True
             except Exception:
                 continue
@@ -308,15 +326,17 @@ class TelegramProductService:
     def _notify_admin_event(
         self, profile: TelegramBotProfile, event_type: str, message: str,
     ) -> bool:
-        admins = list(self.db.scalars(select(TelegramAdminRecord).where(
-            TelegramAdminRecord.enabled.is_(True),
-            TelegramAdminRecord.telegram_user_id.is_not(None),
-        )))
+        admins = self._bound_admins()
         success = False
         for admin in admins:
             try:
                 self.transport.send_message(profile.token, TelegramMessage(
-                    "Trade Companion Admin Alert\nEvent: %s\n%s" % (event_type, message[:1000]),
+                    html.escape(
+                        "Trade Companion Admin Alert\nEvent: %s\n%s" % (
+                            event_type, message[:1000],
+                        ),
+                        quote=False,
+                    ),
                 ).as_payload(admin.telegram_user_id))
                 self.db.add(TelegramRuntimeMessageLog(
                     bot_alias=profile.alias, direction="OUTBOUND",
@@ -328,6 +348,20 @@ class TelegramProductService:
                 continue
         self.db.commit()
         return success
+
+    def _bound_admins(self) -> List[TelegramAdminRecord]:
+        rows = list(self.db.scalars(select(TelegramAdminRecord).where(
+            TelegramAdminRecord.enabled.is_(True),
+            TelegramAdminRecord.telegram_user_id.is_not(None),
+        ).order_by(TelegramAdminRecord.id)))
+        seen = set()
+        result = []
+        for row in rows:
+            recipient = str(row.telegram_user_id or "")
+            if recipient and recipient not in seen:
+                seen.add(recipient)
+                result.append(row)
+        return result
 
     def log_message(
         self, profile: TelegramBotProfile, direction: str, event_type: str,

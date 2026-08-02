@@ -19,9 +19,11 @@ from app.database.models import (
 
 
 SYSTEM_RULE = (
+    "You are Trade Companion, an AI assistant that explains system-provided trading data. "
     "All numbers are supplied by the system. Do not recalculate, change, or invent "
     "numbers, statistics, prices, returns, scores, MFE, or MAE. Explain only. "
-    "Never claim to place trades and never present content as financial advice."
+    "Never claim to place trades and never present content as financial advice. "
+    "Use numbered headings and the bullet character •. Do not use Markdown asterisks."
 )
 
 
@@ -121,7 +123,9 @@ class TelegramAIService:
         return text
 
     def _context(self, operation: str, symbol: Optional[str]) -> Dict[str, object]:
-        context: Dict[str, object] = {"operation": operation, "data_source": "QuantPilot Backend"}
+        context: Dict[str, object] = {
+            "operation": operation, "data_source": "Trade Companion Backend",
+        }
         if symbol:
             normalized = symbol.upper().replace("US.", "")
             variants = (normalized, "US." + normalized)
@@ -178,9 +182,9 @@ class TelegramAIService:
     def _fallback(operation: str, language: str, context: Dict[str, object]) -> str:
         zh = language == "zh-CN"
         if zh:
-            return "AI 暂时不可用。以下为系统数据快照（未重新计算）：\n<pre>%s</pre>" % json.dumps(
+            return "AI 暂时不可用。以下为系统数据快照（未重新计算）：\n%s" % json.dumps(
                 context, ensure_ascii=False, default=str, indent=2,
             )[:3000]
-        return "AI is temporarily unavailable. System snapshot (not recalculated):\n<pre>%s</pre>" % json.dumps(
+        return "AI is temporarily unavailable. System snapshot (not recalculated):\n%s" % json.dumps(
             context, ensure_ascii=False, default=str, indent=2,
         )[:3000]

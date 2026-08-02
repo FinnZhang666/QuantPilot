@@ -14,10 +14,19 @@ from app.database.models import (
     TelegramFeedbackRecord,
     TelegramRuntimeMessageLog,
     TelegramRuntimeUser,
+    TelegramAdminRecord,
 )
 from app.database.session import get_db
 from app.telegram_product.bot_profiles import load_bot_profiles
-from app.telegram_runtime.renderer import feedback_categories, language_picker, more, welcome
+from app.telegram_runtime.renderer import (
+    about_message,
+    feedback_categories,
+    help_message,
+    language_picker,
+    more,
+    updates_message,
+    welcome,
+)
 from app.telegram_runtime.runtime import get_telegram_runtime
 
 
@@ -116,6 +125,19 @@ def statistics(db: Session = Depends(get_db), settings: Settings = Depends(get_s
     }
 
 
+@router.get("/admins")
+def admins(db: Session = Depends(get_db)):
+    rows = list(db.scalars(select(TelegramAdminRecord).order_by(TelegramAdminRecord.id)))
+    return {"items": [{
+        "username": row.username,
+        "display_name": row.display_name,
+        "role": row.role,
+        "enabled": row.enabled,
+        "binding_status": "BOUND" if row.telegram_user_id else "WAITING_FOR_START",
+        "telegram_user_id_bound": bool(row.telegram_user_id),
+    } for row in rows], "total": len(rows), "secrets_exposed": False}
+
+
 @router.get("/feedback")
 def feedback(
     search: Optional[str] = None, category: Optional[str] = None,
@@ -154,16 +176,22 @@ def feedback(
 
 
 @router.get("/preview/{alias}/{view}")
-def preview(alias: str, view: str, settings: Settings = Depends(get_settings)):
+def preview(
+    alias: str, view: str, language: str = "zh-CN",
+    settings: Settings = Depends(get_settings),
+):
     profile = next((item for item in load_bot_profiles(settings) if item.alias == alias), None)
     if profile is None:
         raise HTTPException(404, "Unknown Telegram bot alias.")
     builders = {
-        "welcome": lambda: welcome(profile),
-        "menu": lambda: welcome(profile),
-        "more": lambda: more(profile.language),
-        "feedback": lambda: feedback_categories(profile.language),
+        "welcome": lambda: welcome(profile, language),
+        "menu": lambda: welcome(profile, language),
+        "more": lambda: more(language),
+        "feedback": lambda: feedback_categories(language),
         "language": language_picker,
+        "help": lambda: help_message(language),
+        "updates": lambda: updates_message(language),
+        "about": lambda: about_message(language),
     }
     if view not in builders:
         raise HTTPException(404, "Unknown Telegram preview view.")

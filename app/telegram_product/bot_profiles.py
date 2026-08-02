@@ -39,23 +39,19 @@ class TelegramBotProfile:
     commands: Tuple[BotCommand, ...]
     main_menu: Tuple[BotMenuItem, ...]
     token_setting: str
-    fallback_token_setting: Optional[str]
+    fallback_token_settings: Tuple[str, ...]
     token: str
     enabled: bool
-    profile_photo: str = "app/dashboard/static/branding/trade-companion-logo-en.png"
+    profile_photo: str = "app/dashboard/static/branding/trade-companion-logo.png"
 
     @property
     def more_menu(self) -> Tuple[BotMenuItem, ...]:
-        if self.language == "zh-CN":
-            return (
-                BotMenuItem("我的关注", "watchlist"), BotMenuItem("当前持仓", "holding"),
-                BotMenuItem("历史记录", "history"), BotMenuItem("交易复盘", "review"),
-                BotMenuItem("用户反馈", "feedback"),
-            )
         return (
-            BotMenuItem("Watchlist", "watchlist"), BotMenuItem("Holdings", "holding"),
-            BotMenuItem("History", "history"), BotMenuItem("Reviews", "review"),
-            BotMenuItem("Feedback", "feedback"),
+            BotMenuItem("Help", "help"), BotMenuItem("Feedback", "feedback"),
+            BotMenuItem("Updates", "updates"), BotMenuItem("Change Language", "language"),
+            BotMenuItem("About", "about"), BotMenuItem("Watchlist", "watchlist"),
+            BotMenuItem("Holdings", "holding"), BotMenuItem("History", "history"),
+            BotMenuItem("Reviews", "review"),
         )
 
     @property
@@ -76,6 +72,7 @@ class TelegramBotProfile:
             "language": self.language,
             "display_name": self.display_name,
             "enabled": self.enabled,
+            "lifecycle_state": "PRODUCTION" if self.enabled else "RESERVED",
             "token_configured": bool(self.token),
             "profile_photo": self.profile_photo,
             "avatar_sync": "MANUAL_REQUIRED",
@@ -111,10 +108,14 @@ def load_bot_profiles(
             raise ValueError("Duplicate Telegram bot alias: %s" % alias)
         aliases.add(alias)
         token_setting = str(item["token_setting"])
+        fallback_items = list(item.get("fallback_token_settings") or [])
         fallback = item.get("fallback_token_setting")
+        if fallback:
+            fallback_items.insert(0, str(fallback))
         token = str(getattr(settings, token_setting, "") or "")
-        if not token and fallback:
-            token = str(getattr(settings, str(fallback), "") or "")
+        for fallback_setting in fallback_items:
+            if not token:
+                token = str(getattr(settings, str(fallback_setting), "") or "")
         profiles.append(TelegramBotProfile(
             alias=alias,
             language=str(item["language"]),
@@ -125,7 +126,7 @@ def load_bot_profiles(
             commands=tuple(BotCommand(**command) for command in item.get("commands", [])),
             main_menu=tuple(BotMenuItem(**menu) for menu in item.get("menu", [])),
             token_setting=token_setting,
-            fallback_token_setting=str(fallback) if fallback else None,
+            fallback_token_settings=tuple(str(value) for value in fallback_items),
             token=token,
             enabled=bool(item.get("runtime_enabled", False)),
         ))
@@ -134,7 +135,7 @@ def load_bot_profiles(
 
 def validate_profile(profile: TelegramBotProfile, repository_root: Path) -> List[str]:
     errors = []
-    if profile.language not in {"zh-CN", "en-US"}:
+    if profile.language not in {"zh-CN", "en-US", "multi"}:
         errors.append("invalid_language")
     if len(profile.short_description) > 120:
         errors.append("short_description_too_long")
@@ -169,6 +170,8 @@ def synchronize_registry(db: Session, settings: Settings) -> List[TelegramBotPro
         row.welcome_template = profile.welcome
         row.token_env_key = profile.token_setting
         row.runtime_enabled = profile.enabled
+        if not profile.enabled:
+            row.runtime_status = "RESERVED"
     for username, role in (("ADHD360", "SUPER_ADMIN"), ("Kevinchou8", "ADMIN")):
         admin = db.scalar(select(TelegramAdminRecord).where(
             TelegramAdminRecord.username == username,

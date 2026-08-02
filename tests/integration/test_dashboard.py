@@ -171,8 +171,19 @@ def test_dashboard_product_shell_and_all_routes(monkeypatch, tmp_path):
             response = client.get(path)
             assert response.status_code == 200
             assert "Trade Companion" in response.text
-            assert "branding/trade-companion-logo-en.png" in response.text
+            assert "branding/trade-companion-logo.png" in response.text
             assert "ui.js" in response.text
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_telegram_preview_uses_safe_html_renderer(monkeypatch, tmp_path):
+    client = dashboard_client(monkeypatch, tmp_path)
+    try:
+        source = client.get("/dashboard/static/dashboard.js").text
+        assert "safeTelegramHtml(x.text)" in source
+        assert "esc(x.text)" not in source
+        assert "?language=${encodeURIComponent(locale)}" in source
     finally:
         client.__exit__(None, None, None)
 

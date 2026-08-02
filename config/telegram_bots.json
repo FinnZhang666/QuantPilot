@@ -1,57 +1,29 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "production_alias": "trade_companion_ai",
   "bots": [
     {
-      "alias": "trade_companion_zh",
-      "language": "zh-CN",
+      "alias": "trade_companion_ai",
+      "language": "multi",
       "name": "Trade Companion",
-      "about": "AI 交易分析、计划跟踪与持仓陪伴",
-      "description": "持续分析市场、记录策略表现并复盘每笔模拟交易。Trade Companion 不替你做决定，只帮助你做出更好的决定。",
-      "token_setting": "telegram_bot_token_trade_companion_zh",
-      "fallback_token_setting": "telegram_bot_token",
+      "about": "AI 交易分析与陪伴 / AI trade analysis companion",
+      "description": "Trade Companion 持续分析市场、记录策略表现并复盘模拟交易。It supports better decisions without replacing your judgment.",
+      "token_setting": "telegram_bot_token_trade_companion_ai",
+      "fallback_token_settings": ["telegram_bot_token_trade_companion_ai_en"],
       "runtime_enabled": true,
-      "welcome_template": "Trade Companion\n\n陪你走过每一次交易，而不是只推送一个买卖点。\n\n我们持续分析市场，\n持续记录策略表现，\n持续复盘每一笔模拟交易，\n帮助你建立自己的交易体系。\n\nTrade Companion 不替你做决定，\n只帮助你做出更好的决定。\n\n投资是一场长期旅程。\n\n我会一直陪伴你。",
+      "welcome_template": "Trade Companion — 中文 / English",
       "commands": [
-        {"command": "start", "description": "开始使用"},
-        {"command": "analyze", "description": "AI 分析股票"},
-        {"command": "portfolio", "description": "我的投资"},
-        {"command": "market", "description": "市场快照"},
-        {"command": "watchlist", "description": "我的关注"},
-        {"command": "history", "description": "历史记录"},
-        {"command": "review", "description": "交易复盘"},
-        {"command": "holding", "description": "当前持仓"},
-        {"command": "feedback", "description": "提交反馈"},
-        {"command": "language", "description": "切换语言"},
-        {"command": "help", "description": "使用帮助"}
-      ],
-      "menu": [
-        {"label": "📈 AI分析", "action": "analyze"},
-        {"label": "💼 我的投资", "action": "portfolio"},
-        {"label": "🌍 市场快照", "action": "market"},
-        {"label": "💡 更多", "action": "more"}
-      ]
-    },
-    {
-      "alias": "trade_companion_en",
-      "language": "en-US",
-      "name": "Trade Companion",
-      "about": "AI trade analysis, planning, and position companion",
-      "description": "Continuously analyzes markets, tracks strategy performance, and reviews every paper trade. It supports your decisions; it never replaces them.",
-      "token_setting": "telegram_bot_token_ai_stock_analyze_en",
-      "runtime_enabled": true,
-      "welcome_template": "Trade Companion\n\nWith you through every trade, not just another buy or sell signal.\n\nWe continuously analyze the market,\ntrack strategy performance,\nreview every paper trade,\nand help you build your own trading system.\n\nTrade Companion does not make decisions for you.\nIt helps you make better decisions.\n\nInvesting is a long-term journey.\n\nI will be with you along the way.",
-      "commands": [
-        {"command": "start", "description": "Start"},
-        {"command": "analyze", "description": "Analyze a stock"},
-        {"command": "portfolio", "description": "My investments"},
-        {"command": "market", "description": "Market snapshot"},
-        {"command": "watchlist", "description": "My watchlist"},
-        {"command": "history", "description": "Analysis history"},
-        {"command": "review", "description": "Trade reviews"},
-        {"command": "holding", "description": "Open positions"},
-        {"command": "feedback", "description": "Send feedback"},
-        {"command": "language", "description": "Change language"},
-        {"command": "help", "description": "Help"}
+        {"command": "start", "description": "开始 / Start"},
+        {"command": "analyze", "description": "AI 股票分析 / AI analysis"},
+        {"command": "portfolio", "description": "我的投资 / My investments"},
+        {"command": "market", "description": "市场快照 / Market snapshot"},
+        {"command": "watchlist", "description": "我的关注 / Watchlist"},
+        {"command": "history", "description": "历史记录 / History"},
+        {"command": "review", "description": "交易复盘 / Trade reviews"},
+        {"command": "holding", "description": "当前持仓 / Holdings"},
+        {"command": "feedback", "description": "提交建议 / Feedback"},
+        {"command": "language", "description": "切换语言 / Change language"},
+        {"command": "help", "description": "使用帮助 / Help"}
       ],
       "menu": [
         {"label": "📈 AI Analysis", "action": "analyze"},
@@ -61,22 +33,30 @@
       ]
     },
     {
-      "alias": "trade_companion_ai_en",
-      "template": "trade_companion_en",
-      "token_setting": "telegram_bot_token_trade_companion_ai_en",
+      "alias": "quantpilot_ai",
+      "template": "trade_companion_ai",
+      "token_setting": "telegram_bot_token_quantpilot_ai",
+      "fallback_token_settings": ["telegram_bot_token_quantpilot_ai_en", "telegram_bot_token"],
       "runtime_enabled": false
     },
     {
-      "alias": "quantpilot_ai_en",
-      "template": "trade_companion_en",
-      "token_setting": "telegram_bot_token_quantpilot_ai_en",
+      "alias": "ai_stock_analyze",
+      "template": "trade_companion_ai",
+      "token_setting": "telegram_bot_token_ai_stock_analyze",
+      "fallback_token_settings": ["telegram_bot_token_ai_stock_analyze_en"],
       "runtime_enabled": false
     },
     {
-      "alias": "stock_analysis_zh",
-      "template": "trade_companion_zh",
-      "token_setting": "telegram_bot_token_stock_analysis_zh",
-      "fallback_token_setting": null,
+      "alias": "jiaoyi_banlv",
+      "template": "trade_companion_ai",
+      "token_setting": "telegram_bot_token_jiaoyi_banlv",
+      "runtime_enabled": false
+    },
+    {
+      "alias": "fenxi_gupiao",
+      "template": "trade_companion_ai",
+      "token_setting": "telegram_bot_token_fenxi_gupiao",
+      "fallback_token_settings": ["telegram_bot_token_stock_analysis_zh"],
       "runtime_enabled": false
     }
   ]

@@ -23,6 +23,7 @@ from app.telegram_product.bot_profiles import (
 )
 from app.telegram_product.profile_sync import build_sync_steps
 from app.telegram_runtime.service import TelegramProductService
+from app.telegram_runtime.renderer import welcome
 from app.telegram_runtime.transport import TelegramBotTransport
 
 
@@ -132,6 +133,27 @@ class TelegramRuntimeManager:
         repository_root = __import__("pathlib").Path(__file__).resolve().parents[2]
         with get_session_factory()() as db:
             for profile in profiles:
+                if not profile.enabled:
+                    status = "RESERVED"
+                    steps = []
+                    remote_snapshot = {}
+                    error_code = None
+                    row = db.scalar(select(TelegramBotProfileRecord).where(
+                        TelegramBotProfileRecord.alias == profile.alias,
+                    ))
+                    if row:
+                        row.sync_status = status
+                    db.add(TelegramProfileSyncLog(
+                        bot_alias=profile.alias, mode="DRY_RUN" if dry_run else "APPLY",
+                        status=status, steps_json=steps,
+                        remote_snapshot_json=remote_snapshot, error_code=error_code,
+                    ))
+                    results.append({
+                        "alias": profile.alias, "status": status,
+                        "token_configured": bool(profile.token), "steps": steps,
+                        "remote": remote_snapshot, "avatar": "MANUAL_REQUIRED",
+                    })
+                    continue
                 errors = validate_profile(profile, repository_root)
                 steps = []
                 status = "DRY_RUN"
@@ -218,12 +240,20 @@ class TelegramRuntimeManager:
             profile.token, "getChatMenuButton", {},
         ).get("result") or {}
         expected_commands = [item.__dict__ for item in profile.commands]
+        visible_text = " ".join([
+            str(name or ""), str(about or ""), str(description or ""),
+            " ".join(str(item.get("description") or "") for item in commands),
+        ]).lower()
+        old_content_detected = any(marker in visible_text for marker in (
+            "quantpilot", "marketing bot", "营销机器人",
+        ))
         matches = (
             name == profile.display_name
             and about == profile.short_description
             and description == profile.description
             and commands == expected_commands
             and menu_button.get("type") == "commands"
+            and not old_content_detected
         )
         return {
             "matches": matches,
@@ -233,7 +263,7 @@ class TelegramRuntimeManager:
                 "language": profile.language,
                 "welcome_matches_registry": bool(profile.welcome),
                 "runtime_enabled": profile.enabled,
-                "old_content_detected": not matches,
+                "old_content_detected": old_content_detected,
             },
         }
 
@@ -242,14 +272,7 @@ class TelegramRuntimeManager:
         if profile is None:
             raise ValueError("Unknown Telegram bot alias.")
         result = self.transport.send_message(profile.token, {
-            "chat_id": chat_id, "text": profile.welcome, "parse_mode": "HTML",
-            "reply_markup": {"inline_keyboard": [[
-                {"text": item.label, "callback_data": "tc:" + item.action}
-                for item in profile.main_menu[:2]
-            ], [
-                {"text": item.label, "callback_data": "tc:" + item.action}
-                for item in profile.main_menu[2:]
-            ]]},
+            **welcome(profile, self.settings.ai_companion_default_language).as_payload(chat_id),
         })
         return {"alias": alias, "status": "SENT", "message_id": (result.get("result") or {}).get("message_id")}
 
@@ -342,7 +365,10 @@ class TelegramRuntimeManager:
                 db.add(row)
             row.status = status
             row.last_heartbeat_at = datetime.now(timezone.utc)
-            row.metadata_json = {"bot_count": len(load_bot_profiles(self.settings)), "multi_bot": True}
+            row.metadata_json = {
+                "bot_count": len(load_bot_profiles(self.settings)),
+                "single_bot_multi_language": True,
+            }
             db.commit()
 
 
