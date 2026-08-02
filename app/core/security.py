@@ -33,7 +33,10 @@ def sanitize_mapping(data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def sanitize_text(message: str) -> str:
-    clean = re.sub(r"\b\d{6,}:[A-Za-z0-9_-]{16,}\b", "[REDACTED_TOKEN]", message)
+    clean = re.sub(
+        r"(?i)(?:bot)?\d{6,}:[A-Za-z0-9_-]{16,}",
+        "bot[REDACTED_TOKEN]", message,
+    )
     clean = re.sub(r"\bsk-[A-Za-z0-9_-]{8,}\b", "sk-************", clean)
     clean = re.sub(
         r"(?i)\b(Bearer\s+)[A-Za-z0-9._-]{12,}\b", r"\1************", clean,

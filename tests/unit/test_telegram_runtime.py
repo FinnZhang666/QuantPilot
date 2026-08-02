@@ -115,6 +115,39 @@ def test_every_required_callback_has_a_real_response(db, monkeypatch):
         assert result and result.text
 
 
+def test_expired_callback_ack_does_not_block_watchlist_add_prompt(db, monkeypatch):
+    cfg = settings(monkeypatch)
+    profile = synchronize_registry(db, cfg)[0]
+
+    def sender(_token, method, _payload):
+        if method == "answerCallbackQuery":
+            return {"ok": False, "error_code": 400}
+        return {"ok": True, "result": {"message_id": 10}}
+
+    service = TelegramProductService(
+        db, cfg, TelegramBotTransport(sender=sender, max_retries=0),
+    )
+    service.handle_update(profile, start_update("normal_user"))
+    select_language(service, profile, "en-US")
+    _, result = service.handle_update(profile, callback_update("watchlist:add"))
+    assert "Enter a stock symbol" in result.text
+
+
+def test_navigation_callback_clears_previous_pending_action(db, monkeypatch):
+    cfg = settings(monkeypatch)
+    profile = synchronize_registry(db, cfg)[0]
+    service = TelegramProductService(db, cfg, TelegramBotTransport(sender=FakeTelegram()))
+    service.handle_update(profile, start_update("normal_user"))
+    select_language(service, profile, "en-US")
+    service.handle_update(profile, callback_update("analyze"))
+    user = db.scalar(select(TelegramRuntimeUser).where(
+        TelegramRuntimeUser.telegram_user_id == "100",
+    ))
+    assert user.pending_action == "ANALYZE"
+    service.handle_update(profile, callback_update("watchlist"))
+    assert user.pending_action is None
+
+
 def test_watchlist_add_flow_creates_default_portfolio_and_persists_symbol(db, monkeypatch):
     cfg = settings(monkeypatch)
     profile = synchronize_registry(db, cfg)[0]

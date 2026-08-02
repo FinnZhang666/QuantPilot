@@ -2,6 +2,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 from app.core.exceptions import LiveTradingDisabledError
+from app.core.security import sanitize_text
 from app.database.models import PaperOrder, Portfolio
 from app.execution.live_blocked import LiveTradingBlockedBroker
 
@@ -16,6 +17,14 @@ async def test_live_broker_always_refuses(method, arg):
     broker = LiveTradingBlockedBroker()
     with pytest.raises(LiveTradingDisabledError):
         await getattr(broker, method)(arg)
+
+
+def test_telegram_token_is_redacted_inside_http_url():
+    token = "1234567890:" + "A" * 35
+    message = "POST https://api.telegram.org/bot%s/getUpdates" % token
+    result = sanitize_text(message)
+    assert token not in result
+    assert "[REDACTED_TOKEN]" in result
 
 
 def test_execution_mode_rejects_live(db):

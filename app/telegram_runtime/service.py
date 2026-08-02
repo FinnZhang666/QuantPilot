@@ -70,7 +70,12 @@ class TelegramProductService:
         if callback:
             callback_id = str(callback.get("id") or "")
             if callback_id:
-                self.transport.answer_callback(profile.token, callback_id)
+                try:
+                    self.transport.answer_callback(profile.token, callback_id)
+                except Exception:
+                    # Telegram may reject an expired callback ID. A failed
+                    # acknowledgement must not cancel the requested action.
+                    pass
             action = str(callback.get("data") or "").removeprefix("tc:")
             response = self._action(profile, user, action, None)
         else:
@@ -156,6 +161,9 @@ class TelegramProductService:
         action: str, argument: Optional[str],
     ) -> TelegramMessage:
         action = action.lower()
+        if user.pending_action:
+            user.pending_action = None
+            self.db.commit()
         if action == "start":
             self._clear_ai_followup(user)
             return welcome(profile, user.language) if self._language_selected(user) else language_picker()
