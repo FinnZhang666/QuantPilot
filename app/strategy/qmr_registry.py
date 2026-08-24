@@ -5,6 +5,7 @@ from sqlalchemy import desc, func, select
 from app.database.models import (
     BuyScoreRecord, QmrBacktestCase, QmrBacktestParameterSet, QmrBacktestRun,
     QmrCandidateRecord, QmrLiveSignal, QmrSignalPerformance, StrategyRecord,
+    QmrExitEvaluation,
 )
 from app.qmr_live.tracking import QmrPerformanceTracker
 
@@ -82,6 +83,10 @@ class StrategyCenterRepository:
         return list(self.db.scalars(select(QmrBacktestParameterSet).order_by(
             desc(QmrBacktestParameterSet.created_at))))
 
+    def exit_evaluations(self, limit=100):
+        return list(self.db.scalars(select(QmrExitEvaluation).order_by(
+            desc(QmrExitEvaluation.evaluation_time)).limit(limit)))
+
     @staticmethod
     def default_config():
         return {"short_name": QMR_SHORT_NAME, "strategy_type": ["REVERSAL", "MEAN_REPAIR", "EVENT_REPAIR"],
@@ -121,6 +126,8 @@ class StrategyCenterService:
             "current_signals": [self._signal(item) for item in signals],
             "backtest": self._backtest(run),
             "live_performance": QmrPerformanceTracker(self.db, self.settings).validation(),
+            "exit_engine": {"current": [self._columns(item) for item in self.repository.exit_evaluations()],
+                            "states": ["HOLD", "WATCH", "PROTECT", "REDUCE", "EXIT"]},
             "cases": self._case_summary(cases),
             "parameter_sets": [self._columns(item) for item in self.repository.parameter_sets()]}
 

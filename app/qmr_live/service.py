@@ -73,6 +73,9 @@ class QmrLiveSignalService:
             signal = self.create_signal(score, recovery, strategy_status, parameter_set_id, at)
             self.repository.save_signal(signal)
             signal.status = "ACTIVE"; self.repository.commit()
+            if getattr(self.settings, "qmr_paper_auto_trading", False):
+                from app.qmr_live.paper_bridge import QmrPaperBridge
+                QmrPaperBridge(self.db).ensure(signal)
             result["notifications"] += self.notifier.send(signal, score.buy_status)
             result["created"] += 1
         return result

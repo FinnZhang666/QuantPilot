@@ -12,3 +12,29 @@ sources:
     format: xlsx
     parser: ssga_holdings
     url: https://www.ssga.com/library-content/products/fund-data/etfs/us/holdings-daily-us-en-spy.xlsx
+  - fund_symbol: SOXX
+    provider: ISHARES
+    enabled: true
+    format: csv
+    parser: ishares_holdings
+    url: https://www.ishares.com/us/products/239705/ishares-semiconductor-etf/1467271812596.ajax?fileType=csv&fileName=SOXX_holdings&dataType=fund
+  - fund_symbol: IGV
+    provider: ISHARES
+    enabled: true
+    format: csv
+    parser: ishares_holdings
+    url: https://www.ishares.com/us/products/239771/ishares-expanded-techsoftware-sector-etf/1467271812596.ajax?fileType=csv&fileName=IGV_holdings&dataType=fund
+  - fund_symbol: IWM
+    provider: ISHARES
+    enabled: true
+    format: csv
+    parser: ishares_holdings
+    url: https://www.ishares.com/us/products/239710/ishares-russell-2000-etf/1467271812596.ajax?fileType=csv&fileName=IWM_holdings&dataType=fund
+  # VanEck currently exposes SMH holdings through a web-generated XLS link.
+  # Keep the official source explicit but disabled until a stable file endpoint is verified.
+  - fund_symbol: SMH
+    provider: VANECK
+    enabled: false
+    format: xlsx
+    parser: vaneck_holdings
+    url: https://www.vaneck.com/us/en/investments/semiconductor-etf-smh/holdings/

@@ -61,6 +61,13 @@ class QmrService:
                 break
         event = self.news.assess(item.symbol, at)
         financial_risk = self._financial_risk(fundamental)
+        small_cap_reasons = []
+        memberships_set = set(weights)
+        if "IWM" in memberships_set and not memberships_set.intersection({"SPY", "QQQ"}):
+            passed, small_cap_reasons = self._small_cap_quality_gate(
+                item, fundamental, average_dollar_volume)
+            if not passed:
+                financial_risk = "HIGH"
         ranks = {"UNKNOWN": 0, "LOW": 1, "MEDIUM": 2, "HIGH": 3}
         if ranks.get(financial_risk, 0) > ranks.get(event.fundamental_risk, 0):
             event = EventAssessment(event.event_risk, financial_risk, event.confidence, event.source)
@@ -71,9 +78,31 @@ class QmrService:
         confidence = "HIGH" if coverage >= .8 and len(prices) >= 252 and event.confidence == "HIGH" else ("MEDIUM" if coverage >= .65 and len(prices) >= 60 else "LOW")
         m_components["benchmark"] = benchmark
         m_components["industry_benchmark"] = industry_symbol
+        m_components["small_cap_quality_gate"] = {"passed": not small_cap_reasons,
+                                                   "reasons": small_cap_reasons}
         return {"quality": q_score, "quality_components": q_components, "coverage": coverage,
                 "mispricing": m_score, "mispricing_components": m_components,
                 "event": event, "sources": sources, "confidence": confidence}
+
+    def _small_cap_quality_gate(self, item, fundamental, average_dollar_volume):
+        rules = self.config["small_cap_quality_gate"]
+        reasons = []
+        if item.market_cap is None or float(item.market_cap) < rules["market_cap_min"]:
+            reasons.append("small_cap_market_cap_insufficient")
+        if average_dollar_volume is None or average_dollar_volume < rules["average_dollar_volume_min"]:
+            reasons.append("small_cap_liquidity_insufficient")
+        if fundamental is None:
+            return False, reasons + ["small_cap_fundamental_data_missing"]
+        if rules["require_positive_net_income"] and (fundamental.net_income_ttm is None or fundamental.net_income_ttm <= 0):
+            reasons.append("small_cap_profitability_gate_failed")
+        if rules["require_positive_free_cash_flow"] and (fundamental.free_cash_flow is None or fundamental.free_cash_flow <= 0):
+            reasons.append("small_cap_cashflow_gate_failed")
+        if fundamental.debt_to_equity is None or fundamental.debt_to_equity > rules["debt_to_equity_max"]:
+            reasons.append("small_cap_debt_gate_failed")
+        dilution = (fundamental.source_payload_json or {}).get("share_dilution_yoy")
+        if rules["require_dilution_data"] and dilution is None:
+            reasons.append("small_cap_dilution_data_missing")
+        return not reasons, reasons
 
     def _financial_risk(self, fundamental):
         if fundamental is None:

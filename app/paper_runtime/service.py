@@ -17,6 +17,7 @@ from app.database.models import (
     SystemPaperPosition,
     TradePlan,
     TradePlanTransition,
+    UniverseInstrument,
 )
 from app.paper_runtime.audit import PaperAudit
 
@@ -412,6 +413,10 @@ class PaperTradingService:
             if self.settings.paper_trading_sizing_mode == "FIXED_CASH"
             else equity * D(str(self.settings.paper_trading_position_pct))
         )
+        if plan.strategy_name == "quality_mispricing_recovery":
+            score_factor = D("1") if (plan.score or 0) >= 90 else (D("0.6") if (plan.score or 0) >= 80 else D("0.3"))
+            budget = min(budget, equity * D(str(self.settings.qmr_target_position_pct)) * score_factor,
+                         equity * D(str(self.settings.qmr_max_position_pct)))
         open_positions = list(self.db.scalars(select(SystemPaperPosition).where(
             SystemPaperPosition.account_id == account.id,
             SystemPaperPosition.status == "OPEN",
@@ -433,6 +438,16 @@ class PaperTradingService:
             max(D("0"), equity * D(str(self.settings.paper_trading_max_strategy_exposure_pct)) - strategy_exposure),
             max(D("0"), equity * D(str(self.settings.paper_trading_max_gross_exposure_pct)) - gross_exposure),
         )
+        if plan.strategy_name == "quality_mispricing_recovery":
+            instrument = self.db.scalar(select(UniverseInstrument).where(
+                UniverseInstrument.symbol == plan.symbol.replace("US.", "")))
+            sector = instrument.sector if instrument else None
+            if sector:
+                sector_symbols = list(self.db.scalars(select(UniverseInstrument.symbol).where(
+                    UniverseInstrument.sector == sector)))
+                sector_exposure = sum((abs(D(str(row.quantity)) * D(str(row.current_price)))
+                    for row in open_positions if row.symbol.replace("US.", "") in sector_symbols), D("0"))
+                budget = min(budget, max(D("0"), equity * D(str(self.settings.qmr_max_sector_exposure)) - sector_exposure))
         if plan.direction == "LONG":
             minimum_cash = equity * D(str(self.settings.paper_trading_min_cash_reserve_pct))
             spendable = D(str(account.available_cash)) - minimum_cash - D(str(self.settings.paper_trading_fee_per_order))
@@ -539,6 +554,9 @@ class PaperTradingService:
                 trigger_price=stop, full=True,
             )
             return "CLOSED"
+        qmr_outcome = self._evaluate_qmr_exit(account, plan, position, bar)
+        if qmr_outcome:
+            return qmr_outcome
         if target_hit:
             targets = position.targets_json or []
             final_target = position.target_index >= len(targets) - 1
@@ -581,6 +599,38 @@ class PaperTradingService:
             details={"bar_timestamp": self._iso(bar.timestamp_utc), "current_price": str(close)},
         )
         return "UPDATED"
+
+    def _evaluate_qmr_exit(self, account, plan, position, bar):
+        """Execute only state transitions in the internal paper ledger, never a broker account."""
+        if not (
+            getattr(self.settings, "qmr_exit_enabled", False)
+            and getattr(self.settings, "qmr_paper_auto_trading", False)
+        ):
+            return None
+        qmr_names = {"quality_mispricing_recovery", "优质错杀修复", "QMR"}
+        if position.strategy_name not in qmr_names:
+            return None
+        from app.qmr_exit.service import QmrExitService
+        service = QmrExitService(self.db, self.settings)
+        at = self._aware(bar.timestamp_utc)
+        result = service.evaluate_position(position, at)
+        service.persist(position, at, result)
+        if result["state"] not in {"REDUCE", "EXIT"} or result["state"] == result["previous_state"]:
+            return None
+        quantity = D(str(position.quantity))
+        full = result["state"] == "EXIT"
+        if not full:
+            quantity *= D(str(result["reduce_ratio"] or self.settings.paper_trading_target1_reduce_pct))
+            if not self.settings.paper_trading_allow_fractional:
+                quantity = quantity.quantize(D("1"), rounding=ROUND_DOWN)
+            if quantity <= 0 or quantity >= D(str(position.quantity)):
+                full, quantity = True, D(str(position.quantity))
+        self._execute_exit(
+            account, plan, position, bar, quantity,
+            self._adverse_market_fill(position.direction, D(str(bar.close))),
+            "QMR_EXIT" if full else "QMR_REDUCE", trigger_price=D(str(bar.close)), full=full,
+        )
+        return "CLOSED" if full else "PARTIAL"
 
     def _execute_exit(
         self, account, plan, position, bar, quantity, fill_price, reason,

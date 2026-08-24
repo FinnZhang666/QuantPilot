@@ -529,6 +529,96 @@ class QmrSignalDelivery(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class QmrMoneyFlowSnapshot(Base):
+    __tablename__ = "qmr_money_flow_snapshots"
+    __table_args__ = (
+        UniqueConstraint("symbol", "timestamp", "source", name="uq_qmr_money_flow_point"),
+        Index("ix_qmr_money_flow_symbol_time", "symbol", "timestamp"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(32))
+    market: Mapped[str] = mapped_column(String(8), default="US")
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    trading_session: Mapped[str] = mapped_column(String(32), default="UNKNOWN")
+    source: Mapped[str] = mapped_column(String(64), default="MOOMOO")
+    data_available: Mapped[bool] = mapped_column(Boolean, default=False)
+    raw_flow_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    rolling_structure_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    money_flow_regime: Mapped[str] = mapped_column(String(32), default="NEUTRAL")
+    money_flow_score: Mapped[Optional[float]] = mapped_column(Numeric(12, 6))
+    accumulation_score: Mapped[Optional[float]] = mapped_column(Numeric(12, 6))
+    distribution_score: Mapped[Optional[float]] = mapped_column(Numeric(12, 6))
+    absorption_score: Mapped[Optional[float]] = mapped_column(Numeric(12, 6))
+    data_quality: Mapped[str] = mapped_column(String(16), default="LOW")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class QmrExitEvaluation(Base):
+    __tablename__ = "qmr_exit_evaluations"
+    __table_args__ = (
+        UniqueConstraint("position_id", "evaluation_time", "model_version", name="uq_qmr_exit_position_time"),
+        Index("ix_qmr_exit_symbol_time", "symbol", "evaluation_time"),
+        Index("ix_qmr_exit_state_time", "state", "evaluation_time"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    position_id: Mapped[Optional[int]] = mapped_column(ForeignKey("system_paper_positions.id"), index=True)
+    signal_id: Mapped[Optional[str]] = mapped_column(ForeignKey("qmr_live_signals.signal_id"), index=True)
+    strategy_code: Mapped[str] = mapped_column(String(64), default="quality_mispricing_recovery")
+    strategy_version: Mapped[str] = mapped_column(String(32))
+    parameter_version: Mapped[str] = mapped_column(String(32))
+    symbol: Mapped[str] = mapped_column(String(32))
+    evaluation_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    entry_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    entry_price: Mapped[float] = mapped_column(Numeric(24, 8))
+    highest_price: Mapped[float] = mapped_column(Numeric(24, 8))
+    current_price: Mapped[float] = mapped_column(Numeric(24, 8))
+    current_return: Mapped[float] = mapped_column(Numeric(14, 8))
+    max_return: Mapped[float] = mapped_column(Numeric(14, 8))
+    profit_giveback: Mapped[float] = mapped_column(Numeric(14, 8))
+    exit_risk_score: Mapped[float] = mapped_column(Numeric(12, 6))
+    capital_flow_risk: Mapped[Optional[float]] = mapped_column(Numeric(12, 6))
+    trend_risk: Mapped[Optional[float]] = mapped_column(Numeric(12, 6))
+    relative_strength_risk: Mapped[Optional[float]] = mapped_column(Numeric(12, 6))
+    sector_rotation_risk: Mapped[Optional[float]] = mapped_column(Numeric(12, 6))
+    profit_protection_risk: Mapped[Optional[float]] = mapped_column(Numeric(12, 6))
+    exhaustion_risk: Mapped[Optional[float]] = mapped_column(Numeric(12, 6))
+    money_flow_regime: Mapped[str] = mapped_column(String(32), default="NEUTRAL")
+    state: Mapped[str] = mapped_column(String(16))
+    previous_state: Mapped[Optional[str]] = mapped_column(String(16))
+    reduce_ratio: Mapped[Optional[float]] = mapped_column(Numeric(10, 6))
+    dynamic_support: Mapped[Optional[float]] = mapped_column(Numeric(24, 8))
+    support_status: Mapped[str] = mapped_column(String(24), default="UNKNOWN")
+    exit_reason: Mapped[Optional[str]] = mapped_column(String(64))
+    hard_exit_reason: Mapped[Optional[str]] = mapped_column(String(128))
+    reasons_json: Mapped[list] = mapped_column(JSON, default=list)
+    components_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    data_quality_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    confidence: Mapped[float] = mapped_column(Numeric(12, 6))
+    model_version: Mapped[str] = mapped_column(String(32))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class QmrExitEvent(Base):
+    __tablename__ = "qmr_exit_events"
+    __table_args__ = (
+        UniqueConstraint("evaluation_id", "event_type", name="uq_qmr_exit_event_evaluation"),
+        Index("ix_qmr_exit_event_symbol_time", "symbol", "event_time"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    evaluation_id: Mapped[int] = mapped_column(ForeignKey("qmr_exit_evaluations.id"), index=True)
+    position_id: Mapped[Optional[int]] = mapped_column(ForeignKey("system_paper_positions.id"), index=True)
+    symbol: Mapped[str] = mapped_column(String(32))
+    event_type: Mapped[str] = mapped_column(String(32))
+    previous_state: Mapped[Optional[str]] = mapped_column(String(16))
+    state: Mapped[str] = mapped_column(String(16))
+    reduce_ratio: Mapped[Optional[float]] = mapped_column(Numeric(10, 6))
+    event_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    reasons_json: Mapped[list] = mapped_column(JSON, default=list)
+    notification_status: Mapped[str] = mapped_column(String(24), default="PENDING")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class StrategyRecord(TimestampMixin, Base):
     __tablename__ = "strategies"
     id: Mapped[int] = mapped_column(primary_key=True)

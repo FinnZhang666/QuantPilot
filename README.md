@@ -4,6 +4,8 @@ QMR 实盘信号、Telegram 去重通知与持续验证闭环见
 [`docs/SPRINT_06_QMR_LIVE_SIGNAL.md`](docs/SPRINT_06_QMR_LIVE_SIGNAL.md)。
 QMR 在现有策略中心的正式注册、状态和版本关系见
 [`docs/QMR_STRATEGY_CENTER.md`](docs/QMR_STRATEGY_CENTER.md)。
+QMR 持仓后的独立退出风险、利润保护、资金结构与回测比较见
+[`docs/SPRINT_09_QMR_EXIT_ENGINE.md`](docs/SPRINT_09_QMR_EXIT_ENGINE.md)。
 
 ![Trade Companion Logo](app/dashboard/static/branding/trade-companion-logo.png)
 
@@ -21,7 +23,7 @@ Trade Companion 是一个 AI 辅助的美股研究与交易生命周期工作台
 - Product：Trade Companion
 - Release：`v1.0.0-beta.1`
 - Stage：Beta
-- Database Migration Head：`0031`
+- Database Migration Head：`0032`
 - 范围：Paper Trading Only，不连接真实券商下单，不同步真实持仓。
 - Beta 仍需观察长期稳定性；当前策略样本有限，Trade Plan 可能为 0，Sharpe 暂无可靠样本。
 
@@ -476,3 +478,10 @@ Buy Score Engine 只聚合当前 QMR WATCH 与其对应 Recovery 结果，按配
 Sprint 5 提供 Point-in-Time QMR 事件回放、1/3/5/10/20日收益、MFE/MAE、局部底部捕获、止盈止损与追踪止损矩阵、Walk-Forward、Out-of-Sample、失败案例和分层统计。它只读取已保存的历史信号及 `market_bars`，不会为了改善结果修改 Sprint 1–4 数据。
 
 当前缺少完整历史 QQQ/SPY 成分有效期，因此真实结果必须标记为 `RESEARCH` 和幸存者偏差警告。详见 [`docs/QMR_BACKTEST_ENGINE.md`](docs/QMR_BACKTEST_ENGINE.md)。
+
+## QMR Exit Engine
+
+QMR Exit Engine 是 QMR 的持仓管理子模块，不是第二套策略。它按资金结构、日线/60m/30m 趋势、
+相对强弱、行业轮动、利润回吐与量价衰竭形成独立 `exit_risk_score`，输出
+`HOLD/WATCH/PROTECT/REDUCE/EXIT`。缺失资金流会降低置信度，不会被当作零风险；所有状态变化和原因
+均可审计。系统 Paper 账本可按状态变化模拟减仓或退出，但 `REAL_AUTO_TRADING` 永久拒绝启用。

@@ -171,6 +171,13 @@ class Settings(BaseSettings):
     qmr_backtest_config_file: str = "config/qmr_backtest_v1.yaml"
     qmr_live_enabled: bool = True
     qmr_live_config_file: str = "config/qmr_live_v1.yaml"
+    qmr_exit_enabled: bool = True
+    qmr_exit_config_file: str = "config/qmr_exit_v1.yaml"
+    qmr_paper_auto_trading: bool = True
+    real_auto_trading: bool = False
+    qmr_target_position_pct: float = Field(default=0.10, gt=0, le=1)
+    qmr_max_position_pct: float = Field(default=0.15, gt=0, le=1)
+    qmr_max_sector_exposure: float = Field(default=0.30, gt=0, le=1)
     default_timezone: str = "America/New_York"
     display_timezone: str = "Asia/Shanghai"
     default_slippage_bps: int = Field(default=8, ge=0, le=1000)
@@ -208,6 +215,8 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_safety(self) -> "Settings":
         enforce_safe_trading_mode(self.trading_mode)
+        if self.real_auto_trading:
+            raise ValueError("QMR真实自动交易永久关闭；仅允许Paper Trading。")
         if self.moomoo_live_trading_enabled:
             raise ValueError("Moomoo实盘交易在V1中永久禁用。")
         if self.moomoo_allow_order_submission:

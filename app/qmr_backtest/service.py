@@ -15,8 +15,10 @@ class QmrBacktestService:
         self.db, self.settings = db, settings
         self.config = yaml.safe_load(Path(config_path or settings.qmr_backtest_config_file).read_text(encoding="utf-8"))
         self.recovery_config = yaml.safe_load(Path(settings.recovery_config_file).read_text(encoding="utf-8"))
+        exit_config_file = getattr(settings, "qmr_exit_config_file", "config/qmr_exit_v1.yaml")
+        self.exit_config = yaml.safe_load(Path(exit_config_file).read_text(encoding="utf-8"))
         self.repository = QmrBacktestRepository(db)
-        self.engine = QmrBacktestEngine(self.config, self.recovery_config)
+        self.engine = QmrBacktestEngine(self.config, self.recovery_config, self.exit_config)
 
     def prepare(self, start, end, parameter_name="default", symbols=None, dry_run=False):
         start, end = self.utc(start), self.utc(end)

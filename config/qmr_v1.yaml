@@ -28,3 +28,14 @@ sector_benchmarks:
   Financials: [XLF, SPY]
   Health Care: [XLV, SPY]
   default: [SPY, QQQ]
+universe_tiers:
+  core: [SPY, QQQ]
+  industry: [SOXX, SMH, IGV]
+  small_mid: [IWM]
+small_cap_quality_gate:
+  market_cap_min: 500000000
+  average_dollar_volume_min: 5000000
+  require_positive_net_income: true
+  require_positive_free_cash_flow: true
+  debt_to_equity_max: 2.0
+  require_dilution_data: true

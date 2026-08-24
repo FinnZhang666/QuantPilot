@@ -90,6 +90,9 @@ from app.database.models.entities import (
     QmrSignalPerformance,
     QmrSignalParticipation,
     QmrSignalDelivery,
+    QmrMoneyFlowSnapshot,
+    QmrExitEvaluation,
+    QmrExitEvent,
 )
 
 __all__ = [
@@ -184,4 +187,7 @@ __all__ = [
     "QmrSignalPerformance",
     "QmrSignalParticipation",
     "QmrSignalDelivery",
+    "QmrMoneyFlowSnapshot",
+    "QmrExitEvaluation",
+    "QmrExitEvent",
 ]

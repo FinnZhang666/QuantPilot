@@ -1,0 +1,48 @@
+version: qmr-exit-v1
+strategy_version: QMR-v1.0
+weights:
+  capital_flow: 25
+  trend: 20
+  relative_strength: 15
+  sector_rotation: 15
+  profit_protection: 15
+  exhaustion: 10
+state_thresholds:
+  watch: 30
+  protect: 45
+  reduce: 60
+  exit: 75
+reduce:
+  default_ratio: 0.333333
+  elevated_ratio: 0.5
+  elevated_score: 70
+profit_stages:
+  protect_cost: 5
+  trailing: 10
+  strong_protection: 20
+  giveback_protect: 5
+  giveback_reduce: 10
+  giveback_exit: 18
+  atr_multiple: 2.5
+money_flow:
+  share_threshold: 0.002
+  strong_share_threshold: 0.006
+  neutral_share_band: 0.0015
+  rolling_windows: [1, 3, 5, 10]
+relative_strength:
+  windows: [1, 3, 5, 10, 20]
+  deterioration_full: -0.10
+sector_rotation:
+  windows: [1, 3, 5]
+  rank_drop_full: 3
+trend:
+  timeframe_weights: {1d: 0.5, 60m: 0.3, 30m: 0.2}
+  support_window: 20
+  support_atr_buffer: 0.5
+hard_exit:
+  support_break_atr: 0.75
+  maximum_risk_score: 90
+notifications:
+  score_change: 15
+  states: [WATCH, PROTECT, REDUCE, EXIT]
+

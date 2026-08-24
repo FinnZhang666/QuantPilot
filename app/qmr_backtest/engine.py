@@ -6,12 +6,14 @@ from statistics import mean, median
 
 from app.buy_score.scoring import STATUS_ORDER
 from app.qmr_backtest.metrics import summarize, target_stop_path, trailing_stop_path
+from app.qmr_exit.backtest import comparison_paths
 
 
 class QmrBacktestEngine:
-    def __init__(self, config, recovery_config=None):
+    def __init__(self, config, recovery_config=None, exit_config=None):
         self.config = config
         self.recovery_config = recovery_config or {}
+        self.exit_config = exit_config
 
     def events(self, rows):
         reached = defaultdict(set)
@@ -57,6 +59,8 @@ class QmrBacktestEngine:
         result = self._result(returns, mae)
         snapshot = dict(score.score_components_json or {})
         snapshot["recovery_snapshot"] = getattr(score, "_qmr_backtest_recovery_snapshot", {})
+        if self.exit_config:
+            snapshot["exit_comparison"] = comparison_paths(maximum, entry, self.exit_config)
         failures = self._failure_features(score, returns, mae, snapshot)
         return {
             "run_id": run_id, "buy_score_id": score.id,
@@ -152,7 +156,22 @@ class QmrBacktestEngine:
             "trailing_stops": self.trailing_summary(rows),
             "best_entry_level": self.best_entry_level(rows),
             "grade_calibration": self.grade_calibration(rows),
-            "factor_ablation": self.failure_factor_summary(rows)}
+            "factor_ablation": self.failure_factor_summary(rows),
+            "exit_engine_comparison": self.exit_comparison(rows)}
+
+    @staticmethod
+    def exit_comparison(rows):
+        keys = ("fixed_5d", "fixed_10d")
+        result = {key: summarize([row["feature_snapshot_json"].get("exit_comparison", {}).get(key)
+                                  for row in rows]) for key in keys}
+        engine = [row["feature_snapshot_json"].get("exit_comparison", {}).get("qmr_exit_engine", {})
+                  for row in rows]
+        result["qmr_exit_engine"] = summarize([item.get("realized_return") for item in engine])
+        result["qmr_exit_engine"]["average_captured_mfe_ratio"] = QmrBacktestEngine.optional_mean(
+            item.get("captured_mfe_ratio") for item in engine)
+        result["qmr_exit_engine"]["average_giveback"] = QmrBacktestEngine.optional_mean(
+            item.get("profit_giveback") for item in engine)
+        return result
 
     def matrix_summary(self, rows):
         keys = {key for row in rows for key in row["target_stop_json"]}
