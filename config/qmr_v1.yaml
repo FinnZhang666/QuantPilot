@@ -3,6 +3,9 @@ thresholds:
   quality_min: 60
   mispricing_min: 65
   minimum_quality_coverage: 0.65
+freshness:
+  fundamentals_days: 120
+valuation_blend_weight: 0.20
 weights:
   quality: {profitability: 20, growth: 20, cashflow: 20, industry: 15, etf_importance: 15, liquidity: 10}
   mispricing: {multi_period_drawdown: 25, historical_anomaly: 20, market_relative: 15, industry_relative: 15, event_risk: 25}

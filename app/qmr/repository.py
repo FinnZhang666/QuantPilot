@@ -2,7 +2,7 @@ from sqlalchemy import and_, desc, exists, func, or_, select
 
 from app.database.models import (
     MarketBar, MispricingScoreRecord, QmrCandidateRecord, QualityScoreRecord,
-    UniverseInstrument, UniverseMembership,
+    UniverseInstrument, UniverseMembership, InstrumentMapping,
 )
 
 
@@ -40,6 +40,13 @@ class QmrRepository:
         for row in reversed(rows):
             deduplicated[row.timestamp_utc] = row
         return [deduplicated[key] for key in sorted(deduplicated)]
+
+    def fundamental_symbol(self, symbol):
+        mapping = self.db.scalar(select(InstrumentMapping).where(
+            InstrumentMapping.leveraged_symbol == symbol.upper(),
+            InstrumentMapping.active.is_(True),
+        ).order_by(InstrumentMapping.id).limit(1))
+        return mapping.underlying_symbol if mapping else symbol.upper()
 
     def save(self, universe, evaluation_time, quality, quality_components, coverage,
              mispricing, mispricing_components, event, sources, confidence, model_version,
