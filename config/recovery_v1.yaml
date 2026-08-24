@@ -1,0 +1,37 @@
+version: recovery-v1
+timeframes: [5m, 15m, 30m, 60m]
+minimum_bars: 20
+history_days_for_rvol: 20
+weights:
+  recovery: {stabilization: 0.30, capital_flow: 0.30, technical: 0.15, sector: 0.15, market: 0.10}
+  stabilization: {no_new_low: 25, low_recovery: 20, higher_low: 20, vwap_recovery: 20, short_trend: 15}
+  capital_flow: {rvol: 20, up_down_volume: 20, vwap_volume: 15, active_buy: 20, price_volume_divergence: 15, continuity: 10}
+  technical: {macd: 0.65, rsi: 0.35}
+  context: {no_new_low: 0.50, low_recovery: 0.50}
+thresholds:
+  observe: 50
+  early_entry: 65
+  confirmed_entry: 75
+  strong_entry: 85
+  stage_stabilizing: 35
+  stage_early: 55
+  stage_confirmed: 75
+  stage_trend: 88
+  no_new_low_bars_full: 8
+  higher_low_tolerance_pct: 0.002
+  low_recovery_atr_full: 2.0
+  rvol_start: 0.8
+  rvol_full: 2.0
+  up_down_ratio_full: 2.0
+  continuity_bars: 3
+  failure_break_pct: 0.001
+  context_no_new_low_bars_full: 5
+  context_low_recovery_full: 0.03
+sector_benchmarks:
+  Information Technology: [VGT, QQQ]
+  Semiconductors: [SOXX, SMH]
+  Financials: [XLF, SPY]
+  Health Care: [XLV, SPY]
+  default: [SPY, QQQ]
+global_context_symbols:
+  Semiconductors: [SK_HYNIX, SAMSUNG, TSM]

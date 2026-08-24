@@ -177,6 +177,58 @@ class QmrCandidateRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class RecoveryScoreRecord(Base):
+    __tablename__ = "recovery_scores"
+    __table_args__ = (
+        UniqueConstraint("symbol", "evaluation_time", "model_version", name="uq_recovery_score_version"),
+        Index("ix_recovery_symbol_time", "symbol", "evaluation_time"),
+        Index("ix_recovery_entry_time", "entry_status", "evaluation_time"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    qmr_candidate_id: Mapped[int] = mapped_column(ForeignKey("qmr_candidates.id"), index=True)
+    symbol: Mapped[str] = mapped_column(String(32))
+    evaluation_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    price: Mapped[float] = mapped_column(Numeric(24, 8))
+    session_low: Mapped[float] = mapped_column(Numeric(24, 8))
+    session_high: Mapped[float] = mapped_column(Numeric(24, 8))
+    low_recovery_pct: Mapped[float] = mapped_column(Numeric(14, 8))
+    stabilization_score: Mapped[int] = mapped_column(Integer)
+    capital_flow_score: Mapped[int] = mapped_column(Integer)
+    technical_score: Mapped[Optional[int]] = mapped_column(Integer)
+    sector_recovery_score: Mapped[Optional[int]] = mapped_column(Integer)
+    market_recovery_score: Mapped[Optional[int]] = mapped_column(Integer)
+    global_context_score: Mapped[Optional[int]] = mapped_column(Integer)
+    recovery_score: Mapped[int] = mapped_column(Integer)
+    recovery_stage: Mapped[str] = mapped_column(String(32))
+    entry_status: Mapped[str] = mapped_column(String(32))
+    market_state: Mapped[str] = mapped_column(String(32))
+    trading_session: Mapped[str] = mapped_column(String(32))
+    capital_flow_data: Mapped[str] = mapped_column(String(16))
+    score_components_json: Mapped[dict] = mapped_column(JSON)
+    data_sources_json: Mapped[list] = mapped_column(JSON)
+    data_confidence: Mapped[str] = mapped_column(String(16))
+    model_version: Mapped[str] = mapped_column(String(32))
+    failure_reason: Mapped[Optional[str]] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class RecoveryEventRecord(Base):
+    __tablename__ = "recovery_events"
+    __table_args__ = (Index("ix_recovery_event_symbol_time", "symbol", "event_time"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    recovery_score_id: Mapped[int] = mapped_column(ForeignKey("recovery_scores.id"), index=True)
+    symbol: Mapped[str] = mapped_column(String(32))
+    event_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    previous_stage: Mapped[Optional[str]] = mapped_column(String(32))
+    recovery_stage: Mapped[str] = mapped_column(String(32))
+    previous_entry_status: Mapped[Optional[str]] = mapped_column(String(32))
+    entry_status: Mapped[str] = mapped_column(String(32))
+    price: Mapped[float] = mapped_column(Numeric(24, 8))
+    reason_json: Mapped[list] = mapped_column(JSON, default=list)
+    model_version: Mapped[str] = mapped_column(String(32))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class StrategyRecord(TimestampMixin, Base):
     __tablename__ = "strategies"
     id: Mapped[int] = mapped_column(primary_key=True)

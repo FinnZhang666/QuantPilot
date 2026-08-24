@@ -76,6 +76,8 @@ from app.database.models.entities import (
     QualityScoreRecord,
     MispricingScoreRecord,
     QmrCandidateRecord,
+    RecoveryScoreRecord,
+    RecoveryEventRecord,
 )
 
 __all__ = [
@@ -156,4 +158,6 @@ __all__ = [
     "QualityScoreRecord",
     "MispricingScoreRecord",
     "QmrCandidateRecord",
+    "RecoveryScoreRecord",
+    "RecoveryEventRecord",
 ]

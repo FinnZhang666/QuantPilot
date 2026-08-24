@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from app.database.session import get_session_factory
 from app.universe.service import UniverseService
 from app.qmr.service import QmrService
+from app.recovery.service import RecoveryService
 
 logger = logging.getLogger("trade_companion.universe.scheduler")
 
@@ -41,9 +42,15 @@ class UniverseScheduler:
                         latest_qmr = qmr.repository.latest_evaluation_time()
                         if latest_qmr is None or datetime.now(timezone.utc) - latest_qmr >= timedelta(minutes=self.settings.qmr_update_interval_minutes):
                             qmr.run(limit=1000)
+                    if self.settings.recovery_enabled and self.settings.recovery_auto_update_enabled:
+                        recovery = RecoveryService(db, self.settings)
+                        latest_recovery = recovery.repository.latest_evaluation_time()
+                        if latest_recovery is None or datetime.now(timezone.utc) - latest_recovery >= timedelta(minutes=self.settings.recovery_update_interval_minutes):
+                            recovery.run(limit=1000)
             except Exception:
                 logger.exception("Scheduled Universe update failed")
-            self._stop.wait(3600)
+            interval = self.settings.recovery_update_interval_minutes * 60 if self.settings.recovery_auto_update_enabled else 3600
+            self._stop.wait(min(3600, interval))
 
 
 _scheduler = None

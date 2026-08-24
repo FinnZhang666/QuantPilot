@@ -160,6 +160,10 @@ class Settings(BaseSettings):
     qmr_config_file: str = "config/qmr_v1.yaml"
     qmr_auto_update_enabled: bool = True
     qmr_update_interval_minutes: int = Field(default=60, ge=5, le=1440)
+    recovery_enabled: bool = True
+    recovery_config_file: str = "config/recovery_v1.yaml"
+    recovery_auto_update_enabled: bool = True
+    recovery_update_interval_minutes: int = Field(default=5, ge=1, le=1440)
     default_timezone: str = "America/New_York"
     display_timezone: str = "Asia/Shanghai"
     default_slippage_bps: int = Field(default=8, ge=0, le=1000)
@@ -281,6 +285,10 @@ class Settings(BaseSettings):
             "qmr_config_file": self.qmr_config_file,
             "qmr_auto_update_enabled": self.qmr_auto_update_enabled,
             "qmr_update_interval_minutes": self.qmr_update_interval_minutes,
+            "recovery_enabled": self.recovery_enabled,
+            "recovery_config_file": self.recovery_config_file,
+            "recovery_auto_update_enabled": self.recovery_auto_update_enabled,
+            "recovery_update_interval_minutes": self.recovery_update_interval_minutes,
         }
 
     def realtime_symbol_list(self) -> List[str]:

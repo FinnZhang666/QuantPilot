@@ -100,4 +100,4 @@ def test_openapi_path_contract_is_preserved(monkeypatch, tmp_path):
     with phase2_client(monkeypatch, tmp_path) as client:
         schema = client.get("/openapi.json")
         assert schema.status_code == 200
-        assert len(schema.json()["paths"]) == 181
+        assert len(schema.json()["paths"]) == 183

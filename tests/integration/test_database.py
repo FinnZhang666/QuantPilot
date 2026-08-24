@@ -33,7 +33,23 @@ def test_fresh_head_schema_matches_git_metadata(monkeypatch, tmp_path):
     with engine.connect() as connection:
         assert connection.exec_driver_sql(
             "SELECT version_num FROM alembic_version"
-        ).scalar_one() == "0026"
+        ).scalar_one() == "0027"
+
+
+def test_recovery_migration_round_trip(monkeypatch, tmp_path):
+    url = "sqlite:///" + str(tmp_path / "recovery-migration.db")
+    monkeypatch.setenv("DATABASE_URL", url)
+    config = Config("alembic.ini")
+    command.upgrade(config, "0026")
+    engine = create_engine(url)
+    names = ("recovery_scores", "recovery_events")
+    for name in names: Base.metadata.tables[name].drop(engine, checkfirst=True)
+    command.upgrade(config, "0027")
+    assert set(names) <= set(inspect(engine).get_table_names())
+    command.downgrade(config, "0026")
+    assert not (set(names) & set(inspect(engine).get_table_names()))
+    command.upgrade(config, "0027")
+    assert "recovery_scores" in inspect(engine).get_table_names()
 
 
 def test_qmr_migration_round_trip(monkeypatch, tmp_path):

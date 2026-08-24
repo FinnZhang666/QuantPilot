@@ -31,8 +31,9 @@ class QmrRepository:
         )))
 
     def bars(self, symbol, evaluation_time, limit=1300):
+        bare = symbol.upper().removeprefix("US.")
         rows = list(self.db.scalars(select(MarketBar).where(
-            MarketBar.symbol == symbol, MarketBar.interval == "1d",
+            MarketBar.symbol.in_((bare, "US." + bare)), MarketBar.interval == "1d",
             MarketBar.timestamp_utc <= evaluation_time, MarketBar.is_blank.is_(False),
         ).order_by(desc(MarketBar.timestamp_utc)).limit(limit)))
         deduplicated = {}

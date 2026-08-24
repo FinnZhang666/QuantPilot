@@ -449,3 +449,11 @@ QMR Engine 仅分析评估时点有效的 QQQ/SPY Universe 成分股，分别计
 缺少新闻时明确标记 `UNKNOWN`，不会伪装为低风险。API 为 `GET /qmr/candidates`、
 `GET /qmr/{symbol}`，Dashboard 为 `/dashboard/qmr`。详见
 [`docs/QMR_ENGINE.md`](docs/QMR_ENGINE.md)。
+
+## Recovery Engine
+
+Recovery Engine 仅处理当前 QMR `WATCH` 候选，使用已闭合 5m/15m/30m/60m K 线计算止跌、资金回流、
+技术确认、板块同步和大盘环境，并保存完整阶段变化历史。RVOL 按交易时段及同一时刻比较；主动买卖、
+大单或全球联动缺失时保持 `PARTIAL/UNKNOWN` 并重新归一化可用因子。输出 Entry 候选状态但不下单、
+不管理仓位。API 为 `GET /qmr/recovery`、`GET /qmr/recovery/{symbol}`，Dashboard 复用
+`/dashboard/qmr`。详见 [`docs/RECOVERY_ENGINE.md`](docs/RECOVERY_ENGINE.md)。
