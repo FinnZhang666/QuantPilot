@@ -1,8 +1,11 @@
 import logging
+from collections import defaultdict
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from app.universe.config import load_sources
 from app.universe.downloader import UniverseDownloader
+from app.universe.models import UniverseFetchResult
 from app.universe.parser import parse_holdings, normalize_symbol
 from app.universe.repository import UniverseRepository
 
@@ -23,25 +26,93 @@ class UniverseService:
     def update(self, force=False):
         run = self.repository.create_run([{"fund_symbol": s.fund_symbol, "provider": s.provider} for s in self.sources])
         summary = {"added": 0, "reactivated": 0, "inactivated": 0, "sources": [], "errors": []}
+        grouped = defaultdict(list)
         for source in self.sources:
+            grouped[source.fund_symbol].append(source)
+        for fund_symbol, sources in sorted(grouped.items()):
             try:
-                content, cache_status = self.downloader.fetch(source, force=force)
-                records = parse_holdings(content, source.file_format)
-                counts = self.repository.sync_source(source, records)
+                fetched = self._fetch_group(sorted(sources, key=lambda item: (item.priority, item.role)))
+                source = next(item for item in sources if item.provider == fetched.source_name)
+                if fetched.cache_used:
+                    summary["sources"].append(self._source_summary(fetched, None, sources))
+                    summary["errors"].append({"fund_symbol": fund_symbol,
+                                              "error": fetched.error_code or "USING_LAST_KNOWN_GOOD"})
+                    logger.warning("Universe using LKG fund=%s source=%s members=%d",
+                                   fund_symbol, fetched.source_name, len(fetched.members))
+                    continue
+                counts = self.repository.sync_source(source, fetched.members)
                 for key in ("added", "reactivated", "inactivated"):
                     summary[key] += counts[key]
-                summary["sources"].append({
-                    "fund_symbol": source.fund_symbol, "provider": source.provider,
-                    "records": len(records), "cache_status": cache_status, **counts,
-                })
-                logger.info("Universe source updated fund=%s records=%d cache=%s added=%d inactive=%d",
-                            source.fund_symbol, len(records), cache_status, counts["added"], counts["inactivated"])
+                summary["sources"].append(self._source_summary(fetched, counts, sources))
+                logger.info("Universe source updated fund=%s records=%d source=%s fallback=%s added=%d inactive=%d",
+                            fund_symbol, len(fetched.members), fetched.source_name,
+                            fetched.fallback_used, counts["added"], counts["inactivated"])
             except Exception as exc:
                 self.db.rollback()
-                summary["errors"].append({"fund_symbol": source.fund_symbol, "error": type(exc).__name__})
-                logger.exception("Universe source update failed fund=%s provider=%s", source.fund_symbol, source.provider)
+                summary["errors"].append({"fund_symbol": fund_symbol, "error": type(exc).__name__})
+                logger.exception("Universe source update failed fund=%s", fund_symbol)
         status = "SUCCESS" if not summary["errors"] else ("PARTIAL_SUCCESS" if summary["sources"] else "FAILED")
         return self.repository.finish_run(run, status, summary)
+
+    def _fetch_group(self, sources):
+        failures = []
+        now = datetime.now(timezone.utc)
+        for index, source in enumerate(sources):
+            try:
+                if hasattr(self.downloader, "fetch_remote"):
+                    content, fetched_at = self.downloader.fetch_remote(source)
+                else:
+                    content, _ = self.downloader.fetch(source, force=True)
+                    fetched_at = now
+                records = parse_holdings(content, source.file_format)
+                if not records:
+                    raise ValueError("EMPTY_UNIVERSE_SNAPSHOT")
+                if hasattr(self.downloader, "save_last_known_good"):
+                    self.downloader.save_last_known_good(source, content, fetched_at)
+                return UniverseFetchResult(source.fund_symbol, source.provider, source.source_type,
+                    records, fetched_at, fetched_at, True, "FRESH", "HIGH",
+                    fallback_used=index > 0)
+            except Exception as exc:
+                failures.append("%s:%s" % (source.provider, type(exc).__name__))
+        for source in sources:
+            cached = self.downloader.load_last_known_good(source) if hasattr(self.downloader, "load_last_known_good") else None
+            if not cached:
+                continue
+            content, metadata = cached
+            records = parse_holdings(content, source.file_format)
+            if not records:
+                continue
+            fetched_at = metadata.get("downloaded_at")
+            try:
+                fetched_at = datetime.fromisoformat(fetched_at) if fetched_at else now
+            except ValueError:
+                fetched_at = now
+            return UniverseFetchResult(source.fund_symbol, source.provider, source.source_type,
+                records, fetched_at, fetched_at, True, "STALE", "LOW",
+                fallback_used=len(sources) > 1, cache_used=True,
+                error_code="REMOTE_SOURCES_FAILED", error_message=";".join(failures))
+        raise RuntimeError("ALL_UNIVERSE_SOURCES_FAILED:" + ";".join(failures))
+
+    @staticmethod
+    def _source_summary(result, counts, sources):
+        counts = counts or {"added": 0, "reactivated": 0, "inactivated": 0}
+        primary = next((item.provider for item in sources if item.role == "PRIMARY"), None)
+        fallbacks = [item.provider for item in sources if item.role == "FALLBACK"]
+        return {
+            "fund_symbol": result.universe_code,
+            "primary_source": primary,
+            "fallback_source": fallbacks[0] if fallbacks else None,
+            "actual_source": result.source_name,
+            "source_type": result.source_type,
+            "member_count": len(result.members),
+            "records": len(result.members),
+            "added": counts["added"], "reactivated": counts["reactivated"],
+            "removed": counts["inactivated"], "unchanged": max(0, len(result.members) - counts["added"] - counts["reactivated"]),
+            "fetched_at": result.fetched_at.isoformat(), "effective_at": result.effective_at.isoformat(),
+            "data_quality": result.quality, "freshness": result.freshness,
+            "fallback_used": result.fallback_used, "cache_used": result.cache_used,
+            "failure_reason": result.error_message,
+        }
 
     def list(self, **kwargs):
         rows, total = self.repository.list(**kwargs)

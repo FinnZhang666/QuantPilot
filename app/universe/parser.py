@@ -2,6 +2,7 @@ import csv
 import io
 import re
 import zipfile
+from html.parser import HTMLParser
 from decimal import Decimal, InvalidOperation
 from typing import List
 from xml.etree import ElementTree
@@ -115,5 +116,42 @@ def parse_xlsx(content: bytes) -> List[HoldingRecord]:
     return parse_rows(rows)
 
 
+class _TableParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.tables, self.table, self.row, self.cell = [], None, None, None
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "table": self.table = []
+        elif tag == "tr" and self.table is not None: self.row = []
+        elif tag in ("th", "td") and self.row is not None: self.cell = []
+
+    def handle_data(self, data):
+        if self.cell is not None: self.cell.append(data)
+
+    def handle_endtag(self, tag):
+        if tag in ("th", "td") and self.cell is not None:
+            self.row.append(" ".join("".join(self.cell).split())); self.cell = None
+        elif tag == "tr" and self.row is not None:
+            if self.row: self.table.append(self.row)
+            self.row = None
+        elif tag == "table" and self.table is not None:
+            self.tables.append(self.table); self.table = None
+
+
+def parse_html(content: bytes) -> List[HoldingRecord]:
+    parser = _TableParser()
+    parser.feed(content.decode("utf-8", errors="replace"))
+    errors = []
+    for table in parser.tables:
+        try:
+            return parse_rows(table)
+        except ValueError as exc:
+            errors.append(str(exc))
+    raise ValueError("HTML中未找到有效持仓表。")
+
+
 def parse_holdings(content: bytes, file_format: str) -> List[HoldingRecord]:
-    return parse_xlsx(content) if file_format == "xlsx" else parse_csv(content)
+    if file_format == "xlsx": return parse_xlsx(content)
+    if file_format == "html": return parse_html(content)
+    return parse_csv(content)

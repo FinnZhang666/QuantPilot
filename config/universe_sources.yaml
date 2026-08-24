@@ -6,35 +6,95 @@ sources:
     format: csv
     parser: invesco_holdings
     url: https://www.invesco.com/us/financial-products/etfs/holdings/main/holdings/0?action=download&audienceType=Investor&ticker=QQQ
+    role: PRIMARY
+    priority: 10
+  - fund_symbol: QQQ
+    provider: WIKIPEDIA_NASDAQ100
+    role: FALLBACK
+    priority: 20
+    enabled: true
+    format: html
+    parser: generic_html
+    url: https://en.wikipedia.org/wiki/Nasdaq-100
   - fund_symbol: SPY
     provider: STATE_STREET
     enabled: true
     format: xlsx
     parser: ssga_holdings
     url: https://www.ssga.com/library-content/products/fund-data/etfs/us/holdings-daily-us-en-spy.xlsx
+    role: PRIMARY
+    priority: 10
+  - fund_symbol: SPY
+    provider: WIKIPEDIA_SP500
+    role: FALLBACK
+    priority: 20
+    enabled: true
+    format: html
+    parser: generic_html
+    url: https://en.wikipedia.org/wiki/List_of_S%26P_500_companies
   - fund_symbol: SOXX
     provider: ISHARES
     enabled: true
     format: csv
     parser: ishares_holdings
     url: https://www.ishares.com/us/products/239705/ishares-semiconductor-etf/1467271812596.ajax?fileType=csv&fileName=SOXX_holdings&dataType=fund
+    role: PRIMARY
+    priority: 10
+  - fund_symbol: SOXX
+    provider: ISHARES_PRODUCT_PAGE
+    role: FALLBACK
+    priority: 20
+    enabled: true
+    format: html
+    parser: generic_html
+    url: https://www.ishares.com/us/products/239705/ishares-semiconductor-etf
   - fund_symbol: IGV
     provider: ISHARES
     enabled: true
     format: csv
     parser: ishares_holdings
     url: https://www.ishares.com/us/products/239771/ishares-expanded-techsoftware-sector-etf/1467271812596.ajax?fileType=csv&fileName=IGV_holdings&dataType=fund
+    role: PRIMARY
+    priority: 10
+  - fund_symbol: IGV
+    provider: ISHARES_PRODUCT_PAGE
+    role: FALLBACK
+    priority: 20
+    enabled: true
+    format: html
+    parser: generic_html
+    url: https://www.ishares.com/us/products/239771/ishares-expanded-techsoftware-sector-etf
   - fund_symbol: IWM
     provider: ISHARES
     enabled: true
     format: csv
     parser: ishares_holdings
     url: https://www.ishares.com/us/products/239710/ishares-russell-2000-etf/1467271812596.ajax?fileType=csv&fileName=IWM_holdings&dataType=fund
+    role: PRIMARY
+    priority: 10
+  - fund_symbol: IWM
+    provider: ISHARES_PRODUCT_PAGE
+    role: FALLBACK
+    priority: 20
+    enabled: true
+    format: html
+    parser: generic_html
+    url: https://www.ishares.com/us/products/239710/ishares-russell-2000-etf
   # VanEck currently exposes SMH holdings through a web-generated XLS link.
   # Keep the official source explicit but disabled until a stable file endpoint is verified.
   - fund_symbol: SMH
     provider: VANECK
-    enabled: false
+    enabled: true
     format: xlsx
     parser: vaneck_holdings
     url: https://www.vaneck.com/us/en/investments/semiconductor-etf-smh/holdings/
+    role: PRIMARY
+    priority: 10
+  - fund_symbol: SMH
+    provider: VANECK_PRODUCT_PAGE
+    role: FALLBACK
+    priority: 20
+    enabled: true
+    format: html
+    parser: generic_html
+    url: https://www.vaneck.com/us/en/investments/semiconductor-etf-smh/overview/

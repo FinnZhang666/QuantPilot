@@ -19,8 +19,11 @@ def load_sources(path: str) -> List[UniverseSource]:
             provider=str(item["provider"]).strip(), url=str(item["url"]).strip(),
             file_format=str(item["format"]).strip().lower(), parser=str(item["parser"]).strip(),
             enabled=bool(item.get("enabled", True)),
+            role=str(item.get("role", "PRIMARY")).strip().upper(),
+            source_type=str(item.get("source_type", "HTTP_FILE")).strip().upper(),
+            priority=int(item.get("priority", 100)),
         ))
-    funds = [item.fund_symbol for item in result if item.enabled]
-    if len(funds) != len(set(funds)):
-        raise ValueError("Universe数据源fund_symbol重复。")
+    identities = [(item.fund_symbol, item.role, item.priority) for item in result if item.enabled]
+    if len(identities) != len(set(identities)):
+        raise ValueError("Universe数据源角色与优先级重复。")
     return result
