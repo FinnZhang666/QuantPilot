@@ -425,6 +425,110 @@ class QmrWalkForwardResult(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class QmrLiveSignal(Base):
+    __tablename__ = "qmr_live_signals"
+    __table_args__ = (
+        UniqueConstraint("signal_id", name="uq_qmr_live_signal_id"),
+        Index("ix_qmr_live_symbol_status", "symbol", "status"),
+        Index("ix_qmr_live_signal_time", "signal_time"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    signal_id: Mapped[str] = mapped_column(String(32))
+    buy_score_id: Mapped[int] = mapped_column(ForeignKey("buy_scores.id"), index=True)
+    parameter_set_id: Mapped[Optional[int]] = mapped_column(ForeignKey("qmr_parameter_sets.id"))
+    symbol: Mapped[str] = mapped_column(String(32))
+    market: Mapped[str] = mapped_column(String(8), default="US")
+    signal_level: Mapped[str] = mapped_column(String(32))
+    previous_level: Mapped[Optional[str]] = mapped_column(String(32))
+    signal_mode: Mapped[str] = mapped_column(String(16))
+    status: Mapped[str] = mapped_column(String(24), default="OPEN")
+    strategy_status: Mapped[str] = mapped_column(String(16))
+    strategy_version: Mapped[str] = mapped_column(String(32))
+    model_version: Mapped[str] = mapped_column(String(32))
+    telegram_template_version: Mapped[str] = mapped_column(String(32))
+    signal_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    signal_price: Mapped[float] = mapped_column(Numeric(24, 8))
+    latest_price: Mapped[Optional[float]] = mapped_column(Numeric(24, 8))
+    buy_score: Mapped[int] = mapped_column(Integer)
+    buy_grade: Mapped[str] = mapped_column(String(4))
+    quality_score: Mapped[int] = mapped_column(Integer)
+    mispricing_score: Mapped[int] = mapped_column(Integer)
+    recovery_score: Mapped[int] = mapped_column(Integer)
+    market_state: Mapped[Optional[str]] = mapped_column(String(32))
+    sector: Mapped[Optional[str]] = mapped_column(String(128))
+    trading_session: Mapped[Optional[str]] = mapped_column(String(32))
+    session_confidence: Mapped[str] = mapped_column(String(16))
+    chase_risk_level: Mapped[str] = mapped_column(String(16))
+    similar_statistics_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    signal_snapshot_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    invalidation_reason_json: Mapped[list] = mapped_column(JSON, default=list)
+    last_state_change_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class QmrSignalPerformance(Base):
+    __tablename__ = "qmr_signal_performance"
+    __table_args__ = (
+        UniqueConstraint("signal_id", "window_days", name="uq_qmr_signal_performance_window"),
+        Index("ix_qmr_signal_performance_window", "window_days", "completed"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    signal_id: Mapped[str] = mapped_column(ForeignKey("qmr_live_signals.signal_id"), index=True)
+    window_days: Mapped[int] = mapped_column(Integer)
+    completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    evaluated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    last_price: Mapped[Optional[float]] = mapped_column(Numeric(24, 8))
+    max_price: Mapped[Optional[float]] = mapped_column(Numeric(24, 8))
+    min_price: Mapped[Optional[float]] = mapped_column(Numeric(24, 8))
+    return_pct: Mapped[Optional[float]] = mapped_column(Numeric(14, 8))
+    mfe_pct: Mapped[Optional[float]] = mapped_column(Numeric(14, 8))
+    mae_pct: Mapped[Optional[float]] = mapped_column(Numeric(14, 8))
+    case_label: Mapped[Optional[str]] = mapped_column(String(32))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class QmrSignalParticipation(Base):
+    __tablename__ = "qmr_signal_participations"
+    __table_args__ = (
+        UniqueConstraint("telegram_user_id", "signal_id", name="uq_qmr_participation_user_signal"),
+        Index("ix_qmr_participation_user_status", "telegram_user_id", "status"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    telegram_user_id: Mapped[str] = mapped_column(String(64))
+    chat_id: Mapped[str] = mapped_column(String(64))
+    signal_id: Mapped[str] = mapped_column(ForeignKey("qmr_live_signals.signal_id"), index=True)
+    symbol: Mapped[str] = mapped_column(String(32))
+    entry_price: Mapped[float] = mapped_column(Numeric(24, 8))
+    entry_price_source: Mapped[str] = mapped_column(String(32), default="SIGNAL_REFERENCE")
+    user_action_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(16), default="OPEN")
+    exit_price: Mapped[Optional[float]] = mapped_column(Numeric(24, 8))
+    closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class QmrSignalDelivery(Base):
+    __tablename__ = "qmr_signal_deliveries"
+    __table_args__ = (
+        UniqueConstraint("signal_id", "chat_id", "event_type", name="uq_qmr_delivery_event"),
+        Index("ix_qmr_delivery_message", "telegram_message_id"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    signal_id: Mapped[str] = mapped_column(ForeignKey("qmr_live_signals.signal_id"), index=True)
+    chat_id: Mapped[str] = mapped_column(String(64))
+    bot_alias: Mapped[str] = mapped_column(String(64))
+    event_type: Mapped[str] = mapped_column(String(32))
+    status: Mapped[str] = mapped_column(String(24))
+    telegram_message_id: Mapped[Optional[str]] = mapped_column(String(64))
+    error_code: Mapped[Optional[str]] = mapped_column(String(64))
+    sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class StrategyRecord(TimestampMixin, Base):
     __tablename__ = "strategies"
     id: Mapped[int] = mapped_column(primary_key=True)

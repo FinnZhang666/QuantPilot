@@ -80,7 +80,8 @@ class TelegramProductService:
             response = self._action(profile, user, action, None)
         else:
             text = str(message.get("text") or "").strip()
-            response = self._incoming_text(profile, user, text)
+            reply = message.get("reply_to_message") or {}
+            response = self._incoming_text(profile, user, text, reply.get("message_id"))
         return chat_id, response
 
     def _upsert_user(
@@ -118,12 +119,23 @@ class TelegramProductService:
 
     def _incoming_text(
         self, profile: TelegramBotProfile, user: TelegramRuntimeUser, text: str,
+        reply_message_id: Optional[object] = None,
     ) -> TelegramMessage:
         if text.startswith("/"):
             parts = text.split(maxsplit=1)
             command = parts[0].split("@", 1)[0].lstrip("/").lower()
             argument = parts[1].strip() if len(parts) > 1 else None
             return self._action(profile, user, command, argument)
+        qmr_match = re.fullmatch(r"#?(QMR-\d{8}-\d{3})", text.strip(), re.IGNORECASE)
+        if qmr_match:
+            return self._qmr_status(user, qmr_match.group(1))
+        if reply_message_id is not None:
+            from app.qmr_live.service import QmrLiveSignalService
+            signal_id = QmrLiveSignalService(self.db, self.settings).resolve_reply(
+                user.chat_id, str(reply_message_id),
+            )
+            if signal_id:
+                return self._qmr_status(user, signal_id)
         if not self._language_selected(user):
             return language_picker()
         if user.pending_action == "ANALYZE":
@@ -210,6 +222,38 @@ class TelegramProductService:
             return self._history(user)
         if action == "review":
             return self._reviews(user)
+        if action in {"qmr", "my_qmr"}:
+            from app.qmr_live.formatter import qmr_user_statistics_message
+            from app.qmr_live.tracking import QmrPerformanceTracker
+            return qmr_user_statistics_message(
+                QmrPerformanceTracker(self.db, self.settings).user_statistics(
+                    user.telegram_user_id,
+                ), user.language,
+            )
+        if action.startswith("qmr-feedback:"):
+            from app.qmr_live.service import QmrLiveSignalService
+            parts = action.split(":")
+            if len(parts) != 3 or parts[2] not in {"helpful", "not-helpful"}:
+                return TelegramMessage("QMR callback is invalid.")
+            QmrLiveSignalService(self.db, self.settings).feedback(
+                user, parts[1], parts[2] == "helpful", profile.alias,
+            )
+            return TelegramMessage(
+                "已更新评价，谢谢。" if user.language == "zh-CN" else
+                "Your rating was updated. Thank you.", main_menu(user.language),
+            )
+        if action.startswith("qmr-bought:"):
+            from app.qmr_live.service import QmrLiveSignalService
+            _, created = QmrLiveSignalService(self.db, self.settings).bought(
+                user, action.split(":", 1)[1],
+            )
+            return TelegramMessage(
+                ("已按信号参考价记录；这不是券商成交记录。" if created else "这条参与记录已存在。")
+                if user.language == "zh-CN" else
+                ("Recorded at the signal reference price; this is not a broker fill."
+                 if created else "This participation is already recorded."),
+                main_menu(user.language),
+            )
         if action == "feedback":
             return feedback_categories(user.language)
         if action.startswith("feedback:"):
@@ -253,6 +297,18 @@ class TelegramProductService:
         if action == "market_summary":
             return self._ai_message(profile, user, "MARKET_SUMMARY", None)
         return more(user.language)
+
+    def _qmr_status(self, user: TelegramRuntimeUser, signal_id: str) -> TelegramMessage:
+        from app.qmr_live.formatter import qmr_status_message
+        from app.qmr_live.service import QmrLiveSignalService
+        try:
+            signal, performances = QmrLiveSignalService(self.db, self.settings).query(signal_id)
+        except KeyError:
+            return TelegramMessage(
+                "未找到该 QMR Signal。" if user.language == "zh-CN" else
+                "QMR signal was not found.",
+            )
+        return qmr_status_message(signal, performances, user.language)
 
     @staticmethod
     def _language_selected(user: TelegramRuntimeUser) -> bool:

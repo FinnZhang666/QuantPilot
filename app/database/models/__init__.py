@@ -86,6 +86,10 @@ from app.database.models.entities import (
     QmrBacktestCase,
     QmrBacktestResult,
     QmrWalkForwardResult,
+    QmrLiveSignal,
+    QmrSignalPerformance,
+    QmrSignalParticipation,
+    QmrSignalDelivery,
 )
 
 __all__ = [
@@ -176,4 +180,8 @@ __all__ = [
     "QmrBacktestCase",
     "QmrBacktestResult",
     "QmrWalkForwardResult",
+    "QmrLiveSignal",
+    "QmrSignalPerformance",
+    "QmrSignalParticipation",
+    "QmrSignalDelivery",
 ]

@@ -50,6 +50,8 @@ from app.api.buy_score import internal_router as internal_buy_score_router
 from app.api.buy_score import router as buy_score_router
 from app.api.qmr_backtest import internal_router as internal_qmr_backtest_router
 from app.api.qmr_backtest import router as qmr_backtest_router
+from app.api.qmr_live import internal_router as internal_qmr_live_router
+from app.api.qmr_live import router as qmr_live_router
 from app.api.paper_runtime import internal_router as internal_paper_runtime_router
 from app.api.paper_runtime import router as paper_runtime_router
 from app.telegram_runtime.api import internal_router as internal_telegram_runtime_router
@@ -160,12 +162,14 @@ app.include_router(universe_router)
 app.include_router(internal_universe_router)
 app.include_router(buy_score_router)
 app.include_router(qmr_backtest_router)
+app.include_router(qmr_live_router)
 app.include_router(recovery_router)
 app.include_router(qmr_router)
 app.include_router(internal_qmr_router)
 app.include_router(internal_recovery_router)
 app.include_router(internal_buy_score_router)
 app.include_router(internal_qmr_backtest_router)
+app.include_router(internal_qmr_live_router)
 app.include_router(paper_runtime_router)
 app.include_router(internal_paper_runtime_router)
 app.include_router(telegram_runtime_router)

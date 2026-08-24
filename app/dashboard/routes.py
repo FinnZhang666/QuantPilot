@@ -88,6 +88,17 @@ def qmr_backtest(request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "strategy-parameters")
 
 
+@router.get("/dashboard/qmr-live", include_in_schema=False)
+def qmr_live(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "qmr-live")
+
+
+@router.get("/dashboard/qmr-live/{signal_id}", include_in_schema=False)
+def qmr_live_detail(signal_id: str, request: Request,
+                    settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "qmr-live-detail")
+
+
 @router.get("/dashboard/opportunities")
 def opportunities(request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "opportunities")

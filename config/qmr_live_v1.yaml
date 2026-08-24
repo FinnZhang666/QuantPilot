@@ -1,0 +1,20 @@
+version: qmr-live-v1
+telegram_template_version: qmr-telegram-v1
+tracking_windows_days: [1, 3, 5, 10, 20]
+cooldown_minutes: 30
+max_signal_age_minutes: 15
+similarity_limit: 100
+similarity_fields:
+  quality_score: 0.15
+  mispricing_score: 0.20
+  recovery_score: 0.25
+  buy_score: 0.20
+  market_state: 0.10
+  sector: 0.10
+drift:
+  window: 50
+  win_rate_drop_threshold: 0.15
+case_labels:
+  major_winner_mfe_pct: 20
+  outlier_winner_mfe_pct: 50
+  false_recovery_mae_pct: -10
