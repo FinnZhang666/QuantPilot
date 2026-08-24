@@ -69,7 +69,8 @@ class BuyScoreService:
         discoveries = self._first_prices(previous, scored["buy_status"], float(recovery.price))
         components = scored.pop("components")
         components.update({"recovery_stage": recovery.recovery_stage,
-            "recovery_entry_status": recovery.entry_status, "feature_risk": features,
+            "recovery_entry_status": recovery.entry_status, "market_state": recovery.market_state,
+            "feature_risk": features,
             "qmr_model_version": qmr.model_version, "recovery_model_version": recovery.model_version})
         return {
             "qmr_candidate_id": qmr.id, "recovery_score_id": recovery.id,

@@ -465,3 +465,9 @@ Buy Score Engine 只聚合当前 QMR WATCH 与其对应 Recovery 结果，按配
 状态及 Top 10/20 排名。它保存排名变化、首次发现价格和观察价格区间；杠杆产品映射仅展示，不改变底层
 正股评分或创建订单。API 为 `GET /qmr/buy-scores`、`GET /qmr/ranking`、
 `GET /qmr/{symbol}/buy-score`。详见 [`docs/BUY_SCORE_ENGINE.md`](docs/BUY_SCORE_ENGINE.md)。
+
+## QMR 历史回测
+
+Sprint 5 提供 Point-in-Time QMR 事件回放、1/3/5/10/20日收益、MFE/MAE、局部底部捕获、止盈止损与追踪止损矩阵、Walk-Forward、Out-of-Sample、失败案例和分层统计。它只读取已保存的历史信号及 `market_bars`，不会为了改善结果修改 Sprint 1–4 数据。
+
+当前缺少完整历史 QQQ/SPY 成分有效期，因此真实结果必须标记为 `RESEARCH` 和幸存者偏差警告。详见 [`docs/QMR_BACKTEST_ENGINE.md`](docs/QMR_BACKTEST_ENGINE.md)。

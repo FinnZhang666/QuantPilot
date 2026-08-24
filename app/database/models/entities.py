@@ -315,6 +315,116 @@ class InstrumentMapping(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
 
+class QmrBacktestParameterSet(Base):
+    __tablename__ = "qmr_parameter_sets"
+    __table_args__ = (UniqueConstraint("name", "strategy_version", name="uq_qmr_parameter_version"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(96))
+    strategy_version: Mapped[str] = mapped_column(String(32))
+    configuration_hash: Mapped[str] = mapped_column(String(64), index=True)
+    parameters_json: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class QmrBacktestRun(Base):
+    __tablename__ = "qmr_backtest_runs"
+    __table_args__ = (
+        Index("ix_qmr_backtest_run_status_started", "status", "started_at"),
+        Index("ix_qmr_backtest_run_range", "data_start", "data_end"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    parameter_set_id: Mapped[int] = mapped_column(ForeignKey("qmr_parameter_sets.id"), index=True)
+    run_key: Mapped[str] = mapped_column(String(64), index=True)
+    model_version: Mapped[str] = mapped_column(String(32))
+    strategy_version: Mapped[str] = mapped_column(String(32))
+    universe_version: Mapped[str] = mapped_column(String(64))
+    data_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    data_end: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(24), default="PENDING")
+    strategy_status: Mapped[str] = mapped_column(String(16), default="RESEARCH")
+    progress_pct: Mapped[int] = mapped_column(Integer, default=0)
+    symbols_json: Mapped[list] = mapped_column(JSON, default=list)
+    coverage_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    warnings_json: Mapped[list] = mapped_column(JSON, default=list)
+    summary_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    estimated_storage_bytes: Mapped[int] = mapped_column(BigInteger, default=0)
+    cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    error_summary: Mapped[Optional[str]] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class QmrBacktestCase(Base):
+    __tablename__ = "qmr_backtest_cases"
+    __table_args__ = (
+        UniqueConstraint("run_id", "buy_score_id", "entry_level", name="uq_qmr_backtest_case_event"),
+        Index("ix_qmr_backtest_case_symbol_signal", "symbol", "signal_time"),
+        Index("ix_qmr_backtest_case_result", "result", "entry_level"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    run_id: Mapped[int] = mapped_column(ForeignKey("qmr_backtest_runs.id"), index=True)
+    buy_score_id: Mapped[int] = mapped_column(ForeignKey("buy_scores.id"), index=True)
+    event_key: Mapped[str] = mapped_column(String(64))
+    symbol: Mapped[str] = mapped_column(String(32))
+    entry_level: Mapped[str] = mapped_column(String(32))
+    signal_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    signal_price: Mapped[float] = mapped_column(Numeric(24, 8))
+    quality_score: Mapped[int] = mapped_column(Integer)
+    mispricing_score: Mapped[int] = mapped_column(Integer)
+    recovery_score: Mapped[int] = mapped_column(Integer)
+    buy_score: Mapped[int] = mapped_column(Integer)
+    buy_grade: Mapped[str] = mapped_column(String(4))
+    market_state: Mapped[Optional[str]] = mapped_column(String(32))
+    sector: Mapped[Optional[str]] = mapped_column(String(128))
+    data_confidence: Mapped[str] = mapped_column(String(16))
+    result: Mapped[str] = mapped_column(String(32))
+    local_bottom_price: Mapped[Optional[float]] = mapped_column(Numeric(24, 8))
+    signal_vs_local_bottom: Mapped[Optional[float]] = mapped_column(Numeric(14, 8))
+    consecutive_down_days: Mapped[Optional[int]] = mapped_column(Integer)
+    returns_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    mfe_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    mae_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    target_stop_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    trailing_stop_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    feature_snapshot_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    failure_features_json: Mapped[list] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class QmrBacktestResult(Base):
+    __tablename__ = "qmr_backtest_results"
+    __table_args__ = (
+        UniqueConstraint("run_id", "dimension", "dimension_value", "holding_period", name="uq_qmr_result_slice"),
+        Index("ix_qmr_backtest_result_run_dimension", "run_id", "dimension"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    run_id: Mapped[int] = mapped_column(ForeignKey("qmr_backtest_runs.id"), index=True)
+    dimension: Mapped[str] = mapped_column(String(32))
+    dimension_value: Mapped[str] = mapped_column(String(128))
+    holding_period: Mapped[int] = mapped_column(Integer)
+    sample_count: Mapped[int] = mapped_column(Integer)
+    confidence_level: Mapped[str] = mapped_column(String(16))
+    metrics_json: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class QmrWalkForwardResult(Base):
+    __tablename__ = "qmr_walk_forward_results"
+    __table_args__ = (UniqueConstraint("run_id", "fold_number", name="uq_qmr_walk_forward_fold"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    run_id: Mapped[int] = mapped_column(ForeignKey("qmr_backtest_runs.id"), index=True)
+    fold_number: Mapped[int] = mapped_column(Integer)
+    training_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    training_end: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    test_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    test_end: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    parameter_set_id: Mapped[int] = mapped_column(ForeignKey("qmr_parameter_sets.id"))
+    in_sample_json: Mapped[dict] = mapped_column(JSON)
+    out_of_sample_json: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class StrategyRecord(TimestampMixin, Base):
     __tablename__ = "strategies"
     id: Mapped[int] = mapped_column(primary_key=True)

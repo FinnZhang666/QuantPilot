@@ -83,6 +83,11 @@ def qmr_detail(symbol: str, request: Request, settings: Settings = Depends(get_s
     return _page(request, settings, "qmr-detail")
 
 
+@router.get("/dashboard/qmr-backtest", include_in_schema=False)
+def qmr_backtest(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "strategy-parameters")
+
+
 @router.get("/dashboard/opportunities")
 def opportunities(request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "opportunities")

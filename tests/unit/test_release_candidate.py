@@ -61,7 +61,8 @@ def test_release_includes_phase4_migrations():
     assert any("0026" in path.name for path in versions.glob("*.py"))
     assert any("0027" in path.name for path in versions.glob("*.py"))
     assert any("0028" in path.name for path in versions.glob("*.py"))
-    assert not any(re.match(r"0029", path.name) for path in versions.glob("*.py"))
+    assert any("0029" in path.name for path in versions.glob("*.py"))
+    assert not any(re.match(r"0030", path.name) for path in versions.glob("*.py"))
 
 
 def test_readme_known_limitations_are_current():
@@ -72,8 +73,8 @@ def test_readme_known_limitations_are_current():
 
 def test_public_openapi_phase4_surface_and_internal_hidden():
     paths = app.openapi()["paths"]
-    assert len(paths) == 186
-    assert sum(len(operations) for operations in paths.values()) == 195
+    assert len(paths) == 191
+    assert sum(len(operations) for operations in paths.values()) == 200
     assert not any(path.startswith("/internal") for path in paths)
 
 

@@ -81,6 +81,11 @@ from app.database.models.entities import (
     BuyScoreRecord,
     BuyRankingRecord,
     InstrumentMapping,
+    QmrBacktestParameterSet,
+    QmrBacktestRun,
+    QmrBacktestCase,
+    QmrBacktestResult,
+    QmrWalkForwardResult,
 )
 
 __all__ = [
@@ -166,4 +171,9 @@ __all__ = [
     "BuyScoreRecord",
     "BuyRankingRecord",
     "InstrumentMapping",
+    "QmrBacktestParameterSet",
+    "QmrBacktestRun",
+    "QmrBacktestCase",
+    "QmrBacktestResult",
+    "QmrWalkForwardResult",
 ]

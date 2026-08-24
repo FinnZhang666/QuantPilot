@@ -167,6 +167,8 @@ class Settings(BaseSettings):
     buy_score_enabled: bool = True
     buy_score_config_file: str = "config/buy_score_v1.yaml"
     buy_score_auto_update_enabled: bool = True
+    qmr_backtest_enabled: bool = True
+    qmr_backtest_config_file: str = "config/qmr_backtest_v1.yaml"
     default_timezone: str = "America/New_York"
     display_timezone: str = "Asia/Shanghai"
     default_slippage_bps: int = Field(default=8, ge=0, le=1000)
@@ -295,6 +297,8 @@ class Settings(BaseSettings):
             "buy_score_enabled": self.buy_score_enabled,
             "buy_score_config_file": self.buy_score_config_file,
             "buy_score_auto_update_enabled": self.buy_score_auto_update_enabled,
+            "qmr_backtest_enabled": self.qmr_backtest_enabled,
+            "qmr_backtest_config_file": self.qmr_backtest_config_file,
         }
 
     def realtime_symbol_list(self) -> List[str]:

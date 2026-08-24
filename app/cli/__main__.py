@@ -4,6 +4,7 @@ import json
 import os
 import signal
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 from app.core.config import get_settings
@@ -42,6 +43,19 @@ def build_parser():
     universe_list.add_argument("--fund")
     universe_list.add_argument("--status", default="ACTIVE")
     universe_list.add_argument("--limit", type=int, default=100)
+    qmr_backtest = group.add_parser("qmr-backtest")
+    qmr_backtest_actions = qmr_backtest.add_subparsers(dest="action", required=True)
+    qmr_run = qmr_backtest_actions.add_parser("run")
+    qmr_run.add_argument("--start", required=True)
+    qmr_run.add_argument("--end", required=True)
+    qmr_run.add_argument("--parameter-set", default="default")
+    qmr_run.add_argument("--symbol", action="append")
+    qmr_run.add_argument("--sector")
+    qmr_run.add_argument("--dry-run", action="store_true")
+    qmr_list = qmr_backtest_actions.add_parser("list")
+    qmr_list.add_argument("--limit", type=int, default=20)
+    qmr_show = qmr_backtest_actions.add_parser("show")
+    qmr_show.add_argument("--id", type=int, required=True)
     backup = group.add_parser("backup")
     backup_actions = backup.add_subparsers(dest="action", required=True)
     backup_create = backup_actions.add_parser("create")
@@ -152,6 +166,23 @@ def main():
                     item["spy_member"], item["status"],
                 ))
             return 0
+    if args.group == "qmr-backtest":
+        from app.qmr_backtest.service import QmrBacktestService
+        with get_session_factory()() as db:
+            service = QmrBacktestService(db, get_settings())
+            if args.action == "list":
+                items, total = service.list(limit=args.limit, offset=0)
+                print("QMR回测任务：%s" % total)
+                for item in items: print("#%s %s %s %s" % (item["id"], item["status"], item["strategy_status"], item["data_start"]))
+                return 0
+            if args.action == "show":
+                print(json.dumps(service.get(args.id), ensure_ascii=False, default=str, indent=2)); return 0
+            start = datetime.fromisoformat(args.start.replace("Z", "+00:00"))
+            end = datetime.fromisoformat(args.end.replace("Z", "+00:00"))
+            prepared = service.prepare(start, end, args.parameter_set, args.symbol, args.dry_run)
+            if args.sector: print("警告：当前CLI接受sector参数，但历史事件筛选以保存的Sector结果分层展示。")
+            result = prepared if args.dry_run else service.execute(prepared["run_id"])
+            print(json.dumps(result, ensure_ascii=False, default=str, indent=2)); return 0
     if args.group == "research":
         return _research(args)
     if args.group == "regime":
