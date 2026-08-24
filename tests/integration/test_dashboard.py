@@ -75,7 +75,10 @@ def test_empty_summary_and_data_quality(monkeypatch, tmp_path):
         quality = client.get("/api/dashboard/data-quality")
         assert quality.status_code == 200 and quality.json()["items"] == []
         strategies = client.get("/api/dashboard/strategy-summary").json()
-        assert strategies["items"] == []
+        assert len(strategies["items"]) == 1
+        assert strategies["items"][0]["strategy_code"] == "quality_mispricing_recovery"
+        assert strategies["items"][0]["current_candidate_count"] == 0
+        assert strategies["items"][0]["historical_win_rate_5d"] is None
     finally:
         client.__exit__(None, None, None)
 

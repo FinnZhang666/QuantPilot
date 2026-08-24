@@ -33,7 +33,7 @@ def test_fresh_head_schema_matches_git_metadata(monkeypatch, tmp_path):
     with engine.connect() as connection:
         assert connection.exec_driver_sql(
             "SELECT version_num FROM alembic_version"
-        ).scalar_one() == "0030"
+        ).scalar_one() == "0031"
 
 
 def test_qmr_backtest_migration_round_trip(monkeypatch, tmp_path):

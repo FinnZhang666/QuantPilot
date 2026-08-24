@@ -29,6 +29,11 @@ class QmrLiveSignalService:
 
     def run(self, evaluation_time=None):
         at = self.utc(evaluation_time or datetime.now(timezone.utc))
+        from app.strategy.qmr_registry import StrategyCenterRepository
+        strategy = StrategyCenterRepository(self.db).ensure_qmr()
+        if not strategy.is_enabled:
+            return {"strategy_status": "DISABLED", "scanned": 0, "created": 0,
+                    "upgraded": 0, "invalidated": 0, "skipped": 0, "notifications": []}
         run = self.repository.latest_strategy_run()
         strategy_status = run.strategy_status if run else "RESEARCH"
         parameter_set_id = run.parameter_set_id if run else None

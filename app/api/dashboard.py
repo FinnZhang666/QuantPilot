@@ -191,7 +191,18 @@ def strategy_summary(db: Session = Depends(get_db)):
             for value in values or []:
                 failed[value] = failed.get(value, 0) + 1
         target["failed_gates"] = dict(sorted(failed.items(), key=lambda item: -item[1])[:10])
-    return {"items": list(grouped.values()), "total": len(grouped)}
+    items = list(grouped.values())
+    from app.core.config import get_settings
+    from app.strategy.qmr_registry import QMR_CODE, StrategyCenterService
+    center = StrategyCenterService(db, get_settings())
+    center.ensure_qmr()
+    qmr = center.get(QMR_CODE)
+    existing = next((item for item in items if item["strategy_name"] == qmr["strategy_name"]), None)
+    if existing:
+        existing.update(qmr)
+    else:
+        items.append(qmr)
+    return {"items": items, "total": len(items)}
 
 
 @router.get("/data-quality")

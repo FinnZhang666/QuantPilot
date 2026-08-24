@@ -52,6 +52,8 @@ from app.api.qmr_backtest import internal_router as internal_qmr_backtest_router
 from app.api.qmr_backtest import router as qmr_backtest_router
 from app.api.qmr_live import internal_router as internal_qmr_live_router
 from app.api.qmr_live import router as qmr_live_router
+from app.api.strategy_center import internal_router as internal_strategy_center_router
+from app.api.strategy_center import router as strategy_center_router
 from app.api.paper_runtime import internal_router as internal_paper_runtime_router
 from app.api.paper_runtime import router as paper_runtime_router
 from app.telegram_runtime.api import internal_router as internal_telegram_runtime_router
@@ -61,7 +63,7 @@ from app.api.routes import router as api_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.database.init import create_schema
-from app.database.session import get_engine
+from app.database.session import get_engine, get_session_factory
 from app.realtime.factory import peek_realtime_manager
 from app.core.enums import RealtimeServiceState
 from app.runtime.realtime_runtime import get_runtime
@@ -79,6 +81,9 @@ async def lifespan(app: FastAPI):
         settings.log_max_bytes, settings.log_backup_count,
     )
     create_schema(get_engine())
+    from app.strategy.qmr_registry import StrategyCenterService
+    with get_session_factory()() as registry_db:
+        StrategyCenterService(registry_db, settings).ensure_qmr()
     paper_runtime = get_runtime_manager(settings)
     opportunity_runtime = get_runtime(settings)
     telegram_runtime = get_telegram_runtime(settings)
@@ -163,6 +168,7 @@ app.include_router(internal_universe_router)
 app.include_router(buy_score_router)
 app.include_router(qmr_backtest_router)
 app.include_router(qmr_live_router)
+app.include_router(strategy_center_router)
 app.include_router(recovery_router)
 app.include_router(qmr_router)
 app.include_router(internal_qmr_router)
@@ -170,6 +176,7 @@ app.include_router(internal_recovery_router)
 app.include_router(internal_buy_score_router)
 app.include_router(internal_qmr_backtest_router)
 app.include_router(internal_qmr_live_router)
+app.include_router(internal_strategy_center_router)
 app.include_router(paper_runtime_router)
 app.include_router(internal_paper_runtime_router)
 app.include_router(telegram_runtime_router)

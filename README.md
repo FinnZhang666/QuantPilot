@@ -2,6 +2,8 @@
 
 QMR 实盘信号、Telegram 去重通知与持续验证闭环见
 [`docs/SPRINT_06_QMR_LIVE_SIGNAL.md`](docs/SPRINT_06_QMR_LIVE_SIGNAL.md)。
+QMR 在现有策略中心的正式注册、状态和版本关系见
+[`docs/QMR_STRATEGY_CENTER.md`](docs/QMR_STRATEGY_CENTER.md)。
 
 ![Trade Companion Logo](app/dashboard/static/branding/trade-companion-logo.png)
 
@@ -19,7 +21,7 @@ Trade Companion 是一个 AI 辅助的美股研究与交易生命周期工作台
 - Product：Trade Companion
 - Release：`v1.0.0-beta.1`
 - Stage：Beta
-- Database Migration Head：`0030`
+- Database Migration Head：`0031`
 - 范围：Paper Trading Only，不连接真实券商下单，不同步真实持仓。
 - Beta 仍需观察长期稳定性；当前策略样本有限，Trade Plan 可能为 0，Sharpe 暂无可靠样本。
 

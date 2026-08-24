@@ -28,6 +28,7 @@ def qmr_signal_message(signal, language="zh-CN", failed=False):
         "[%s]" % signal.trading_session.replace("_", " ").title() if signal.trading_session and signal.trading_session != "REGULAR" else "")
     level = LEVEL_ZH.get(signal.signal_level, signal.signal_level) if zh else signal.signal_level.replace("_", " ").title()
     lines = [title + session, "", "<b>%s</b>" % html.escape(signal.symbol),
+        ("策略：优质错杀修复｜QMR v1.0" if zh else "Strategy: Quality Mispricing Recovery | QMR v1.0"),
         ("状态：%s" % level) if zh else "Status: %s" % level,
         ("买入评分：%s / 100（%s）" % (signal.buy_score, signal.buy_grade)) if zh else
         ("Buy score: %s / 100 (%s)" % (signal.buy_score, signal.buy_grade)),
