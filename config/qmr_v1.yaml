@@ -1,0 +1,30 @@
+version: qmr-v1
+thresholds:
+  quality_min: 60
+  mispricing_min: 65
+  minimum_quality_coverage: 0.65
+weights:
+  quality: {profitability: 20, growth: 20, cashflow: 20, industry: 15, etf_importance: 15, liquidity: 10}
+  mispricing: {multi_period_drawdown: 25, historical_anomaly: 20, market_relative: 15, industry_relative: 15, event_risk: 25}
+quality_rules:
+  operating_margin_good: 0.20
+  roe_good: 0.15
+  roic_good: 0.12
+  growth_good: 0.15
+  debt_to_equity_high: 2.0
+  interest_coverage_good: 4.0
+  liquidity_dollar_volume_good: 50000000
+  liquidity_dollar_volume_min: 5000000
+  etf_weight_full: 5.0
+mispricing_rules:
+  drawdown_full: {1: -0.08, 3: -0.12, 5: -0.15, 10: -0.20, 20: -0.25}
+  relative_full: -0.15
+  zscore_full: -2.5
+  percentile_full: 0.05
+  event_risk_factors: {A: 1.0, B: 0.4, C: 0.0, UNKNOWN: 0.0}
+sector_benchmarks:
+  Information Technology: [VGT, QQQ]
+  Semiconductors: [SOXX, SMH]
+  Financials: [XLF, SPY]
+  Health Care: [XLV, SPY]
+  default: [SPY, QQQ]

@@ -82,6 +82,101 @@ class UniverseUpdateRun(Base):
     summary_json: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
+class FundamentalSnapshot(TimestampMixin, Base):
+    __tablename__ = "fundamental_snapshots"
+    __table_args__ = (
+        UniqueConstraint("symbol", "period_end", "available_at", "source", name="uq_fundamental_point_in_time"),
+        Index("ix_fundamental_symbol_available", "symbol", "available_at"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(32))
+    period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    available_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    source: Mapped[str] = mapped_column(String(64))
+    net_income_ttm: Mapped[Optional[float]] = mapped_column(Numeric(24, 4))
+    eps_ttm: Mapped[Optional[float]] = mapped_column(Numeric(18, 6))
+    operating_margin: Mapped[Optional[float]] = mapped_column(Numeric(12, 6))
+    roe: Mapped[Optional[float]] = mapped_column(Numeric(12, 6))
+    roic: Mapped[Optional[float]] = mapped_column(Numeric(12, 6))
+    revenue_yoy: Mapped[Optional[float]] = mapped_column(Numeric(12, 6))
+    eps_yoy: Mapped[Optional[float]] = mapped_column(Numeric(12, 6))
+    quarterly_trend: Mapped[Optional[float]] = mapped_column(Numeric(12, 6))
+    forward_earnings_growth: Mapped[Optional[float]] = mapped_column(Numeric(12, 6))
+    operating_cash_flow: Mapped[Optional[float]] = mapped_column(Numeric(24, 4))
+    free_cash_flow: Mapped[Optional[float]] = mapped_column(Numeric(24, 4))
+    cash: Mapped[Optional[float]] = mapped_column(Numeric(24, 4))
+    debt: Mapped[Optional[float]] = mapped_column(Numeric(24, 4))
+    debt_to_equity: Mapped[Optional[float]] = mapped_column(Numeric(14, 6))
+    interest_coverage: Mapped[Optional[float]] = mapped_column(Numeric(14, 6))
+    sector_profit_trend: Mapped[Optional[float]] = mapped_column(Numeric(12, 6))
+    source_payload_json: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class QualityScoreRecord(Base):
+    __tablename__ = "quality_scores"
+    __table_args__ = (
+        UniqueConstraint("symbol", "evaluation_time", "model_version", name="uq_quality_score_version"),
+        Index("ix_quality_symbol_time", "symbol", "evaluation_time"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    universe_id: Mapped[int] = mapped_column(ForeignKey("universe.id"), index=True)
+    symbol: Mapped[str] = mapped_column(String(32))
+    evaluation_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    quality_score: Mapped[int] = mapped_column(Integer)
+    score_components_json: Mapped[dict] = mapped_column(JSON)
+    data_sources_json: Mapped[list] = mapped_column(JSON)
+    data_confidence: Mapped[str] = mapped_column(String(16))
+    data_coverage: Mapped[float] = mapped_column(Numeric(8, 6))
+    model_version: Mapped[str] = mapped_column(String(32))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class MispricingScoreRecord(Base):
+    __tablename__ = "mispricing_scores"
+    __table_args__ = (
+        UniqueConstraint("symbol", "evaluation_time", "model_version", name="uq_mispricing_score_version"),
+        Index("ix_mispricing_symbol_time", "symbol", "evaluation_time"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    universe_id: Mapped[int] = mapped_column(ForeignKey("universe.id"), index=True)
+    symbol: Mapped[str] = mapped_column(String(32))
+    evaluation_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    mispricing_score: Mapped[int] = mapped_column(Integer)
+    fundamental_risk: Mapped[str] = mapped_column(String(16))
+    event_risk: Mapped[str] = mapped_column(String(16))
+    news_confidence: Mapped[str] = mapped_column(String(16))
+    score_components_json: Mapped[dict] = mapped_column(JSON)
+    data_sources_json: Mapped[list] = mapped_column(JSON)
+    data_confidence: Mapped[str] = mapped_column(String(16))
+    model_version: Mapped[str] = mapped_column(String(32))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class QmrCandidateRecord(Base):
+    __tablename__ = "qmr_candidates"
+    __table_args__ = (
+        UniqueConstraint("symbol", "evaluation_time", "model_version", name="uq_qmr_candidate_version"),
+        Index("ix_qmr_status_time", "candidate_status", "evaluation_time"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    universe_id: Mapped[int] = mapped_column(ForeignKey("universe.id"), index=True)
+    quality_score_id: Mapped[int] = mapped_column(ForeignKey("quality_scores.id"))
+    mispricing_score_id: Mapped[int] = mapped_column(ForeignKey("mispricing_scores.id"))
+    symbol: Mapped[str] = mapped_column(String(32))
+    evaluation_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    quality_score: Mapped[int] = mapped_column(Integer)
+    mispricing_score: Mapped[int] = mapped_column(Integer)
+    combined_score: Mapped[int] = mapped_column(Integer)
+    fundamental_risk: Mapped[str] = mapped_column(String(16))
+    event_risk: Mapped[str] = mapped_column(String(16))
+    candidate_status: Mapped[str] = mapped_column(String(16))
+    score_components_json: Mapped[dict] = mapped_column(JSON)
+    data_sources_json: Mapped[list] = mapped_column(JSON)
+    data_confidence: Mapped[str] = mapped_column(String(16))
+    model_version: Mapped[str] = mapped_column(String(32))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class StrategyRecord(TimestampMixin, Base):
     __tablename__ = "strategies"
     id: Mapped[int] = mapped_column(primary_key=True)

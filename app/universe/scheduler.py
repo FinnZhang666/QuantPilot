@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 from app.database.session import get_session_factory
 from app.universe.service import UniverseService
+from app.qmr.service import QmrService
 
 logger = logging.getLogger("trade_companion.universe.scheduler")
 
@@ -35,6 +36,11 @@ class UniverseScheduler:
                     latest = service.repository.latest_success_at()
                     if latest is None or datetime.now(timezone.utc) - latest >= timedelta(hours=self.settings.universe_update_interval_hours):
                         service.update()
+                    if self.settings.qmr_enabled and self.settings.qmr_auto_update_enabled:
+                        qmr = QmrService(db, self.settings)
+                        latest_qmr = qmr.repository.latest_evaluation_time()
+                        if latest_qmr is None or datetime.now(timezone.utc) - latest_qmr >= timedelta(minutes=self.settings.qmr_update_interval_minutes):
+                            qmr.run(limit=1000)
             except Exception:
                 logger.exception("Scheduled Universe update failed")
             self._stop.wait(3600)

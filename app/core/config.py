@@ -156,6 +156,10 @@ class Settings(BaseSettings):
     universe_cache_ttl_hours: int = Field(default=20, ge=1, le=168)
     universe_update_interval_hours: int = Field(default=24, ge=1, le=168)
     universe_download_timeout_seconds: int = Field(default=30, ge=5, le=300)
+    qmr_enabled: bool = True
+    qmr_config_file: str = "config/qmr_v1.yaml"
+    qmr_auto_update_enabled: bool = True
+    qmr_update_interval_minutes: int = Field(default=60, ge=5, le=1440)
     default_timezone: str = "America/New_York"
     display_timezone: str = "Asia/Shanghai"
     default_slippage_bps: int = Field(default=8, ge=0, le=1000)
@@ -273,6 +277,10 @@ class Settings(BaseSettings):
             "universe_auto_update_enabled": self.universe_auto_update_enabled,
             "universe_sources_file": self.universe_sources_file,
             "universe_cache_directory": self.universe_cache_directory,
+            "qmr_enabled": self.qmr_enabled,
+            "qmr_config_file": self.qmr_config_file,
+            "qmr_auto_update_enabled": self.qmr_auto_update_enabled,
+            "qmr_update_interval_minutes": self.qmr_update_interval_minutes,
         }
 
     def realtime_symbol_list(self) -> List[str]:

@@ -441,3 +441,11 @@ manual BotFather step.
 策略选股现已受持久化白名单约束。首批来源为可配置的 QQQ 与 SPY 官方成分文件，支持跨 ETF 去重、
 成员删除软停用、本地缓存、每日更新、只读 API 和 Dashboard。新增 ETF 只需扩展配置与相应解析器，
 无需改变数据库结构。详见 [`docs/UNIVERSE_ENGINE.md`](docs/UNIVERSE_ENGINE.md)。
+
+## Quality & Mispricing Engine
+
+QMR Engine 仅分析评估时点有效的 QQQ/SPY Universe 成分股，分别计算可解释、版本化的公司质量分和
+错杀分，并保留历史评分。符合阈值且无重大基本面风险时只输出 `WATCH`，不输出 BUY/SELL、价格或仓位。
+缺少新闻时明确标记 `UNKNOWN`，不会伪装为低风险。API 为 `GET /qmr/candidates`、
+`GET /qmr/{symbol}`，Dashboard 为 `/dashboard/qmr`。详见
+[`docs/QMR_ENGINE.md`](docs/QMR_ENGINE.md)。

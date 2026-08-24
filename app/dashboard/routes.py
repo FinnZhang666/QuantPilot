@@ -73,6 +73,16 @@ def universe(request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "universe")
 
 
+@router.get("/dashboard/qmr", include_in_schema=False)
+def qmr(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "qmr")
+
+
+@router.get("/dashboard/qmr/{symbol}", include_in_schema=False)
+def qmr_detail(symbol: str, request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "qmr-detail")
+
+
 @router.get("/dashboard/opportunities")
 def opportunities(request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "opportunities")

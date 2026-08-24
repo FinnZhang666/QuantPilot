@@ -5,7 +5,7 @@
     "zh-CN": {
       tagline: "陪你把每一笔交易做完",
       "nav.workspace": "🏠 工作台", "nav.home": "工作台", "nav.market": "📈 市场",
-      "nav.regime": "市场状态", "nav.marketMonitor": "市场监控", "nav.universe": "股票池", "nav.candidates": "候选池",
+      "nav.regime": "市场状态", "nav.marketMonitor": "市场监控", "nav.universe": "股票池", "nav.qmr": "优质错杀", "nav.candidates": "候选池",
       "nav.strategy": "📊 策略", "nav.plans": "交易计划", "nav.paperPositions": "我的持仓",
       "nav.tradeReviews": "交易复盘", "nav.scoreboard": "策略成绩榜", "nav.ai": "🤖 AI",
       "nav.companion": "AI 交易解读", "nav.aiReviews": "AI 策略复盘", "nav.telegram": "Telegram 预览",
@@ -22,7 +22,7 @@
     "en-US": {
       tagline: "Your AI Trade Companion",
       "nav.workspace": "🏠 Workspace", "nav.home": "Dashboard", "nav.market": "📈 Market",
-      "nav.regime": "Market Regime", "nav.marketMonitor": "Market Monitor", "nav.universe": "Universe", "nav.candidates": "Candidate Pool",
+      "nav.regime": "Market Regime", "nav.marketMonitor": "Market Monitor", "nav.universe": "Universe", "nav.qmr": "Quality Mispricing", "nav.candidates": "Candidate Pool",
       "nav.strategy": "📊 Strategy", "nav.plans": "Trade Plans", "nav.paperPositions": "My Positions",
       "nav.tradeReviews": "Trade Reviews", "nav.scoreboard": "Strategy Scoreboard", "nav.ai": "🤖 AI",
       "nav.companion": "AI Trade Interpretation", "nav.aiReviews": "AI Strategy Review", "nav.telegram": "Telegram Preview",
@@ -40,7 +40,7 @@
 
   const pageTitles = {
     "zh-CN": {
-      home: "工作台", universe: "股票池", opportunities: "交易机会", "opportunity-detail": "机会详情",
+      home: "工作台", universe: "股票池", qmr: "优质错杀", "qmr-detail": "评分拆解", opportunities: "交易机会", "opportunity-detail": "机会详情",
       "trade-plans": "交易计划", "trade-plan-detail": "交易计划详情", positions: "我的持仓计划",
       "position-detail": "持仓计划详情", portfolios: "投资组合", "portfolio-detail": "投资组合详情",
       "holding-detail": "持仓详情", "market-snapshots": "市场快照", "market-snapshot-detail": "快照详情",
@@ -58,7 +58,7 @@
       "runtime-logs": "运行日志",
     },
     "en-US": {
-      home: "Dashboard", universe: "Universe", opportunities: "Opportunities", "opportunity-detail": "Opportunity Details",
+      home: "Dashboard", universe: "Universe", qmr: "Quality & Mispricing", "qmr-detail": "Score Breakdown", opportunities: "Opportunities", "opportunity-detail": "Opportunity Details",
       "trade-plans": "Trade Plans", "trade-plan-detail": "Trade Plan Details", positions: "My Position Plans",
       "position-detail": "Position Plan Details", portfolios: "Portfolio Center", "portfolio-detail": "Portfolio Details",
       "holding-detail": "Holding Details", "market-snapshots": "Market Snapshot", "market-snapshot-detail": "Snapshot Details",

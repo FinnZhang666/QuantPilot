@@ -72,6 +72,10 @@ from app.database.models.entities import (
     UniverseInstrument,
     UniverseMembership,
     UniverseUpdateRun,
+    FundamentalSnapshot,
+    QualityScoreRecord,
+    MispricingScoreRecord,
+    QmrCandidateRecord,
 )
 
 __all__ = [
@@ -148,4 +152,8 @@ __all__ = [
     "UniverseInstrument",
     "UniverseMembership",
     "UniverseUpdateRun",
+    "FundamentalSnapshot",
+    "QualityScoreRecord",
+    "MispricingScoreRecord",
+    "QmrCandidateRecord",
 ]
