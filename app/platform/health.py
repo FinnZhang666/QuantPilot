@@ -17,7 +17,7 @@ from app.version import version_info
 def _process_memory_mb() -> float:
     """Return this process' resident memory without importing Unix-only modules."""
     system = platform.system()
-    if system == "Windows":
+    if system == "Windows" and hasattr(ctypes, "windll"):
         class ProcessMemoryCounters(Structure):
             _fields_ = [
                 ("cb", c_ulong), ("PageFaultCount", c_ulong),
@@ -32,9 +32,17 @@ def _process_memory_mb() -> float:
 
         counters = ProcessMemoryCounters()
         counters.cb = sizeof(counters)
-        process = c_void_p(ctypes.windll.kernel32.GetCurrentProcess())
-        if ctypes.windll.psapi.GetProcessMemoryInfo(process, byref(counters), counters.cb):
-            return counters.WorkingSetSize / 1024 ** 2
+        try:
+            process = c_void_p(ctypes.windll.kernel32.GetCurrentProcess())
+            if ctypes.windll.psapi.GetProcessMemoryInfo(
+                process, byref(counters), counters.cb,
+            ):
+                return counters.WorkingSetSize / 1024 ** 2
+        except (AttributeError, OSError):
+            return 0.0
+        return 0.0
+
+    if system == "Windows":
         return 0.0
 
     try:
