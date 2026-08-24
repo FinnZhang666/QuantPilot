@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 
 from app.data.providers.moomoo import MoomooConnectionManager
+from app.data.capabilities import money_flow_capability
+from app.data.quality import DataStatus, assess_quality
 
 
 class MoomooMoneyFlowProvider:
@@ -9,14 +11,21 @@ class MoomooMoneyFlowProvider:
         self.manager = manager or MoomooConnectionManager()
 
     def fetch(self, symbol):
+        capability = money_flow_capability(symbol)
+        if not capability.supported:
+            quality = assess_quality("money_flow", None, 0, capability.provider,
+                                     DataStatus.UNSUPPORTED.value, "MARKET_UNSUPPORTED")
+            return {"data_available": False, "data_status": quality.status,
+                    "source": capability.provider, "coverage": 0,
+                    "confidence": quality.confidence, "raw_fields": {},
+                    "capability": capability.as_dict(), "error": quality.error_code}
         context = None
         try:
             context = self.manager.open_quote_context()
             ret, frame = context.get_capital_distribution(
                 symbol if symbol.startswith("US.") else "US." + symbol.upper())
             if ret != 0 or frame is None or getattr(frame, "empty", False):
-                return {"data_available": False, "source": "MOOMOO_CAPITAL_DISTRIBUTION",
-                        "error": "CAPITAL_DISTRIBUTION_UNAVAILABLE"}
+                return self._unavailable(capability, "CAPITAL_DISTRIBUTION_UNAVAILABLE")
             row = frame.to_dict("records")[0]
             mapping = {"super_large": "super", "large": "big", "medium": "mid", "small": "small"}
             raw = {}
@@ -31,16 +40,32 @@ class MoomooMoneyFlowProvider:
             raw["total_outflow"] = sum(raw[key] for key in raw if key.endswith("_outflow") and raw[key] is not None)
             raw["total_net"] = raw["total_inflow"] - raw["total_outflow"]
             raw["total_turnover"] = raw["total_inflow"] + raw["total_outflow"]
-            return {"data_available": len(valid) == 8, "source": "MOOMOO_CAPITAL_DISTRIBUTION",
-                    "timestamp": row.get("update_time") or datetime.now(timezone.utc), "raw": raw}
+            timestamp = row.get("update_time") or datetime.now(timezone.utc)
+            coverage = len(valid) / 8
+            status = DataStatus.AVAILABLE.value if coverage == 1 else DataStatus.PARTIAL.value
+            quality = assess_quality("money_flow", timestamp if isinstance(timestamp, datetime) else None,
+                                     coverage, capability.provider, status)
+            return {"data_available": quality.available, "data_status": quality.status,
+                    "source": capability.provider, "timestamp": timestamp, "raw": raw,
+                    "raw_fields": raw, "freshness": quality.freshness, "coverage": coverage,
+                    "confidence": quality.confidence, "capability": capability.as_dict()}
         except Exception as exc:
-            return {"data_available": False, "source": "MOOMOO_CAPITAL_DISTRIBUTION",
-                    "error": type(exc).__name__}
+            code = "PERMISSION_DENIED" if "permission" in str(exc).lower() else type(exc).__name__
+            status = DataStatus.PERMISSION_DENIED.value if code == "PERMISSION_DENIED" else DataStatus.UNAVAILABLE.value
+            return self._unavailable(capability, code, status)
         finally:
             if context is not None:
                 try: context.close()
                 except Exception: pass
             self.manager.close_all()
+
+    @staticmethod
+    def _unavailable(capability, error, status=DataStatus.UNAVAILABLE.value):
+        quality = assess_quality("money_flow", None, 0, capability.provider, status, error)
+        return {"data_available": False, "data_status": quality.status,
+                "source": capability.provider, "coverage": 0,
+                "confidence": quality.confidence, "raw_fields": {},
+                "capability": capability.as_dict(), "error": error}
 
 
 def _float(value):

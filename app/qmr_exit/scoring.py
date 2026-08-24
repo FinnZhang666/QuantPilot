@@ -28,13 +28,15 @@ def evaluate_money_flow(raw, price=None, history=None, config=None):
     history = history or []
     required = ("super_large_net", "large_net", "medium_net", "small_net", "total_turnover")
     if not raw or any(_number(raw, key) is None for key in required):
-        return {"data_available": False, "regime": "NEUTRAL", "money_flow_score": None,
+        return {"data_available": False, "data_status": "UNAVAILABLE", "coverage": 0,
+                "confidence": "INSUFFICIENT", "regime": "UNKNOWN", "money_flow_score": None,
                 "accumulation_score": None, "distribution_score": None,
                 "absorption_score": None, "institutional_net": None, "retail_net": None,
                 "institutional_share": None, "retail_share": None, "rolling": {}}
     turnover = abs(_number(raw, "total_turnover"))
     if turnover <= 0:
-        return {"data_available": False, "regime": "NEUTRAL", "money_flow_score": None,
+        return {"data_available": False, "data_status": "UNAVAILABLE", "coverage": 0,
+                "confidence": "INSUFFICIENT", "regime": "UNKNOWN", "money_flow_score": None,
                 "accumulation_score": None, "distribution_score": None,
                 "absorption_score": None, "institutional_net": None, "retail_net": None,
                 "institutional_share": None, "retail_share": None, "rolling": {},
@@ -77,7 +79,13 @@ def evaluate_money_flow(raw, price=None, history=None, config=None):
     risk = max(distribution, 85 if regime == "BROAD_SELLING" else 0)
     if regime in {"ACCUMULATION", "POSSIBLE_ABSORPTION", "BROAD_BUYING"}:
         risk = max(0, risk - max(accumulation, absorption) * .35)
-    return {"data_available": True, "regime": regime, "money_flow_score": round(clamp(risk), 2),
+    coverage = sum(_number(raw, key) is not None for key in FLOW_FIELDS) / len(FLOW_FIELDS)
+    minimum = float(config.get("minimum_regime_coverage", .75))
+    if coverage < minimum:
+        regime = "UNKNOWN"
+    return {"data_available": True, "data_status": "AVAILABLE" if coverage == 1 else "PARTIAL",
+            "coverage": coverage, "confidence": "HIGH" if coverage >= .8 else "MEDIUM",
+            "regime": regime, "money_flow_score": round(clamp(risk), 2),
             "accumulation_score": round(accumulation, 2), "distribution_score": round(distribution, 2),
             "absorption_score": round(absorption, 2), "institutional_net": institutional,
             "retail_net": retail, "institutional_share": institutional_share,

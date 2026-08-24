@@ -25,6 +25,7 @@ profit_stages:
   giveback_exit: 18
   atr_multiple: 2.5
 money_flow:
+  minimum_regime_coverage: 0.75
   share_threshold: 0.002
   strong_share_threshold: 0.006
   neutral_share_band: 0.0015
@@ -45,4 +46,3 @@ hard_exit:
 notifications:
   score_change: 15
   states: [WATCH, PROTECT, REDUCE, EXIT]
-

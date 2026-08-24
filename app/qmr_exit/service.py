@@ -52,7 +52,7 @@ class QmrExitService:
             rolling_structure_json=assessment.get("rolling", {}), money_flow_regime=assessment["regime"],
             money_flow_score=assessment["money_flow_score"], accumulation_score=assessment["accumulation_score"],
             distribution_score=assessment["distribution_score"], absorption_score=assessment["absorption_score"],
-            data_quality="HIGH" if assessment["data_available"] else "LOW")
+            data_quality=payload.get("data_status", assessment.get("data_status", "UNAVAILABLE")))
         return self.repository.save_money_flow(row)
 
     def notify_pending(self, notifier, limit=100):
