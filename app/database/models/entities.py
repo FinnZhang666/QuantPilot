@@ -30,6 +30,58 @@ class TimestampMixin:
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
 
+class UniverseInstrument(TimestampMixin, Base):
+    __tablename__ = "universe"
+    __table_args__ = (
+        UniqueConstraint("market", "symbol", name="uq_universe_market_symbol"),
+        Index("ix_universe_status_sector", "status", "sector"),
+        Index("ix_universe_industry", "industry"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(32), index=True)
+    market: Mapped[str] = mapped_column(String(8), default="US")
+    company_name: Mapped[Optional[str]] = mapped_column(String(255))
+    sector: Mapped[Optional[str]] = mapped_column(String(128))
+    industry: Mapped[Optional[str]] = mapped_column(String(128))
+    market_cap: Mapped[Optional[float]] = mapped_column(Numeric(24, 4))
+    first_seen: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    last_update: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    status: Mapped[str] = mapped_column(String(16), default="ACTIVE")
+
+
+class UniverseMembership(TimestampMixin, Base):
+    __tablename__ = "universe_memberships"
+    __table_args__ = (
+        UniqueConstraint("universe_id", "fund_symbol", name="uq_universe_membership_fund"),
+        Index("ix_universe_membership_fund_active", "fund_symbol", "is_active"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    universe_id: Mapped[int] = mapped_column(ForeignKey("universe.id"), index=True)
+    fund_symbol: Mapped[str] = mapped_column(String(16))
+    weight: Mapped[Optional[float]] = mapped_column(Numeric(14, 8))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    source_name: Mapped[str] = mapped_column(String(64))
+    source_url: Mapped[Optional[str]] = mapped_column(Text)
+    first_seen: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    last_seen: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class UniverseUpdateRun(Base):
+    __tablename__ = "universe_update_runs"
+    __table_args__ = (Index("ix_universe_update_status_completed", "status", "completed_at"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    status: Mapped[str] = mapped_column(String(24), default="RUNNING")
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    sources_json: Mapped[list] = mapped_column(JSON, default=list)
+    added_count: Mapped[int] = mapped_column(Integer, default=0)
+    reactivated_count: Mapped[int] = mapped_column(Integer, default=0)
+    inactivated_count: Mapped[int] = mapped_column(Integer, default=0)
+    active_count: Mapped[int] = mapped_column(Integer, default=0)
+    error_count: Mapped[int] = mapped_column(Integer, default=0)
+    summary_json: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
 class StrategyRecord(TimestampMixin, Base):
     __tablename__ = "strategies"
     id: Mapped[int] = mapped_column(primary_key=True)

@@ -40,6 +40,8 @@ from app.api.market_snapshots import router as market_snapshots_router
 from app.api.symbol_overview import internal_router as internal_symbol_overview_router
 from app.api.symbol_overview import router as symbol_overview_router
 from app.api.telegram_preview import router as telegram_preview_router
+from app.api.universe import internal_router as internal_universe_router
+from app.api.universe import router as universe_router
 from app.api.paper_runtime import internal_router as internal_paper_runtime_router
 from app.api.paper_runtime import router as paper_runtime_router
 from app.telegram_runtime.api import internal_router as internal_telegram_runtime_router
@@ -56,6 +58,7 @@ from app.runtime.realtime_runtime import get_runtime
 from app.paper_runtime.manager import get_runtime_manager
 from app.telegram_runtime.runtime import get_telegram_runtime
 from app.version import PRODUCT, VERSION
+from app.universe.scheduler import get_universe_scheduler
 
 
 @asynccontextmanager
@@ -70,6 +73,9 @@ async def lifespan(app: FastAPI):
     opportunity_runtime = get_runtime(settings)
     telegram_runtime = get_telegram_runtime(settings)
     telegram_runtime.initialize_registry()
+    universe_scheduler = get_universe_scheduler(settings)
+    if settings.universe_enabled and settings.universe_auto_update_enabled:
+        universe_scheduler.start()
     if settings.runtime_manager_enabled and settings.paper_trading_autostart:
         paper_runtime.start()
     if settings.realtime_runtime_enabled:
@@ -79,6 +85,7 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
+        universe_scheduler.stop()
         if opportunity_runtime.status != "STOPPED":
             opportunity_runtime.stop()
         if paper_runtime.status != "STOPPED":
@@ -141,6 +148,8 @@ app.include_router(market_snapshots_router)
 app.include_router(symbol_overview_router)
 app.include_router(internal_symbol_overview_router)
 app.include_router(telegram_preview_router)
+app.include_router(universe_router)
+app.include_router(internal_universe_router)
 app.include_router(paper_runtime_router)
 app.include_router(internal_paper_runtime_router)
 app.include_router(telegram_runtime_router)

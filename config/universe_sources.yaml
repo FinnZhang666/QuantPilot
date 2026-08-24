@@ -1,0 +1,14 @@
+version: "1.0"
+sources:
+  - fund_symbol: QQQ
+    provider: INVESCO
+    enabled: true
+    format: csv
+    parser: invesco_holdings
+    url: https://www.invesco.com/us/financial-products/etfs/holdings/main/holdings/0?action=download&audienceType=Investor&ticker=QQQ
+  - fund_symbol: SPY
+    provider: STATE_STREET
+    enabled: true
+    format: xlsx
+    parser: ssga_holdings
+    url: https://www.ssga.com/library-content/products/fund-data/etfs/us/holdings-daily-us-en-spy.xlsx

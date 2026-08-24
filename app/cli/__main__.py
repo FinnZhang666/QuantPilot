@@ -23,6 +23,7 @@ from app.platform.environment import validate_environment
 from app.platform.health import health_report
 from app.version import version_info
 from app.research import ResearchService
+from app.universe.service import UniverseService
 
 PID_FILE = Path("data/opportunity_runtime.pid")
 
@@ -33,6 +34,14 @@ def build_parser():
     group.add_parser("health")
     group.add_parser("config")
     group.add_parser("version")
+    universe = group.add_parser("universe")
+    universe_actions = universe.add_subparsers(dest="action", required=True)
+    universe_update = universe_actions.add_parser("update")
+    universe_update.add_argument("--force", action="store_true")
+    universe_list = universe_actions.add_parser("list")
+    universe_list.add_argument("--fund")
+    universe_list.add_argument("--status", default="ACTIVE")
+    universe_list.add_argument("--limit", type=int, default=100)
     backup = group.add_parser("backup")
     backup_actions = backup.add_subparsers(dest="action", required=True)
     backup_create = backup_actions.add_parser("create")
@@ -126,6 +135,23 @@ def main():
     args = build_parser().parse_args()
     if args.group in {"health", "config", "version", "backup"}:
         return _platform(args)
+    if args.group == "universe":
+        with get_session_factory()() as db:
+            service = UniverseService(db, get_settings())
+            if args.action == "update":
+                row = service.update(force=args.force)
+                print("Universe更新完成：状态%s，ACTIVE %s，新增%s，停用%s，错误%s。" % (
+                    row.status, row.active_count, row.added_count, row.inactivated_count, row.error_count,
+                ))
+                return 0 if row.status in {"SUCCESS", "PARTIAL_SUCCESS"} else 1
+            items, total = service.list(fund=args.fund, status=args.status, limit=args.limit, offset=0)
+            print("Universe股票数量：%s" % total)
+            for item in items:
+                print("%s %-40s QQQ=%s SPY=%s %s" % (
+                    item["symbol"], item["company_name"] or "—", item["qqq_member"],
+                    item["spy_member"], item["status"],
+                ))
+            return 0
     if args.group == "research":
         return _research(args)
     if args.group == "regime":

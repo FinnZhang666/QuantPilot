@@ -14,7 +14,7 @@ def test_database_migration(monkeypatch, tmp_path):
     assert {"portfolios", "paper_orders", "trades", "system_events"}.issubset(tables)
 
 
-def test_fresh_0024_schema_matches_git_metadata(monkeypatch, tmp_path):
+def test_fresh_head_schema_matches_git_metadata(monkeypatch, tmp_path):
     url = f"sqlite:///{tmp_path / 'fresh-0024.db'}"
     monkeypatch.setenv("DATABASE_URL", url)
     config = Config("alembic.ini")
@@ -33,7 +33,23 @@ def test_fresh_0024_schema_matches_git_metadata(monkeypatch, tmp_path):
     with engine.connect() as connection:
         assert connection.exec_driver_sql(
             "SELECT version_num FROM alembic_version"
-        ).scalar_one() == "0024"
+        ).scalar_one() == "0025"
+
+
+def test_universe_migration_round_trip(monkeypatch, tmp_path):
+    url = "sqlite:///" + str(tmp_path / "universe-migration.db")
+    monkeypatch.setenv("DATABASE_URL", url)
+    config = Config("alembic.ini")
+    command.upgrade(config, "0024")
+    engine = create_engine(url)
+    for name in ("universe_update_runs", "universe_memberships", "universe"):
+        Base.metadata.tables[name].drop(engine, checkfirst=True)
+    command.upgrade(config, "0025")
+    assert {"universe", "universe_memberships", "universe_update_runs"} <= set(inspect(engine).get_table_names())
+    command.downgrade(config, "0024")
+    assert "universe" not in inspect(engine).get_table_names()
+    command.upgrade(config, "0025")
+    assert "universe" in inspect(engine).get_table_names()
 
 
 def test_telegram_runtime_migration_upgrade_downgrade(monkeypatch, tmp_path):

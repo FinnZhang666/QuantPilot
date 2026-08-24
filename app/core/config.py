@@ -149,6 +149,13 @@ class Settings(BaseSettings):
     telegram_bot_enabled_ai_stock_analyze_en: bool = False
     telegram_bot_enabled_trade_companion_zh: bool = False
     telegram_bot_enabled_stock_analysis_zh: bool = False
+    universe_enabled: bool = True
+    universe_auto_update_enabled: bool = True
+    universe_sources_file: str = "config/universe_sources.yaml"
+    universe_cache_directory: str = "data/cache/universe"
+    universe_cache_ttl_hours: int = Field(default=20, ge=1, le=168)
+    universe_update_interval_hours: int = Field(default=24, ge=1, le=168)
+    universe_download_timeout_seconds: int = Field(default=30, ge=5, le=300)
     default_timezone: str = "America/New_York"
     display_timezone: str = "Asia/Shanghai"
     default_slippage_bps: int = Field(default=8, ge=0, le=1000)
@@ -262,6 +269,10 @@ class Settings(BaseSettings):
             "paper_scheduler_enabled": self.paper_scheduler_enabled,
             "review_runtime_enabled": self.review_runtime_enabled,
             "strategy_scoreboard_enabled": self.strategy_scoreboard_enabled,
+            "universe_enabled": self.universe_enabled,
+            "universe_auto_update_enabled": self.universe_auto_update_enabled,
+            "universe_sources_file": self.universe_sources_file,
+            "universe_cache_directory": self.universe_cache_directory,
         }
 
     def realtime_symbol_list(self) -> List[str]:

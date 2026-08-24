@@ -6,7 +6,33 @@ from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
 from app.candidate_pool.models import UniverseSymbol
-from app.database.models import CandidatePoolEntry, WatchlistItem
+from app.database.models import CandidatePoolEntry, UniverseInstrument, UniverseMembership, WatchlistItem
+
+
+class DatabaseUniverseProvider:
+    """The only production strategy universe: persisted, active ETF constituents."""
+    def __init__(self, db: Session):
+        self.db = db
+
+    def get_symbols(self) -> List[UniverseSymbol]:
+        instruments = self.db.scalars(select(UniverseInstrument).where(
+            UniverseInstrument.status == "ACTIVE",
+        ).order_by(UniverseInstrument.symbol)).all()
+        memberships = {}
+        if instruments:
+            rows = self.db.execute(select(
+                UniverseMembership.universe_id, UniverseMembership.fund_symbol,
+            ).where(
+                UniverseMembership.universe_id.in_([item.id for item in instruments]),
+                UniverseMembership.is_active.is_(True),
+            )).all()
+            for universe_id, fund in rows:
+                memberships.setdefault(universe_id, []).append(fund)
+        return [UniverseSymbol(
+            item.symbol, item.market, "ETF_COMPONENT",
+            "UNIVERSE:" + ",".join(sorted(memberships.get(item.id, []))),
+            item.sector, "SOXX" if (item.sector or "").lower() == "semiconductor" else "QQQ",
+        ) for item in instruments]
 
 
 class WatchlistUniverseProvider:

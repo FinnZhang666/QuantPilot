@@ -28,6 +28,7 @@ def clean_settings_cache(monkeypatch):
         "AI_COMPANION_PROVIDER",
         "AI_COMPANION_MODEL",
         "AI_COMPANION_API_KEY",
+        "UNIVERSE_AUTO_UPDATE_ENABLED",
     ):
         monkeypatch.delenv(key, raising=False)
     # Automated tests must never activate a real Telegram or Gemini transport,
@@ -37,6 +38,7 @@ def clean_settings_cache(monkeypatch):
     monkeypatch.setenv("TELEGRAM_RUNTIME_AUTOSTART", "false")
     monkeypatch.setenv("AI_COMPANION_ENABLED", "false")
     monkeypatch.setenv("AI_COMPANION_PROVIDER", "mock")
+    monkeypatch.setenv("UNIVERSE_AUTO_UPDATE_ENABLED", "false")
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()

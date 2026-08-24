@@ -69,6 +69,9 @@ from app.database.models.entities import (
     TelegramRuntimeMessageLog,
     TelegramProfileSyncLog,
     TelegramAIInvocation,
+    UniverseInstrument,
+    UniverseMembership,
+    UniverseUpdateRun,
 )
 
 __all__ = [
@@ -142,4 +145,7 @@ __all__ = [
     "TelegramRuntimeMessageLog",
     "TelegramProfileSyncLog",
     "TelegramAIInvocation",
+    "UniverseInstrument",
+    "UniverseMembership",
+    "UniverseUpdateRun",
 ]

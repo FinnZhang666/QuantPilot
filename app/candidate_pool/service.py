@@ -11,10 +11,7 @@ from sqlalchemy.orm import Session
 from app.candidate_pool.expiry import expire_due
 from app.candidate_pool.filters import evaluate_filters
 from app.candidate_pool.ranking import CandidateRanker
-from app.candidate_pool.universe import (
-    CombinedUniverseProvider, ConfigUniverseProvider,
-    PreviousCandidateUniverseProvider, WatchlistUniverseProvider,
-)
+from app.candidate_pool.universe import DatabaseUniverseProvider
 from app.core.config import Settings
 from app.database.models import (
     CandidatePoolEntry, CandidatePoolRun, FeatureValueRecord,
@@ -75,11 +72,7 @@ class CandidatePoolService:
                 except Exception as exc:
                     self.db.rollback()
                     errors.append({"symbol": "MARKET", "error": type(exc).__name__})
-            universe = CombinedUniverseProvider([
-                WatchlistUniverseProvider(self.db),
-                ConfigUniverseProvider(self.settings.candidate_pool_config_universe_file),
-                PreviousCandidateUniverseProvider(self.db),
-            ]).get_symbols()
+            universe = DatabaseUniverseProvider(self.db).get_symbols()
             run.universe_size = len(universe)
             watchlist = {
                 row.symbol: row for row in self.db.scalars(select(WatchlistItem).where(

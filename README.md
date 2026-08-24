@@ -435,3 +435,9 @@ The unified, configuration-backed multi-Bot runtime is documented in
 Bot tokens remain local in `.env`; `config/telegram_bots.json` contains public profile
 copy only. Preview and real delivery share one renderer, and Bot avatars remain a
 manual BotFather step.
+
+## Universe Engine
+
+策略选股现已受持久化白名单约束。首批来源为可配置的 QQQ 与 SPY 官方成分文件，支持跨 ETF 去重、
+成员删除软停用、本地缓存、每日更新、只读 API 和 Dashboard。新增 ETF 只需扩展配置与相应解析器，
+无需改变数据库结构。详见 [`docs/UNIVERSE_ENGINE.md`](docs/UNIVERSE_ENGINE.md)。

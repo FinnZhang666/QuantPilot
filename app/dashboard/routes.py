@@ -68,6 +68,11 @@ def home(request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "home")
 
 
+@router.get("/dashboard/universe", include_in_schema=False)
+def universe(request: Request, settings: Settings = Depends(get_settings)):
+    return _page(request, settings, "universe")
+
+
 @router.get("/dashboard/opportunities")
 def opportunities(request: Request, settings: Settings = Depends(get_settings)):
     return _page(request, settings, "opportunities")
