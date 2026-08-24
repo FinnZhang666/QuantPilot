@@ -229,6 +229,92 @@ class RecoveryEventRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class BuyScoreRecord(Base):
+    __tablename__ = "buy_scores"
+    __table_args__ = (
+        UniqueConstraint("symbol", "evaluation_time", "model_version", name="uq_buy_score_version"),
+        Index("ix_buy_score_symbol_time", "symbol", "evaluation_time"),
+        Index("ix_buy_score_status_rank", "buy_status", "rank_current"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    qmr_candidate_id: Mapped[int] = mapped_column(ForeignKey("qmr_candidates.id"), index=True)
+    recovery_score_id: Mapped[int] = mapped_column(ForeignKey("recovery_scores.id"), index=True)
+    symbol: Mapped[str] = mapped_column(String(32))
+    evaluation_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    quality_score: Mapped[int] = mapped_column(Integer)
+    mispricing_score: Mapped[int] = mapped_column(Integer)
+    recovery_score: Mapped[int] = mapped_column(Integer)
+    sector_score: Mapped[Optional[int]] = mapped_column(Integer)
+    market_score: Mapped[Optional[int]] = mapped_column(Integer)
+    etf_importance_score: Mapped[Optional[int]] = mapped_column(Integer)
+    raw_buy_score: Mapped[int] = mapped_column(Integer)
+    risk_penalty: Mapped[int] = mapped_column(Integer)
+    final_buy_score: Mapped[int] = mapped_column(Integer)
+    buy_grade: Mapped[str] = mapped_column(String(4))
+    buy_status: Mapped[str] = mapped_column(String(32))
+    recommended_action: Mapped[str] = mapped_column(String(48))
+    entry_reference_price: Mapped[float] = mapped_column(Numeric(24, 8))
+    entry_zone_low: Mapped[Optional[float]] = mapped_column(Numeric(24, 8))
+    entry_zone_high: Mapped[Optional[float]] = mapped_column(Numeric(24, 8))
+    first_watch_price: Mapped[Optional[float]] = mapped_column(Numeric(24, 8))
+    first_early_entry_price: Mapped[Optional[float]] = mapped_column(Numeric(24, 8))
+    first_confirmed_entry_price: Mapped[Optional[float]] = mapped_column(Numeric(24, 8))
+    first_strong_entry_price: Mapped[Optional[float]] = mapped_column(Numeric(24, 8))
+    rank_current: Mapped[Optional[int]] = mapped_column(Integer)
+    rank_previous: Mapped[Optional[int]] = mapped_column(Integer)
+    rank_change: Mapped[Optional[int]] = mapped_column(Integer)
+    chase_risk_score: Mapped[int] = mapped_column(Integer)
+    chase_risk_level: Mapped[str] = mapped_column(String(16))
+    entry_attractiveness: Mapped[str] = mapped_column(String(16))
+    recommended_position_confidence: Mapped[str] = mapped_column(String(16))
+    holding_profile: Mapped[str] = mapped_column(String(16), default="UNKNOWN")
+    cooldown_until: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    data_confidence: Mapped[str] = mapped_column(String(16))
+    model_version: Mapped[str] = mapped_column(String(32))
+    score_components_json: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class BuyRankingRecord(Base):
+    __tablename__ = "buy_rankings"
+    __table_args__ = (
+        UniqueConstraint("evaluation_time", "rank_current", "model_version", name="uq_buy_ranking_position"),
+        UniqueConstraint("symbol", "evaluation_time", "model_version", name="uq_buy_ranking_symbol"),
+        Index("ix_buy_ranking_time_rank", "evaluation_time", "rank_current"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    buy_score_id: Mapped[int] = mapped_column(ForeignKey("buy_scores.id"), index=True)
+    symbol: Mapped[str] = mapped_column(String(32))
+    evaluation_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    rank_current: Mapped[int] = mapped_column(Integer)
+    rank_previous: Mapped[Optional[int]] = mapped_column(Integer)
+    rank_change: Mapped[Optional[int]] = mapped_column(Integer)
+    final_buy_score: Mapped[int] = mapped_column(Integer)
+    recovery_score: Mapped[int] = mapped_column(Integer)
+    mispricing_score: Mapped[int] = mapped_column(Integer)
+    quality_score: Mapped[int] = mapped_column(Integer)
+    data_confidence: Mapped[str] = mapped_column(String(16))
+    model_version: Mapped[str] = mapped_column(String(32))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class InstrumentMapping(Base):
+    __tablename__ = "instrument_mappings"
+    __table_args__ = (
+        UniqueConstraint("underlying_symbol", "leveraged_symbol", "direction", name="uq_instrument_mapping"),
+        Index("ix_instrument_mapping_underlying_active", "underlying_symbol", "active"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    underlying_symbol: Mapped[str] = mapped_column(String(32))
+    leveraged_symbol: Mapped[str] = mapped_column(String(32))
+    leverage_multiple: Mapped[float] = mapped_column(Numeric(8, 3))
+    direction: Mapped[str] = mapped_column(String(16))
+    provider: Mapped[str] = mapped_column(String(64))
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
 class StrategyRecord(TimestampMixin, Base):
     __tablename__ = "strategies"
     id: Mapped[int] = mapped_column(primary_key=True)

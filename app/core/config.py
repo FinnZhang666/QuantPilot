@@ -164,6 +164,9 @@ class Settings(BaseSettings):
     recovery_config_file: str = "config/recovery_v1.yaml"
     recovery_auto_update_enabled: bool = True
     recovery_update_interval_minutes: int = Field(default=5, ge=1, le=1440)
+    buy_score_enabled: bool = True
+    buy_score_config_file: str = "config/buy_score_v1.yaml"
+    buy_score_auto_update_enabled: bool = True
     default_timezone: str = "America/New_York"
     display_timezone: str = "Asia/Shanghai"
     default_slippage_bps: int = Field(default=8, ge=0, le=1000)
@@ -289,6 +292,9 @@ class Settings(BaseSettings):
             "recovery_config_file": self.recovery_config_file,
             "recovery_auto_update_enabled": self.recovery_auto_update_enabled,
             "recovery_update_interval_minutes": self.recovery_update_interval_minutes,
+            "buy_score_enabled": self.buy_score_enabled,
+            "buy_score_config_file": self.buy_score_config_file,
+            "buy_score_auto_update_enabled": self.buy_score_auto_update_enabled,
         }
 
     def realtime_symbol_list(self) -> List[str]:

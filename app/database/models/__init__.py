@@ -78,6 +78,9 @@ from app.database.models.entities import (
     QmrCandidateRecord,
     RecoveryScoreRecord,
     RecoveryEventRecord,
+    BuyScoreRecord,
+    BuyRankingRecord,
+    InstrumentMapping,
 )
 
 __all__ = [
@@ -160,4 +163,7 @@ __all__ = [
     "QmrCandidateRecord",
     "RecoveryScoreRecord",
     "RecoveryEventRecord",
+    "BuyScoreRecord",
+    "BuyRankingRecord",
+    "InstrumentMapping",
 ]

@@ -6,6 +6,7 @@ from app.database.session import get_session_factory
 from app.universe.service import UniverseService
 from app.qmr.service import QmrService
 from app.recovery.service import RecoveryService
+from app.buy_score.service import BuyScoreService
 
 logger = logging.getLogger("trade_companion.universe.scheduler")
 
@@ -47,6 +48,11 @@ class UniverseScheduler:
                         latest_recovery = recovery.repository.latest_evaluation_time()
                         if latest_recovery is None or datetime.now(timezone.utc) - latest_recovery >= timedelta(minutes=self.settings.recovery_update_interval_minutes):
                             recovery.run(limit=1000)
+                    if self.settings.buy_score_enabled and self.settings.buy_score_auto_update_enabled:
+                        buy_score = BuyScoreService(db, self.settings)
+                        latest_buy_score = buy_score.repository.latest_evaluation_time()
+                        if latest_buy_score is None or datetime.now(timezone.utc) - latest_buy_score >= timedelta(minutes=self.settings.recovery_update_interval_minutes):
+                            buy_score.run(limit=1000)
             except Exception:
                 logger.exception("Scheduled Universe update failed")
             interval = self.settings.recovery_update_interval_minutes * 60 if self.settings.recovery_auto_update_enabled else 3600

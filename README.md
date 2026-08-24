@@ -457,3 +457,11 @@ Recovery Engine 仅处理当前 QMR `WATCH` 候选，使用已闭合 5m/15m/30m/
 大单或全球联动缺失时保持 `PARTIAL/UNKNOWN` 并重新归一化可用因子。输出 Entry 候选状态但不下单、
 不管理仓位。API 为 `GET /qmr/recovery`、`GET /qmr/recovery/{symbol}`，Dashboard 复用
 `/dashboard/qmr`。详见 [`docs/RECOVERY_ENGINE.md`](docs/RECOVERY_ENGINE.md)。
+
+## Buy Score Engine
+
+Buy Score Engine 只聚合当前 QMR WATCH 与其对应 Recovery 结果，按配置化权重计算 Raw Buy Score，加入
+基本面、大盘、板块、失败修复、波动、数据可信度与追涨风险扣分，再通过状态矩阵、迟滞和冷却输出候选
+状态及 Top 10/20 排名。它保存排名变化、首次发现价格和观察价格区间；杠杆产品映射仅展示，不改变底层
+正股评分或创建订单。API 为 `GET /qmr/buy-scores`、`GET /qmr/ranking`、
+`GET /qmr/{symbol}/buy-score`。详见 [`docs/BUY_SCORE_ENGINE.md`](docs/BUY_SCORE_ENGINE.md)。

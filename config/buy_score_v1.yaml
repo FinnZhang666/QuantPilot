@@ -1,0 +1,59 @@
+version: buy-score-v1
+weights:
+  quality: 0.20
+  mispricing: 0.25
+  recovery: 0.30
+  sector: 0.10
+  market: 0.10
+  etf_importance: 0.05
+grades:
+  S: 90
+  A: 80
+  B: 70
+  C: 60
+  D: 0
+status_thresholds:
+  strong_entry: 90
+  confirmed_entry: 80
+  early_entry: 70
+  watch: 60
+matrix_caps:
+  PANIC: WATCH
+  STABILIZING: WATCH
+  EARLY_RECOVERY: EARLY_ENTRY
+  RECOVERY_CONFIRMED: CONFIRMED_ENTRY
+  TREND_RECOVERY: STRONG_ENTRY
+  FAILED_RECOVERY: WAIT
+risk:
+  maximum_penalty: 40
+  market_panic_penalty: 10
+  sector_minimum: 50
+  sector_maximum_penalty: 10
+  failed_recovery_penalty: 25
+  low_confidence_penalty: 10
+  medium_confidence_penalty: 4
+  high_atr_pct: 6.0
+  high_realized_volatility: 0.60
+  high_intraday_range_pct: 8.0
+  high_recent_drawdown_pct: 20.0
+  volatility_penalty_each: 4
+  missing_volatility_penalty_each: 2
+chase:
+  start_pct: 0.10
+  full_pct: 0.20
+  maximum_penalty: 15
+  high_score: 70
+entry_zone:
+  atr_multiple: 0.50
+  session_range_fraction: 0.20
+hysteresis:
+  downgrade_buffer: 5
+  minimum_state_duration_minutes: 10
+  failed_recovery_cooldown_minutes: 60
+instrument_mappings:
+  - {underlying_symbol: APP, leveraged_symbol: APPX, leverage_multiple: 2, direction: LONG, provider: CONFIG, active: true}
+  - {underlying_symbol: MU, leveraged_symbol: MULL, leverage_multiple: 2, direction: LONG, provider: CONFIG, active: true}
+  - {underlying_symbol: SNDK, leveraged_symbol: SNDU, leverage_multiple: 2, direction: LONG, provider: CONFIG, active: true}
+  - {underlying_symbol: NVDA, leveraged_symbol: NVDL, leverage_multiple: 2, direction: LONG, provider: CONFIG, active: true}
+  - {underlying_symbol: SOXL, leveraged_symbol: SOXS, leverage_multiple: -1, direction: INVERSE, provider: CONFIG, active: true}
+  - {underlying_symbol: QQQ, leveraged_symbol: SQQQ, leverage_multiple: -3, direction: INVERSE, provider: CONFIG, active: true}
