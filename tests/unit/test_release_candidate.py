@@ -75,8 +75,8 @@ def test_readme_known_limitations_are_current():
 
 def test_public_openapi_phase4_surface_and_internal_hidden():
     paths = app.openapi()["paths"]
-    assert len(paths) == 198
-    assert sum(len(operations) for operations in paths.values()) == 207
+    assert len(paths) == 201
+    assert sum(len(operations) for operations in paths.values()) == 210
     assert not any(path.startswith("/internal") for path in paths)
 
 

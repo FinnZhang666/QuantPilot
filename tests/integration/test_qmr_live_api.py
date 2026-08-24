@@ -11,6 +11,7 @@ HEADERS = {"X-Dashboard-Token": "qmr-live-test"}
 def client(monkeypatch, tmp_path):
     monkeypatch.setenv("DATABASE_URL", "sqlite:///" + str(tmp_path / "qmr-live-api.db"))
     monkeypatch.setenv("DASHBOARD_ADMIN_TOKEN", "qmr-live-test")
+    monkeypatch.setenv("DASHBOARD_READONLY_PUBLIC", "false")
     monkeypatch.setenv("UNIVERSE_AUTO_UPDATE_ENABLED", "false")
     get_settings.cache_clear(); get_engine.cache_clear()
     return TestClient(app)

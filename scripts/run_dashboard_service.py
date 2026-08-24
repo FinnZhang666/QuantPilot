@@ -11,6 +11,8 @@ def main():
     os.environ["RUNTIME_MANAGER_ENABLED"] = "false"
     os.environ["PAPER_TRADING_AUTOSTART"] = "false"
     os.environ["TELEGRAM_RUNTIME_AUTOSTART"] = "false"
+    os.environ["REALTIME_RUNTIME_ENABLED"] = "false"
+    os.environ["UNIVERSE_AUTO_UPDATE_ENABLED"] = "false"
     settings = get_settings()
     uvicorn.run(
         "app.main:app", host=settings.app_host, port=settings.app_port,

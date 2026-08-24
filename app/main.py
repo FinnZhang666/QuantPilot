@@ -60,6 +60,7 @@ from app.api.paper_runtime import internal_router as internal_paper_runtime_rout
 from app.api.paper_runtime import router as paper_runtime_router
 from app.telegram_runtime.api import internal_router as internal_telegram_runtime_router
 from app.telegram_runtime.api import router as telegram_runtime_router
+from app.api.local_node import router as local_node_router
 from app.dashboard.routes import router as dashboard_router
 from app.api.routes import router as api_router
 from app.core.config import get_settings
@@ -185,6 +186,7 @@ app.include_router(paper_runtime_router)
 app.include_router(internal_paper_runtime_router)
 app.include_router(telegram_runtime_router)
 app.include_router(internal_telegram_runtime_router)
+app.include_router(local_node_router)
 app.include_router(dashboard_router)
 app.mount(
     "/dashboard/static",
