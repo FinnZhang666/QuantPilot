@@ -37,7 +37,8 @@ class QmrPaperBridge:
                 feature_refs_json={"source": "qmr_live_signals", "signal_id": signal.signal_id},
                 components_json={"quality": signal.quality_score, "mispricing": signal.mispricing_score,
                                  "recovery": signal.recovery_score, "buy_score": signal.buy_score,
-                                 "qmr_signal_id": signal.signal_id})
+                                 "qmr_signal_id": signal.signal_id,
+                                 "market_context": snapshot.get("market_context")})
             self.db.add(candidate); self.db.flush()
         plan = self.db.scalar(select(TradePlan).where(
             TradePlan.signal_id == candidate.id, TradePlan.direction == "LONG"))

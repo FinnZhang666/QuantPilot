@@ -1,5 +1,14 @@
 # Trade Companion
 
+## QMR v1.1 Market Context
+
+QMR automatic research scans the deduplicated active union of QQQ, SPY, SOXX,
+SMH, IGV and IWM constituents. A configurable Global + Sector context gate is
+persisted before any internal paper entry is evaluated; missing or stale context
+fails closed. This does not enable real trading. See
+[`docs/QMR_V1_1_MARKET_CONTEXT.md`](docs/QMR_V1_1_MARKET_CONTEXT.md) for data
+sources, states, scheduling, historical reconstruction and safety boundaries.
+
 QMR 实盘信号、Telegram 去重通知与持续验证闭环见
 [`docs/SPRINT_06_QMR_LIVE_SIGNAL.md`](docs/SPRINT_06_QMR_LIVE_SIGNAL.md)。
 QMR 在现有策略中心的正式注册、状态和版本关系见

@@ -1,5 +1,5 @@
-version: qmr-exit-v1
-strategy_version: QMR-v1.0
+version: qmr-exit-v1.1
+strategy_version: QMR-v1.1
 weights:
   capital_flow: 25
   trend: 20

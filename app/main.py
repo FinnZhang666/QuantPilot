@@ -19,6 +19,8 @@ from app.api.runtime import router as runtime_router
 from app.api.dashboard import router as dashboard_api_router
 from app.api.development import router as development_router
 from app.api.market_regime import router as market_regime_router
+from app.api.market_context import router as market_context_router
+from app.api.market_context import internal_router as internal_market_context_router
 from app.api.candidate_pool import router as candidate_pool_router
 from app.api.review import router as review_router
 from app.api.ai_review import router as ai_review_router
@@ -145,6 +147,8 @@ app.include_router(runtime_router)
 app.include_router(dashboard_api_router)
 app.include_router(development_router)
 app.include_router(market_regime_router)
+app.include_router(market_context_router)
+app.include_router(internal_market_context_router)
 app.include_router(candidate_pool_router)
 app.include_router(review_router)
 app.include_router(ai_review_router)

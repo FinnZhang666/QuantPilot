@@ -158,8 +158,10 @@ class Settings(BaseSettings):
     universe_download_timeout_seconds: int = Field(default=30, ge=5, le=300)
     qmr_enabled: bool = True
     qmr_config_file: str = "config/qmr_v1.yaml"
+    market_context_enabled: bool = True
+    market_context_config_file: str = "config/market_context_v1.yaml"
     qmr_auto_update_enabled: bool = True
-    qmr_update_interval_minutes: int = Field(default=60, ge=5, le=1440)
+    qmr_update_interval_minutes: int = Field(default=5, ge=5, le=1440)
     recovery_enabled: bool = True
     recovery_config_file: str = "config/recovery_v1.yaml"
     recovery_auto_update_enabled: bool = True
@@ -299,6 +301,8 @@ class Settings(BaseSettings):
             "universe_cache_directory": self.universe_cache_directory,
             "qmr_enabled": self.qmr_enabled,
             "qmr_config_file": self.qmr_config_file,
+            "market_context_enabled": self.market_context_enabled,
+            "market_context_config_file": self.market_context_config_file,
             "qmr_auto_update_enabled": self.qmr_auto_update_enabled,
             "qmr_update_interval_minutes": self.qmr_update_interval_minutes,
             "recovery_enabled": self.recovery_enabled,

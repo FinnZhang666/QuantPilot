@@ -342,6 +342,14 @@ class PaperTradingService:
             return self._decision("REJECTED", "MISSING_CANDIDATE", "Trade Plan has no persisted Candidate")
         if candidate.status != "VALID" or candidate.signal_type != "CANDIDATE_BUY":
             return self._decision("REJECTED", "INVALID_CANDIDATE", "Candidate is not a valid buy signal")
+        if candidate.strategy_name == "quality_mispricing_recovery":
+            context = (candidate.components_json or {}).get("market_context") or {}
+            if getattr(self.settings, "market_context_enabled", False) and not context:
+                return self._decision("WAITING_ENTRY_DATA", "MISSING_MARKET_CONTEXT",
+                                      "QMR entry requires a persisted Market Context snapshot")
+            if context.get("decision") in {"WAIT", "PROBE"}:
+                return self._decision("WAITING_ENTRY", "MARKET_CONTEXT_GATE",
+                                      "QMR Market Context gate does not permit entry")
         if any((
             candidate.symbol.replace("US.", "") != plan.symbol.replace("US.", ""),
             candidate.timeframe != plan.timeframe,
@@ -417,6 +425,10 @@ class PaperTradingService:
             score_factor = D("1") if (plan.score or 0) >= 90 else (D("0.6") if (plan.score or 0) >= 80 else D("0.3"))
             budget = min(budget, equity * D(str(self.settings.qmr_target_position_pct)) * score_factor,
                          equity * D(str(self.settings.qmr_max_position_pct)))
+            candidate = self.db.get(CandidateSignal, plan.signal_id) if plan.signal_id else None
+            context = ((candidate.components_json or {}).get("market_context")
+                       if candidate is not None else None) or {}
+            budget *= D(str(context.get("position_multiplier", 1)))
         open_positions = list(self.db.scalars(select(SystemPaperPosition).where(
             SystemPaperPosition.account_id == account.id,
             SystemPaperPosition.status == "OPEN",

@@ -1,0 +1,52 @@
+version: market-context-v1
+global:
+  assets:
+    SPY: {weight: 0.22, inverse: false}
+    QQQ: {weight: 0.24, inverse: false}
+    IWM: {weight: 0.14, inverse: false}
+    GLD: {weight: 0.07, inverse: true}
+    BTC: {weight: 0.05, inverse: false}
+    TLT: {weight: 0.07, inverse: true}
+    US10Y: {weight: 0.05, inverse: true}
+    DXY: {weight: 0.04, inverse: true}
+    VIX: {weight: 0.08, inverse: true}
+    USO: {weight: 0.02, inverse: true}
+    COPPER: {weight: 0.02, inverse: false}
+  horizons: {1: 0.10, 3: 0.15, 5: 0.25, 10: 0.25, 20: 0.25}
+  states: {risk_on: 70, neutral: 50, caution: 35}
+  minimum_coverage: 0.45
+sector:
+  benchmarks:
+    Information Technology: [XLK, QQQ]
+    Technology: [XLK, QQQ]
+    Semiconductors: [SOXX, SMH]
+    Software: [IGV, XLK]
+    Financials: [XLF, SPY]
+    Energy: [XLE, SPY]
+    Health Care: [XLV, SPY]
+    Biotechnology: [XBI, XLV]
+    Industrials: [XLI, SPY]
+    Consumer Discretionary: [XLY, SPY]
+    Consumer Staples: [XLP, SPY]
+    Communication Services: [XLC, SPY]
+    default: [SPY, QQQ]
+  states: {strong: 75, positive: 60, neutral: 45, weak: 30}
+  minimum_bars: 21
+entry_gate:
+  global_block_below: 35
+  global_probe_below: 50
+  sector_block_below: 30
+  sector_probe_below: 45
+  data_max_age_seconds: 900
+  multipliers:
+    global: {RISK_ON: 1.0, NEUTRAL: 0.75, CAUTION: 0.25, RISK_OFF: 0.0}
+    sector: {STRONG: 1.0, POSITIVE: 0.85, NEUTRAL: 0.65, WEAK: 0.25, VERY_WEAK: 0.0}
+scheduler:
+  global_regular_seconds: 300
+  global_extended_seconds: 600
+  sector_regular_seconds: 300
+  sector_extended_seconds: 600
+  universe_seconds: 300
+  candidate_collect_seconds: 60
+  candidate_score_seconds: 300
+  position_seconds: 60

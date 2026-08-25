@@ -23,6 +23,54 @@ class QmrRepository:
             query = query.where(UniverseInstrument.symbol.in_(symbols))
         return list(self.db.scalars(query.order_by(UniverseInstrument.symbol)))
 
+    def unified_universe(self, evaluation_time, fund_symbols, symbols=None,
+                         exclude_source_funds=True):
+        """Return the canonical active union plus auditable source membership."""
+        funds = tuple(sorted({value.upper() for value in fund_symbols}))
+        query = select(UniverseInstrument).where(
+            UniverseInstrument.first_seen <= evaluation_time,
+            exists(select(UniverseMembership.id).where(
+                UniverseMembership.universe_id == UniverseInstrument.id,
+                UniverseMembership.fund_symbol.in_(funds),
+                UniverseMembership.first_seen <= evaluation_time,
+                or_(UniverseMembership.is_active.is_(True),
+                    UniverseMembership.last_seen >= evaluation_time),
+            )),
+        )
+        if exclude_source_funds:
+            query = query.where(UniverseInstrument.symbol.not_in(funds))
+        if symbols:
+            query = query.where(UniverseInstrument.symbol.in_(
+                {value.upper().removeprefix("US.") for value in symbols}))
+        instruments = list(self.db.scalars(query.order_by(UniverseInstrument.symbol)))
+        ids = [row.id for row in instruments]
+        memberships = [] if not ids else list(self.db.scalars(select(UniverseMembership).where(
+            UniverseMembership.universe_id.in_(ids),
+            UniverseMembership.fund_symbol.in_(funds),
+            UniverseMembership.first_seen <= evaluation_time,
+            or_(UniverseMembership.is_active.is_(True),
+                UniverseMembership.last_seen >= evaluation_time),
+        )))
+        by_id = {row.id: [] for row in instruments}
+        source_counts = {fund: 0 for fund in funds}
+        for membership in memberships:
+            by_id[membership.universe_id].append(membership.fund_symbol)
+            source_counts[membership.fund_symbol] += 1
+        metadata = {row.symbol: {
+            "source_universes": sorted(set(by_id[row.id])),
+            "source_count": len(set(by_id[row.id])),
+        } for row in instruments}
+        raw_count = len(memberships)
+        stats = {
+            "raw_membership_count": raw_count,
+            "unique_symbol_count": len(instruments),
+            "duplicates_removed": max(0, raw_count - len(instruments)),
+            "source_counts": source_counts,
+            "source_statuses": {key: ("HEALTHY" if value else "DATA_UNAVAILABLE")
+                                for key, value in source_counts.items()},
+        }
+        return instruments, metadata, stats
+
     def memberships(self, universe_id, evaluation_time):
         return list(self.db.scalars(select(UniverseMembership).where(
             UniverseMembership.universe_id == universe_id,

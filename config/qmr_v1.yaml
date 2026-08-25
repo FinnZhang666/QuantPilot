@@ -1,4 +1,7 @@
 version: qmr-v1
+universe_codes: [QQQ, SPY, SOXX, SMH, IGV, IWM]
+universe_minimum_available_sources: 2
+universe_exclude_source_etfs: true
 thresholds:
   quality_min: 60
   mispricing_min: 65

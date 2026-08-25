@@ -14,6 +14,8 @@ from app.database.models import (
 from app.qmr_live.repository import QmrLiveRepository
 from app.qmr_live.telegram import QmrTelegramNotifier
 from app.telegram_runtime.transport import TelegramBotTransport
+from app.market_context.gating import entry_gate
+from app.market_context.service import MarketContextService
 
 
 LEVEL_ORDER = {"EARLY_ENTRY": 1, "CONFIRMED_ENTRY": 2, "STRONG_ENTRY": 3}
@@ -23,6 +25,7 @@ class QmrLiveSignalService:
     def __init__(self, db, settings, notifier=None):
         self.db, self.settings = db, settings
         self.config = yaml.safe_load(Path(settings.qmr_live_config_file).read_text(encoding="utf-8"))
+        self.qmr_config = yaml.safe_load(Path(settings.qmr_config_file).read_text(encoding="utf-8"))
         self.repository = QmrLiveRepository(db)
         self.notifier = notifier or QmrTelegramNotifier(self.repository, settings,
             TelegramBotTransport(settings.telegram_timeout_seconds, settings.telegram_max_retries))
@@ -54,6 +57,11 @@ class QmrLiveSignalService:
                 result["skipped"] += 1; continue
             if at - self.utc(score.evaluation_time) > timedelta(minutes=self.config["max_signal_age_minutes"]):
                 result["skipped"] += 1; continue
+            context_gate = self.market_context_gate(score, recovery, at)
+            if context_gate and context_gate["decision"] in {"WAIT", "PROBE"}:
+                result["skipped"] += 1
+                result.setdefault("gated", []).append({"symbol": score.symbol, **context_gate})
+                continue
             if active:
                 if LEVEL_ORDER[score.buy_status] <= LEVEL_ORDER[active.signal_level]:
                     result["skipped"] += 1; continue
@@ -61,7 +69,7 @@ class QmrLiveSignalService:
                 active.buy_score_id, active.buy_score, active.buy_grade = score.id, score.final_buy_score, score.buy_grade
                 active.recovery_score, active.latest_price = score.recovery_score, score.entry_reference_price
                 active.last_state_change_at = at
-                active.signal_snapshot_json = self.snapshot(score, recovery)
+                active.signal_snapshot_json = self.snapshot(score, recovery, context_gate)
                 active.similar_statistics_json = self.similar_statistics(score, recovery)
                 self.repository.commit()
                 result["notifications"] += self.notifier.send(active, score.buy_status)
@@ -70,7 +78,8 @@ class QmrLiveSignalService:
             if latest and at - self.utc(latest.last_state_change_at) < timedelta(
                     minutes=self.config["cooldown_minutes"]):
                 result["skipped"] += 1; continue
-            signal = self.create_signal(score, recovery, strategy_status, parameter_set_id, at)
+            signal = self.create_signal(score, recovery, strategy_status, parameter_set_id, at,
+                                        context_gate)
             self.repository.save_signal(signal)
             signal.status = "ACTIVE"; self.repository.commit()
             if getattr(self.settings, "qmr_paper_auto_trading", False):
@@ -80,7 +89,8 @@ class QmrLiveSignalService:
             result["created"] += 1
         return result
 
-    def create_signal(self, score, recovery, strategy_status, parameter_set_id, at):
+    def create_signal(self, score, recovery, strategy_status, parameter_set_id, at,
+                      context_gate=None):
         et = at.astimezone(ZoneInfo("America/New_York")); prefix = "QMR-%s-" % et.strftime("%Y%m%d")
         sequence = self.repository.next_sequence(prefix)
         instrument = self.repository.instrument(score.symbol)
@@ -90,7 +100,7 @@ class QmrLiveSignalService:
         return QmrLiveSignal(signal_id=prefix + "%03d" % sequence, buy_score_id=score.id,
             parameter_set_id=parameter_set_id, symbol=score.symbol, signal_level=score.buy_status,
             signal_mode="LIVE" if strategy_status == "VALIDATED" else "PAPER", status="OPEN",
-            strategy_status=strategy_status, strategy_version="QMR-v1.0", model_version=score.model_version,
+            strategy_status=strategy_status, strategy_version="QMR-v1.1", model_version=score.model_version,
             telegram_template_version=self.config["telegram_template_version"], signal_time=at,
             signal_price=score.entry_reference_price, latest_price=score.entry_reference_price,
             buy_score=score.final_buy_score, buy_grade=score.buy_grade,
@@ -100,14 +110,37 @@ class QmrLiveSignalService:
             sector=instrument.sector if instrument else None, trading_session=session,
             session_confidence=confidence, chase_risk_level=score.chase_risk_level,
             similar_statistics_json=self.similar_statistics(score, recovery),
-            signal_snapshot_json=self.snapshot(score, recovery), last_state_change_at=at)
+            signal_snapshot_json=self.snapshot(score, recovery, context_gate), last_state_change_at=at)
 
     @staticmethod
-    def snapshot(score, recovery):
+    def snapshot(score, recovery, context_gate=None):
         reasons = [] if recovery is None else (recovery.score_components_json or {}).get("reasons", [])
         return {"buy_score_id": score.id, "evaluation_time": score.evaluation_time.isoformat(),
             "buy_components": score.score_components_json, "recovery_components": None if recovery is None else recovery.score_components_json,
-            "reasons": reasons, "data_confidence": score.data_confidence}
+            "reasons": reasons, "data_confidence": score.data_confidence,
+            "market_context": context_gate}
+
+    def market_context_gate(self, score, recovery, at):
+        # Compatibility: tests and older deployments without this setting retain v1.0 behavior.
+        if not getattr(self.settings, "market_context_enabled", False):
+            return None
+        service = MarketContextService(self.db, self.settings)
+        context = service.current_for_symbol(score.symbol, at)
+        global_context, sector_context = context["global"], context["sector"]
+        max_age = service.config["entry_gate"]["data_max_age_seconds"]
+        fresh = all(item and item.get("timestamp") and
+                    (at - self.utc(item["timestamp"])).total_seconds() <= max_age
+                    for item in (global_context, sector_context))
+        context_complete = all((item or {}).get("data_quality", {}).get(
+            "data_sufficient", False) for item in (global_context, sector_context))
+        recovery_pass = bool(recovery and recovery.recovery_stage not in {
+            "FAILED_RECOVERY", "INSUFFICIENT_DATA"})
+        executable = not recovery or recovery.trading_session not in {"CLOSED", "UNAVAILABLE"}
+        return entry_gate(score.buy_status, score.final_buy_score,
+            score.quality_score >= self.qmr_config["thresholds"]["quality_min"],
+            recovery_pass, fresh and context_complete and score.data_confidence != "LOW",
+            executable, True,
+            global_context, sector_context, service.config["entry_gate"])
 
     def similar_statistics(self, score, recovery):
         cases = self.repository.similar_cases()

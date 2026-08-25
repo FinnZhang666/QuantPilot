@@ -15,15 +15,15 @@ def test_qmr_appears_as_one_formal_strategy(db):
     items = StrategyCenterService(db, Settings(_env_file=None)).list()
     qmr = next(item for item in items if item["strategy_code"] == QMR_CODE)
     assert qmr["strategy_name"] == QMR_NAME
-    assert qmr["strategy_version"] == "QMR-v1.0"
-    assert qmr["universe"] == "QQQ + SPY"
+    assert qmr["strategy_version"] == "QMR-v1.1"
+    assert "SOXX" in qmr["universe"] and "IWM" in qmr["universe"]
     assert qmr["historical_win_rate_5d"] is None
 
 
 def test_qmr_detail_contains_six_sprint_pipeline(db):
     service = StrategyCenterService(db, Settings(_env_file=None)); service.ensure_qmr()
     detail = service.get(QMR_CODE)
-    assert detail["logic"][0] == "QQQ + SPY 股票池"
+    assert "统一股票池" in detail["logic"][0]
     assert detail["logic"][-1] == "案例跟踪"
     assert {"current_candidates", "current_signals", "backtest", "live_performance", "cases"} <= set(detail)
 
@@ -70,6 +70,6 @@ def test_qmr_telegram_names_strategy_and_version():
         "buy_grade": "A", "signal_price": 100, "chase_risk_level": "LOW",
         "session_confidence": "HIGH", "quality_score": 85, "mispricing_score": 88,
         "recovery_score": 75, "signal_snapshot_json": {}, "similar_statistics_json": {},
-        "signal_id": "QMR-20260824-001"})()
+        "signal_id": "QMR-20260824-001", "strategy_version": "QMR-v1.1"})()
     text = qmr_signal_message(signal).text
-    assert "策略：优质错杀修复" in text and "QMR v1.0" in text
+    assert "策略：优质错杀修复" in text and "QMR v1.1" in text

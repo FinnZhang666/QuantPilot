@@ -28,7 +28,9 @@ def qmr_signal_message(signal, language="zh-CN", failed=False):
         "[%s]" % signal.trading_session.replace("_", " ").title() if signal.trading_session and signal.trading_session != "REGULAR" else "")
     level = LEVEL_ZH.get(signal.signal_level, signal.signal_level) if zh else signal.signal_level.replace("_", " ").title()
     lines = [title + session, "", "<b>%s</b>" % html.escape(signal.symbol),
-        ("策略：优质错杀修复｜QMR v1.0" if zh else "Strategy: Quality Mispricing Recovery | QMR v1.0"),
+        (("策略：优质错杀修复｜%s" if zh else
+          "Strategy: Quality Mispricing Recovery | %s") %
+         getattr(signal, "strategy_version", "QMR-v1.1").replace("QMR-", "QMR ")),
         ("状态：%s" % level) if zh else "Status: %s" % level,
         ("买入评分：%s / 100（%s）" % (signal.buy_score, signal.buy_grade)) if zh else
         ("Buy score: %s / 100 (%s)" % (signal.buy_score, signal.buy_grade)),
@@ -38,6 +40,13 @@ def qmr_signal_message(signal, language="zh-CN", failed=False):
         "Quality %s｜Mispricing %s｜Recovery %s" % (
             signal.quality_score, signal.mispricing_score, signal.recovery_score)]
     reasons = (signal.signal_snapshot_json or {}).get("reasons", [])
+    context = (signal.signal_snapshot_json or {}).get("market_context") or {}
+    if context:
+        lines += ["", (("市场：%s %s｜行业：%s %s｜仓位系数：%.0f%%" if zh else
+            "Market: %s %s | Sector: %s %s | Size: %.0f%%") % (
+            context.get("global_state", "DATA_UNAVAILABLE"), context.get("global_score", "—"),
+            context.get("sector_state", "DATA_UNAVAILABLE"), context.get("sector_score", "—"),
+            float(context.get("position_multiplier", 0)) * 100))]
     if reasons:
         lines += ["", "为什么出现信号：" if zh else "Why this signal:"] + ["✓ " + html.escape(str(value)) for value in reasons[:8]]
     stats = signal.similar_statistics_json or {}

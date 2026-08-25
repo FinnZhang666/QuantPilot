@@ -20,14 +20,19 @@ class QmrService:
 
     def run(self, evaluation_time=None, symbols=None, dry_run=False, limit=None):
         at = evaluation_time or datetime.now(timezone.utc)
-        universe = self.repository.active_universe(at, [s.upper() for s in symbols] if symbols else None)
+        funds = self.config.get("universe_codes", ["QQQ", "SPY"])
+        universe, source_metadata, universe_stats = self.repository.unified_universe(
+            at, funds, symbols, self.config.get("universe_exclude_source_etfs", True))
         if limit: universe = universe[:limit]
         result = {"evaluation_time": at, "scanned": len(universe), "created": 0,
                   "candidates": 0, "skipped": 0, "failed": 0,
-                  "reason_counts": {}, "items": []}
+                  "reason_counts": {}, "items": [], "universe": universe_stats}
         for item in universe:
             try:
                 payload = self.evaluate(item, at)
+                membership = source_metadata[item.symbol]
+                payload["mispricing_components"]["source_universes"] = membership["source_universes"]
+                payload["mispricing_components"]["source_count"] = membership["source_count"]
                 for code in payload.get("reason_codes", []):
                     result["reason_counts"][code] = result["reason_counts"].get(code, 0) + 1
                 if not payload.get("reason_codes") and payload["event"].fundamental_risk != "HIGH":
@@ -44,7 +49,9 @@ class QmrService:
         return result
 
     def evaluate(self, item, at):
-        memberships = self.repository.memberships(item.id, at)
+        configured = set(self.config.get("universe_codes", ["QQQ", "SPY"]))
+        memberships = [row for row in self.repository.memberships(item.id, at)
+                       if row.fund_symbol in configured]
         weights = {m.fund_symbol: float(m.weight) if m.weight is not None else None for m in memberships}
         prices = self.repository.bars(item.symbol, at)
         average_dollar_volume = None
@@ -227,4 +234,6 @@ class QmrService:
                     if isinstance(value, dict) and float(value.get("coverage", 0)) < 1],
                     "mispricing": mispricing.get("missing_factors", [])},
                 "source_timestamp": mispricing.get("source_timestamp"),
-                "money_flow_status": "UNAVAILABLE"}
+                "money_flow_status": "UNAVAILABLE",
+                "source_universes": mispricing.get("source_universes", []),
+                "source_count": mispricing.get("source_count", 0)}

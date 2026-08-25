@@ -13,7 +13,7 @@ from app.qmr_live.tracking import QmrPerformanceTracker
 QMR_CODE = "quality_mispricing_recovery"
 QMR_NAME = "优质错杀修复"
 QMR_SHORT_NAME = "QMR"
-QMR_VERSION = "QMR-v1.0"
+QMR_VERSION = "QMR-v1.1"
 QMR_DESCRIPTION = (
     "在优质公司因市场恐慌、行业联动、短期事件或估值压缩出现异常大跌后，"
     "先判断公司与行业长期逻辑是否仍然成立，再等待卖压衰竭、资金回流和趋势修复，"
@@ -37,6 +37,12 @@ class StrategyCenterRepository:
             row = StrategyRecord(code=QMR_CODE, name=QMR_NAME, version=QMR_VERSION,
                 description=QMR_DESCRIPTION, is_enabled=True, config_json=self.default_config())
             self.db.add(row); self.db.commit()
+        elif isinstance(row, StrategyRecord) and row.version != QMR_VERSION:
+            row.version = QMR_VERSION
+            config = dict(row.config_json or self.default_config())
+            config.update(self.default_config())
+            row.config_json = config
+            self.db.commit()
         return row
 
     def set_enabled(self, row, enabled):
@@ -90,7 +96,7 @@ class StrategyCenterRepository:
     @staticmethod
     def default_config():
         return {"short_name": QMR_SHORT_NAME, "strategy_type": ["REVERSAL", "MEAN_REPAIR", "EVENT_REPAIR"],
-                "market": "US", "universe": ["QQQ", "SPY"],
+                "market": "US", "universe": ["QQQ", "SPY", "SOXX", "SMH", "IGV", "IWM"],
                 "modules": ["Universe", "Quality", "Mispricing", "Recovery", "Buy Score",
                             "Backtest", "Live Signals", "Cases"],
                 "operational_status": "RESEARCH"}
@@ -119,7 +125,7 @@ class StrategyCenterService:
         signals = self.repository.live_signals()
         run = self.repository.latest_backtest()
         cases = self.repository.cases(run.id if run else None)
-        return {**self.summary(row), "logic": ["QQQ + SPY 股票池", "公司质量筛选", "错杀识别",
+        return {**self.summary(row), "logic": ["QQQ + SPY + SOXX + SMH + IGV + IWM 统一股票池", "公司质量筛选", "错杀识别",
             "止跌检测", "资金回流检测", "综合买入评分", "历史回测验证", "实时信号",
             "TG通知", "案例跟踪"],
             "current_candidates": [self._candidate(item, scores) for item in candidates],
@@ -154,7 +160,7 @@ class StrategyCenterService:
             "short_name": QMR_SHORT_NAME, "strategy_version": row.version, "status": status,
             "is_enabled": row.is_enabled, "description": row.description,
             "strategy_type": (row.config_json or {}).get("strategy_type", []),
-            "market": "US", "universe": "QQQ + SPY",
+            "market": "US", "universe": "QQQ + SPY + SOXX + SMH + IGV + IWM",
             "current_candidate_count": sum(item.candidate_status == "WATCH" for item in candidates),
             "current_entry_signal_count": sum(item.buy_status in {
                 "EARLY_ENTRY", "CONFIRMED_ENTRY", "STRONG_ENTRY"} for item in scores),
@@ -166,7 +172,8 @@ class StrategyCenterService:
             "signal_total": len(signals), "opportunity_count": 0,
             "average_score": round(sum(item.final_buy_score for item in scores) / len(scores), 2) if scores else 0,
             "signal_counts": self._counts(signals, "signal_level"), "failed_gates": {},
-            "supported_timeframes": ["1d", "30m"], "symbol_templates": ["QQQ", "SPY"],
+            "supported_timeframes": ["1d", "30m"],
+            "symbol_templates": ["QQQ", "SPY", "SOXX", "SMH", "IGV", "IWM"],
             "score_distribution": self._score_distribution(scores)}
 
     @staticmethod

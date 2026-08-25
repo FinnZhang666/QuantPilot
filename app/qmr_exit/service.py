@@ -6,6 +6,8 @@ import yaml
 from app.database.models import QmrExitEvaluation, QmrExitEvent, QmrMoneyFlowSnapshot
 from app.qmr_exit.repository import QmrExitRepository
 from app.qmr_exit.scoring import evaluate_exit, evaluate_money_flow
+from app.market_context.gating import exit_context_adjustment
+from app.market_context.service import MarketContextService
 
 
 SECTOR_BENCHMARKS = {
@@ -95,6 +97,22 @@ class QmrExitService:
         result = evaluate_exit(float(position.average_entry), float(position.highest_price),
             float(daily[-1].close), timeframes, benchmarks, sector_rows, sector_universe,
             money_flow, self.config, previous.state if previous else "HOLD")
+        if getattr(self.settings, "market_context_enabled", False):
+            context = MarketContextService(self.db, self.settings).current_for_symbol(symbol, at)
+            adjustment = exit_context_adjustment(context["global"], context["sector"])
+            result["details"]["market_context"] = {**context, **adjustment}
+            if adjustment["risk_addition"]:
+                result["exit_risk_score"] = min(100,
+                    result["exit_risk_score"] + adjustment["risk_addition"])
+                result["reasons"] = list(dict.fromkeys(
+                    result["reasons"] + adjustment["reasons"]))
+                if not result.get("hard_exit_reason"):
+                    levels = self.config["state_thresholds"]
+                    risk = result["exit_risk_score"]
+                    result["state"] = ("EXIT" if risk >= levels["exit"] else
+                        "REDUCE" if risk >= levels["reduce"] else
+                        "PROTECT" if risk >= levels["protect"] else
+                        "WATCH" if risk >= levels["watch"] else "HOLD")
         result["evaluated_price"] = float(daily[-1].close)
         return result
 

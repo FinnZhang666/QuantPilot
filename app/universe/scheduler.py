@@ -9,6 +9,7 @@ from app.recovery.service import RecoveryService
 from app.buy_score.service import BuyScoreService
 from app.qmr_live.service import QmrLiveSignalService
 from app.qmr_live.tracking import QmrPerformanceTracker
+from app.market_context.service import MarketContextService
 
 logger = logging.getLogger("trade_companion.universe.scheduler")
 
@@ -36,6 +37,13 @@ class UniverseScheduler:
         while not self._stop.is_set():
             try:
                 with get_session_factory()() as db:
+                    if getattr(self.settings, "market_context_enabled", False):
+                        context = MarketContextService(db, self.settings)
+                        latest_context = context.repository.latest_global()
+                        interval_seconds = context.config["scheduler"]["global_regular_seconds"]
+                        if latest_context is None or datetime.now(timezone.utc) - self._aware(
+                                latest_context.timestamp) >= timedelta(seconds=interval_seconds):
+                            context.evaluate()
                     service = UniverseService(db, self.settings)
                     latest = service.repository.latest_success_at()
                     if latest is None or datetime.now(timezone.utc) - latest >= timedelta(hours=self.settings.universe_update_interval_hours):
@@ -62,6 +70,10 @@ class UniverseScheduler:
                 logger.exception("Scheduled Universe update failed")
             interval = self.settings.recovery_update_interval_minutes * 60 if self.settings.recovery_auto_update_enabled else 3600
             self._stop.wait(min(3600, interval))
+
+    @staticmethod
+    def _aware(value):
+        return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
 
 
 _scheduler = None

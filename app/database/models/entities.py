@@ -1425,6 +1425,51 @@ class MarketRegime(TimestampMixin, Base):
     reason_snapshot_json: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
+class MarketContextSnapshot(TimestampMixin, Base):
+    __tablename__ = "market_context_snapshots"
+    __table_args__ = (
+        UniqueConstraint("timestamp", "session", "model_version", name="uq_market_context_snapshot"),
+        Index("ix_market_context_time", "timestamp"),
+        Index("ix_market_context_state", "global_state"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    session: Mapped[str] = mapped_column(String(32), default="UNKNOWN")
+    global_score: Mapped[int] = mapped_column(Integer)
+    global_state: Mapped[str] = mapped_column(String(16))
+    asset_scores_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    source_timestamps_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    data_quality_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    model_version: Mapped[str] = mapped_column(String(32))
+
+
+class SectorContextSnapshot(TimestampMixin, Base):
+    __tablename__ = "sector_context_snapshots"
+    __table_args__ = (
+        UniqueConstraint("timestamp", "sector_code", "model_version", name="uq_sector_context_snapshot"),
+        Index("ix_sector_context_sector_time", "sector_code", "timestamp"),
+        Index("ix_sector_context_state", "sector_state"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    session: Mapped[str] = mapped_column(String(32), default="UNKNOWN")
+    sector_code: Mapped[str] = mapped_column(String(128))
+    benchmark: Mapped[str] = mapped_column(String(32))
+    secondary_benchmark: Mapped[Optional[str]] = mapped_column(String(32))
+    sector_score: Mapped[int] = mapped_column(Integer)
+    sector_state: Mapped[str] = mapped_column(String(16))
+    rs_1d: Mapped[Optional[float]] = mapped_column(Numeric(14, 8))
+    rs_3d: Mapped[Optional[float]] = mapped_column(Numeric(14, 8))
+    rs_5d: Mapped[Optional[float]] = mapped_column(Numeric(14, 8))
+    rs_10d: Mapped[Optional[float]] = mapped_column(Numeric(14, 8))
+    rs_20d: Mapped[Optional[float]] = mapped_column(Numeric(14, 8))
+    breadth: Mapped[Optional[float]] = mapped_column(Numeric(14, 8))
+    flow_score: Mapped[Optional[int]] = mapped_column(Integer)
+    rotation_score: Mapped[int] = mapped_column(Integer)
+    data_quality_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    model_version: Mapped[str] = mapped_column(String(32))
+
+
 class CandidatePoolRun(TimestampMixin, Base):
     __tablename__ = "candidate_pool_runs"
     __table_args__ = (
