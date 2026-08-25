@@ -34,12 +34,19 @@ class AgentService:
             return result["message"] if zh else "Trade Companion does not place real orders. I can analyze or record your own trade."
         symbol = result.get("symbol") or (result.get("signal") or {}).get("symbol") or ""
         if intent == "SYMBOL_ANALYSIS" or ("status" in result and "advice" in result):
+            presentation = (result.get("presentation") or {}).get(language) or {}
             return cls._lines(
                 ("📈 主动分析" if zh else "📈 Analysis"), symbol,
-                ("状态" if zh else "Status") + ": " + str(result.get("status", "暂无")),
+                ("分析模型" if zh else "Model") + ": " + str(presentation.get("analysis_model", "—")),
+                ("状态" if zh else "Status") + ": " + str(presentation.get("status", result.get("status", "—"))),
+                ("公司质量" if zh else "Quality") + ": " + str(presentation.get("quality", "—")),
+                ("估值" if zh else "Valuation") + ": " + str(presentation.get("valuation", "—")),
+                "Global: " + str(presentation.get("global", "—")),
+                "Sector: " + str(presentation.get("sector", "—")),
                 ("当前价" if zh else "Price") + ": " + cls._value(result.get("current_price")),
                 ("买入评分" if zh else "Buy score") + ": " + cls._value(result.get("buy_score")),
                 ("退出风险" if zh else "Exit risk") + ": " + cls._value(result.get("exit_risk")),
+                ("最终建议" if zh else "Final action") + ": " + str(presentation.get("advice", result.get("advice", "—"))),
                 ("数据缺失" if zh else "Missing") + ": " + ", ".join(result.get("missing_sections") or [])
             )
         if intent == "MONEY_FLOW":

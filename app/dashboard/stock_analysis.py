@@ -9,10 +9,17 @@ from datetime import datetime, timezone
 from app.buy_score.service import BuyScoreService
 from app.market_snapshot.models import snapshot_dict
 from app.market_snapshot.service import MarketSnapshotService, SnapshotNotFound
+from app.market_context.service import MarketContextService
+from app.qmr.providers import DatabaseFundamentalsProvider
 from app.qmr.service import QmrService
 from app.qmr_exit.service import QmrExitService
 from app.recovery.service import RecoveryService
 from app.universe.service import UniverseService
+from app.symbol_registry.service import SymbolRegistryService
+from app.trade_lifecycle.repository import TradePlanRepository
+from app.dashboard.analysis_presentation import (
+    freshness, localized_view, risk_reward, score_state, valuation_view,
+)
 
 
 ANALYSIS_UNDERLYINGS = {
@@ -53,6 +60,10 @@ class StockAnalysisService:
             snapshot = None
 
         underlying = self._underlying(symbol, qmr_service, buy_service)
+        instrument = self._instrument(symbol, underlying)
+        fundamental = DatabaseFundamentalsProvider(self.db).get_latest(underlying["symbol"])
+        market_context = MarketContextService(self.db, self.settings).current_for_symbol(underlying["symbol"])
+        trade_plan = self._trade_plan(symbol)
         status = self._status(exit_value, buy, recovery, qmr, snapshot)
         price = self._first(
             exit_value, "current_price", buy, "entry_reference_price",
@@ -66,8 +77,8 @@ class StockAnalysisService:
             "invalidation": self._first(exit_value, "dynamic_support", recovery, "session_low"),
         }
         has_data = any((snapshot, qmr, recovery, buy, exit_value, money_flow))
-        return {
-            "schema_version": "dashboard-stock-analysis-v1",
+        payload = {
+            "schema_version": "dashboard-stock-analysis-v2",
             "symbol": symbol,
             "market": (universe or {}).get("market", "US"),
             "company_name": (universe or {}).get("company_name"),
@@ -84,6 +95,19 @@ class StockAnalysisService:
             "core_reasons": reasons[:8],
             "key_levels": levels,
             "underlying": underlying,
+            "instrument": instrument,
+            "analysis_model": "LEVERAGED_ETF_ANALYSIS" if instrument.get("asset_type") == "LEVERAGED_ETF" else "QMR_ANALYSIS",
+            "quality_score": None if qmr is None else qmr.get("quality_score"),
+            "quality_state": score_state(None if qmr is None else qmr.get("quality_score")),
+            "quality": self._quality(fundamental),
+            "valuation": valuation_view(qmr),
+            "market_context": market_context,
+            "trade_plan": trade_plan,
+            "risk_reward": risk_reward(
+                (trade_plan or {}).get("reference_price"),
+                (trade_plan or {}).get("stop_loss_price"),
+                (trade_plan or {}).get("target_prices"),
+            ),
             "latest_update": self._first(
                 exit_value, "evaluation_time", buy, "timestamp", recovery, "timestamp",
                 qmr, "evaluation_time", snapshot, "updated_at",
@@ -102,6 +126,13 @@ class StockAnalysisService:
                 "money_flow": money_flow, "exit": exit_value,
             }.items() if value is None],
         }
+        payload["freshness"] = freshness(payload["latest_update"])
+        payload["decision_factors"] = self._decision_factors(payload)
+        payload["model_versions"] = self._model_versions(qmr, buy, exit_value, market_context)
+        payload["presentation"] = {
+            language: localized_view(payload, language) for language in ("zh-CN", "en-US")
+        }
+        return payload
 
     @staticmethod
     def _latest(rows):
@@ -190,3 +221,67 @@ class StockAnalysisService:
                     "description": "Configured underlying asset", "source": "CONFIG_MAPPING"}
         mappings = buy_service.mappings(symbol)
         return {"symbol": symbol, "description": "Direct instrument", "source": "DIRECT", "vehicles": mappings}
+
+    def _instrument(self, symbol, underlying):
+        try:
+            item = SymbolRegistryService(self.db, self.settings.symbol_registry_config_file).resolve(
+                symbol, allow_unknown=True)["item"]
+        except Exception:
+            item = {"symbol": symbol, "asset_type": "STOCK", "market": "US"}
+        item = dict(item)
+        item.setdefault("underlying_symbol", underlying["symbol"])
+        if underlying["symbol"] != symbol:
+            item["underlying_symbol"] = underlying["symbol"]
+            item["asset_type"] = "LEVERAGED_ETF"
+        return item
+
+    def _trade_plan(self, symbol):
+        rows = TradePlanRepository(self.db).list(symbol=symbol, limit=1)
+        if not rows:
+            return None
+        row = rows[0]
+        return {
+            "plan_id": row.plan_id, "lifecycle_stage": row.lifecycle_stage,
+            "reference_price": None if row.reference_price is None else str(row.reference_price),
+            "stop_loss_price": None if row.stop_loss_price is None else str(row.stop_loss_price),
+            "target_prices": list(row.target_prices_json or []),
+            "strategy_version": row.strategy_version, "updated_at": row.updated_at,
+        }
+
+    @staticmethod
+    def _quality(fundamental):
+        if fundamental is None:
+            return {"available": False, "source": None, "as_of": None, "groups": {}}
+        def values(*names):
+            return {name: getattr(fundamental, name, None) for name in names}
+        return {"available": True, "source": fundamental.source, "as_of": fundamental.available_at,
+                "freshness": fundamental.freshness, "confidence": fundamental.quality,
+                "groups": {
+                    "growth": values("revenue_yoy", "eps_yoy", "forward_earnings_growth", "quarterly_trend"),
+                    "profitability": values("net_income_ttm", "operating_margin"),
+                    "capital_efficiency": values("roe", "roic"),
+                    "cash_flow": values("operating_cash_flow", "free_cash_flow"),
+                    "balance_sheet": values("cash", "debt", "debt_to_equity", "interest_coverage"),
+                }}
+
+    @staticmethod
+    def _decision_factors(payload):
+        positive, caution = [], []
+        if (payload.get("quality_score") or 0) >= 65: positive.append("quality_supported")
+        elif payload.get("quality_score") is not None and payload["quality_score"] < 45: caution.append("quality_weak")
+        valuation = payload.get("valuation") or {}
+        if valuation.get("state") == "LOW_VALUATION": positive.append("valuation_below_peers")
+        if valuation.get("value_trap_state") == "VALUE_TRAP_PRESENT": caution.append("value_trap_risk")
+        global_score = ((payload.get("market_context") or {}).get("global") or {}).get("global_score")
+        sector_score = ((payload.get("market_context") or {}).get("sector") or {}).get("sector_score")
+        if global_score is not None: (positive if global_score >= 65 else caution if global_score < 45 else positive).append("global_supportive" if global_score >= 45 else "global_weak")
+        if sector_score is not None: (positive if sector_score >= 65 else caution if sector_score < 45 else positive).append("sector_supportive" if sector_score >= 45 else "sector_weak")
+        if payload.get("status") in {"EARLY_ENTRY", "CONFIRMED_ENTRY", "STRONG_ENTRY", "HOLD"}: positive.append("stock_setup_confirmed")
+        if payload.get("status") in {"PROTECT", "REDUCE", "EXIT"}: caution.append("exit_risk_elevated")
+        return {"positive": positive, "caution": caution}
+
+    @staticmethod
+    def _model_versions(qmr, buy, exit_value, market_context):
+        return {"qmr": (qmr or {}).get("model_version"), "buy_score": (buy or {}).get("model_version"),
+                "exit": (exit_value or {}).get("model_version"),
+                "market_context": ((market_context or {}).get("global") or {}).get("model_version")}

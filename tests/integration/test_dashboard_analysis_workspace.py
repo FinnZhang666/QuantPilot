@@ -49,6 +49,10 @@ def test_manual_analysis_is_not_restricted_to_qmr_universe(monkeypatch, tmp_path
         assert value["in_qmr_universe"] is False
         assert value["current_price"] == "102.50000000"
         assert value["data_status"] == "AVAILABLE"
+        assert value["schema_version"] == "dashboard-stock-analysis-v2"
+        assert value["freshness"]["status"] in {"FRESH", "DELAYED", "STALE"}
+        assert value["risk_reward"]["status"] == "UNAVAILABLE"
+        assert value["presentation"]["zh-CN"]["valuation"] == "数据不足"
 
 
 def test_unknown_symbol_returns_auditable_empty_analysis(monkeypatch, tmp_path):
@@ -69,6 +73,8 @@ def test_leveraged_etf_analysis_identifies_underlying(monkeypatch, tmp_path):
         response = api.get("/api/dashboard/analysis/SOXL", headers=HEADERS)
         assert response.status_code == 200
         assert response.json()["underlying"]["symbol"] == "SOXX"
+        assert response.json()["instrument"]["asset_type"] == "LEVERAGED_ETF"
+        assert response.json()["analysis_model"] == "LEVERAGED_ETF_ANALYSIS"
         assert api.get(
             "/api/dashboard/analysis/APPX", headers=HEADERS,
         ).json()["underlying"]["symbol"] == "APP"
@@ -84,3 +90,6 @@ def test_workspace_assets_expose_quick_analysis_and_compact_modules(monkeypatch,
         assert "QMR 模拟盘" in source and "最近信号" in source
         assert ".workspace-search" in stylesheet
         assert ".health-strip" in stylesheet
+        assert "DECISION SUMMARY" in source
+        assert "Peer Comparison" in source
+        assert ".decision-summary" in stylesheet
