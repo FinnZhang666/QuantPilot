@@ -18,11 +18,23 @@ from app.database.models import (
 )
 from app.database.session import get_db, get_engine
 from app.platform.health import health_report
+from app.dashboard.stock_analysis import StockAnalysisService
 
 router = APIRouter(
     prefix="/api/dashboard", tags=["公司工作台"],
     dependencies=[Depends(require_read)],
 )
+
+
+@router.get("/analysis/{symbol}", include_in_schema=False)
+def stock_analysis(symbol: str, db: Session = Depends(get_db),
+                   settings: Settings = Depends(get_settings)):
+    """Return persisted engine output for an on-demand symbol analysis."""
+    try:
+        return StockAnalysisService(db, settings).get(symbol)
+    except ValueError as exc:
+        from fastapi import HTTPException
+        raise HTTPException(422, str(exc)) from exc
 
 
 def _today():
