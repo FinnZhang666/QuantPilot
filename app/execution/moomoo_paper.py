@@ -10,6 +10,8 @@ from app.execution.base import ExecutionBroker
 class MoomooPaperBroker(ExecutionBroker):
     """Submit only LIMIT orders to an account reported as SIMULATE."""
 
+    paper_only = True
+
     def __init__(self, settings=None, manager=None):
         self.settings = settings or get_settings()
         self.manager = manager or MoomooConnectionManager(
@@ -18,6 +20,8 @@ class MoomooPaperBroker(ExecutionBroker):
         )
 
     def _guard(self):
+        if not self.paper_only:
+            raise RuntimeError("Moomoo adapter must remain paper-only")
         if self.settings.trading_mode != TradingMode.MOOMOO_PAPER:
             raise RuntimeError("TRADING_MODE must be MOOMOO_PAPER")
         if not self.settings.enable_moomoo_paper:
@@ -93,6 +97,9 @@ class MoomooPaperBroker(ExecutionBroker):
             row = frame.to_dict("records")[0]
             return {"order_id": str(row.get("order_id", "")),
                     "status": str(row.get("order_status", "UNKNOWN")),
+                    "filled_quantity": row.get("dealt_qty"),
+                    "average_fill_price": row.get("dealt_avg_price"),
+                    "reject_reason": row.get("remark") or row.get("last_err_msg"),
                     "code": str(row.get("code", "")), "environment": "SIMULATE",
                     "account": "MASKED"}
         finally:

@@ -315,6 +315,55 @@ class InstrumentMapping(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
 
+class SymbolRegistryRecord(TimestampMixin, Base):
+    """Canonical instrument identity and declared capability registry."""
+    __tablename__ = "symbol_registry"
+    __table_args__ = (
+        UniqueConstraint("market", "symbol", name="uq_symbol_registry_market_symbol"),
+        Index("ix_symbol_registry_name", "display_name"),
+        Index("ix_symbol_registry_sector", "sector", "industry"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(32))
+    display_name: Mapped[Optional[str]] = mapped_column(String(255))
+    asset_type: Mapped[str] = mapped_column(String(32), default="STOCK")
+    market: Mapped[str] = mapped_column(String(16), default="US")
+    exchange: Mapped[Optional[str]] = mapped_column(String(32))
+    currency: Mapped[str] = mapped_column(String(8), default="USD")
+    is_etf: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_leveraged: Mapped[bool] = mapped_column(Boolean, default=False)
+    leverage_ratio: Mapped[Optional[float]] = mapped_column(Numeric(8, 3))
+    underlying_symbol: Mapped[Optional[str]] = mapped_column(String(32))
+    underlying_type: Mapped[Optional[str]] = mapped_column(String(32))
+    sector: Mapped[Optional[str]] = mapped_column(String(128))
+    industry: Mapped[Optional[str]] = mapped_column(String(128))
+    primary_benchmark: Mapped[Optional[str]] = mapped_column(String(32))
+    secondary_benchmark: Mapped[Optional[str]] = mapped_column(String(32))
+    qmr_auto_universe: Mapped[bool] = mapped_column(Boolean, default=False)
+    manual_analysis_supported: Mapped[bool] = mapped_column(Boolean, default=True)
+    quote_supported: Mapped[bool] = mapped_column(Boolean, default=False)
+    money_flow_supported: Mapped[bool] = mapped_column(Boolean, default=False)
+    paper_trade_supported: Mapped[bool] = mapped_column(Boolean, default=False)
+    status: Mapped[str] = mapped_column(String(24), default="ACTIVE")
+
+
+class AgentToolAuditRecord(Base):
+    __tablename__ = "agent_tool_audit"
+    __table_args__ = (
+        Index("ix_agent_tool_audit_time", "timestamp"),
+        Index("ix_agent_tool_audit_tool", "tool_name", "success"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    chat_id_hash: Mapped[str] = mapped_column(String(64))
+    intent: Mapped[str] = mapped_column(String(32))
+    tool_name: Mapped[str] = mapped_column(String(64))
+    symbol: Mapped[Optional[str]] = mapped_column(String(32))
+    duration_ms: Mapped[int] = mapped_column(Integer, default=0)
+    success: Mapped[bool] = mapped_column(Boolean, default=True)
+    error_code: Mapped[Optional[str]] = mapped_column(String(64))
+
+
 class QmrBacktestParameterSet(Base):
     __tablename__ = "qmr_parameter_sets"
     __table_args__ = (UniqueConstraint("name", "strategy_version", name="uq_qmr_parameter_version"),)

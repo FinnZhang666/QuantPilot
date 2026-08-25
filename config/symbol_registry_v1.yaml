@@ -1,0 +1,24 @@
+version: symbol-registry-v1
+defaults:
+  market: US
+  currency: USD
+  manual_analysis_supported: true
+  quote_supported: true
+  paper_trade_supported: true
+symbols:
+  APP: {display_name: AppLovin, asset_type: STOCK, sector: Software, industry: AdTech, primary_benchmark: IGV, secondary_benchmark: XLK, money_flow_supported: true}
+  APPX: {display_name: APP 2x Long ETF, asset_type: LEVERAGED_ETF, is_etf: true, is_leveraged: true, leverage_ratio: 2, underlying_symbol: APP, underlying_type: STOCK, sector: Software, industry: AdTech, primary_benchmark: IGV, secondary_benchmark: XLK}
+  MU: {display_name: Micron Technology, asset_type: STOCK, sector: Semiconductors, industry: Memory, primary_benchmark: SOXX, secondary_benchmark: SMH, money_flow_supported: true}
+  MULL: {display_name: MU 2x Long ETF, asset_type: LEVERAGED_ETF, is_etf: true, is_leveraged: true, leverage_ratio: 2, underlying_symbol: MU, underlying_type: STOCK, sector: Semiconductors, industry: Memory, primary_benchmark: SOXX, secondary_benchmark: SMH}
+  SNDK: {display_name: Sandisk, asset_type: STOCK, sector: Semiconductors, industry: Storage, primary_benchmark: SOXX, secondary_benchmark: SMH}
+  SNDU: {display_name: SNDK 2x Long ETF, asset_type: LEVERAGED_ETF, is_etf: true, is_leveraged: true, leverage_ratio: 2, underlying_symbol: SNDK, underlying_type: STOCK, sector: Semiconductors, industry: Storage, primary_benchmark: SOXX, secondary_benchmark: SMH}
+  SOXL: {display_name: Semiconductor Bull 3x, asset_type: LEVERAGED_ETF, is_etf: true, is_leveraged: true, leverage_ratio: 3, underlying_symbol: SOXX, underlying_type: ETF, sector: Semiconductors, industry: Semiconductor Basket, primary_benchmark: SOXX, secondary_benchmark: SMH}
+  SOXS: {display_name: Semiconductor Bear 3x, asset_type: LEVERAGED_ETF, is_etf: true, is_leveraged: true, leverage_ratio: -3, underlying_symbol: SOXX, underlying_type: ETF, sector: Semiconductors, industry: Semiconductor Basket, primary_benchmark: SOXX, secondary_benchmark: SMH}
+  QQQ: {display_name: Invesco QQQ, asset_type: ETF, is_etf: true, primary_benchmark: QQQ, secondary_benchmark: SPY}
+  SPY: {display_name: SPDR S&P 500 ETF, asset_type: ETF, is_etf: true, primary_benchmark: SPY}
+  IWM: {display_name: iShares Russell 2000 ETF, asset_type: ETF, is_etf: true, primary_benchmark: IWM, secondary_benchmark: SPY}
+  SOXX: {display_name: iShares Semiconductor ETF, asset_type: ETF, is_etf: true, sector: Semiconductors, primary_benchmark: SOXX, secondary_benchmark: SMH}
+  SMH: {display_name: VanEck Semiconductor ETF, asset_type: ETF, is_etf: true, sector: Semiconductors, primary_benchmark: SMH, secondary_benchmark: SOXX}
+  IGV: {display_name: iShares Expanded Tech-Software ETF, asset_type: ETF, is_etf: true, sector: Software, primary_benchmark: IGV, secondary_benchmark: XLK}
+  VIX: {display_name: CBOE Volatility Index, asset_type: VOLATILITY_INDEX, quote_supported: false, paper_trade_supported: false, manual_analysis_supported: false, status: UNSUPPORTED}
+  BTC: {display_name: Bitcoin Proxy, asset_type: CRYPTO, quote_supported: false, paper_trade_supported: false, manual_analysis_supported: false, status: UNSUPPORTED}

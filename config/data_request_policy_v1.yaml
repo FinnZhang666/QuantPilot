@@ -1,0 +1,22 @@
+version: data-request-policy-v1
+ttl_seconds:
+  latest_quote_regular: 10
+  latest_quote_extended: 20
+  position_monitoring: 60
+  money_flow: 300
+  kline_1m: 60
+  market_context: 300
+  fundamentals: 21600
+  symbol_metadata: 86400
+priorities:
+  hard_exit: 0
+  existing_position: 1
+  order_status: 2
+  entry_candidate: 3
+  market_context: 4
+  universe_scan: 5
+  manual_analysis: 6
+  historical: 7
+aging_ratio: 0.75
+wait_timeout_seconds: 15
+max_concurrent_requests: 4

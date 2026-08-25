@@ -33,7 +33,7 @@ def test_fresh_head_schema_matches_git_metadata(monkeypatch, tmp_path):
     with engine.connect() as connection:
         assert connection.exec_driver_sql(
             "SELECT version_num FROM alembic_version"
-        ).scalar_one() == "0033"
+        ).scalar_one() == "0034"
 
 
 def test_qmr_exit_migration_round_trip(monkeypatch, tmp_path):
@@ -50,6 +50,21 @@ def test_qmr_exit_migration_round_trip(monkeypatch, tmp_path):
     command.downgrade(config, "0031")
     assert not names.intersection(inspect(engine).get_table_names())
     command.upgrade(config, "0032")
+    assert names <= set(inspect(engine).get_table_names())
+
+
+def test_agent_data_foundation_migration_round_trip(monkeypatch, tmp_path):
+    url = "sqlite:///" + str(tmp_path / "agent-data-migration.db")
+    monkeypatch.setenv("DATABASE_URL", url)
+    config = Config("alembic.ini")
+    command.upgrade(config, "0033")
+    engine = create_engine(url)
+    names = {"symbol_registry", "agent_tool_audit"}
+    command.upgrade(config, "0034")
+    assert names <= set(inspect(engine).get_table_names())
+    command.downgrade(config, "0033")
+    assert not names.intersection(inspect(engine).get_table_names())
+    command.upgrade(config, "0034")
     assert names <= set(inspect(engine).get_table_names())
 
 

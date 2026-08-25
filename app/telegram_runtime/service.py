@@ -135,6 +135,14 @@ class TelegramProductService:
                 user.chat_id, str(reply_message_id),
             )
             if signal_id:
+                order_question = any(value in text.lower() for value in (
+                    "为什么没买", "为什么没有买", "没成交", "没有成交", "订单", "order",
+                ))
+                if getattr(self.settings, "agent_tools_enabled", True) and order_question:
+                    from app.agent.service import AgentService
+                    response = AgentService(self.db, self.settings).route(text, user, signal_id)
+                    if response is not None:
+                        return response
                 return self._qmr_status(user, signal_id)
         if not self._language_selected(user):
             return language_picker()
@@ -163,6 +171,11 @@ class TelegramProductService:
         context = dict(user.pending_context_json or {})
         if context.get("ai_followup_active"):
             return self._ai_followup_message(profile, user, text, context)
+        if getattr(self.settings, "agent_tools_enabled", True):
+            from app.agent.service import AgentService
+            response = AgentService(self.db, self.settings).route(text, user)
+            if response is not None:
+                return response
         symbols = self._parse_symbols(text)
         if symbols:
             return self._stock_analysis_message(profile, user, text)

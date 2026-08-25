@@ -87,8 +87,10 @@ async def lifespan(app: FastAPI):
     )
     create_schema(get_engine())
     from app.strategy.qmr_registry import StrategyCenterService
+    from app.symbol_registry import SymbolRegistryService
     with get_session_factory()() as registry_db:
         StrategyCenterService(registry_db, settings).ensure_qmr()
+        SymbolRegistryService(registry_db, settings.symbol_registry_config_file).sync()
     paper_runtime = get_runtime_manager(settings)
     opportunity_runtime = get_runtime(settings)
     telegram_runtime = get_telegram_runtime(settings)

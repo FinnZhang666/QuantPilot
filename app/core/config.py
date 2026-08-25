@@ -213,6 +213,9 @@ class Settings(BaseSettings):
     paper_scheduler_enabled: bool = False
     review_runtime_enabled: bool = False
     strategy_scoreboard_enabled: bool = False
+    data_request_policy_file: str = "config/data_request_policy_v1.yaml"
+    symbol_registry_config_file: str = "config/symbol_registry_v1.yaml"
+    agent_tools_enabled: bool = True
 
     @model_validator(mode="after")
     def validate_safety(self) -> "Settings":

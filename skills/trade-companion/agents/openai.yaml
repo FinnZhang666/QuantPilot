@@ -1,0 +1,4 @@
+interface:
+  display_name: "Trade Companion"
+  short_description: "Safe market, QMR and paper-trade analysis tools"
+  default_prompt: "Use approved Trade Companion tools to answer safely from local facts."

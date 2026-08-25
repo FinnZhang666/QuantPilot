@@ -494,3 +494,10 @@ QMR Exit Engine 是 QMR 的持仓管理子模块，不是第二套策略。它�
 相对强弱、行业轮动、利润回吐与量价衰竭形成独立 `exit_risk_score`，输出
 `HOLD/WATCH/PROTECT/REDUCE/EXIT`。缺失资金流会降低置信度，不会被当作零风险；所有状态变化和原因
 均可审计。系统 Paper 账本可按状态变化模拟减仓或退出，但 `REAL_AUTO_TRADING` 永久拒绝启用。
+
+## Agent、Data Gateway 与执行安全
+
+Telegram 自然语言查询现通过 canonical Symbol Registry 与白名单本地工具读取市场上下文、QMR、资金结构、
+模拟持仓、退出风险、信号和订单状态。统一 Data Request Manager 提供异构 TTL、数据质量元数据和并发请求
+合并；订单状态审计支持部分成交并保持 Paper / Real 双重隔离。Agent 不开放 SQL、Shell、原始 Broker 或
+真实订单能力。详见 [`docs/AGENT_DATA_EXECUTION_FOUNDATION.md`](docs/AGENT_DATA_EXECUTION_FOUNDATION.md)。
