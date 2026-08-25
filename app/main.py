@@ -78,6 +78,7 @@ from app.paper_runtime.manager import get_runtime_manager
 from app.telegram_runtime.runtime import get_telegram_runtime
 from app.version import PRODUCT, VERSION
 from app.universe.scheduler import get_universe_scheduler
+from app.cloud_gateway import CloudGatewayMiddleware
 
 
 @asynccontextmanager
@@ -87,6 +88,11 @@ async def lifespan(app: FastAPI):
         settings.log_level, settings.log_directory,
         settings.log_max_bytes, settings.log_backup_count,
     )
+    if settings.app_role == "cloud_web":
+        # Cloud Web is a read-only gateway. It must not create a shadow business
+        # database or start any scanner, broker, Telegram, or realtime runtime.
+        yield
+        return
     create_schema(get_engine())
     from app.strategy.qmr_registry import StrategyCenterService
     from app.symbol_registry import SymbolRegistryService
@@ -130,6 +136,7 @@ app = FastAPI(
     version=VERSION,
     lifespan=lifespan,
 )
+app.add_middleware(CloudGatewayMiddleware, settings=get_settings())
 
 
 @app.exception_handler(RequestValidationError)

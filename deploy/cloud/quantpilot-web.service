@@ -1,0 +1,24 @@
+[Unit]
+Description=Trade Companion QuantPilot Cloud Web
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=quantpilot
+Group=quantpilot
+WorkingDirectory=/opt/quantpilot
+EnvironmentFile=/opt/quantpilot/.env
+ExecStart=/opt/quantpilot/.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8100 --workers 1
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+MemoryMax=768M
+CPUQuota=60%
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=full
+ReadWritePaths=/opt/quantpilot/runtime /opt/quantpilot/logs
+
+[Install]
+WantedBy=multi-user.target

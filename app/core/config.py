@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     app_env: str = "development"
+    app_role: str = "quant_node"
     app_host: str = "127.0.0.1"
     app_port: int = 8000
     log_level: str = "INFO"
@@ -23,6 +24,11 @@ class Settings(BaseSettings):
     backup_daily_retention: int = Field(default=7, ge=1, le=365)
     backup_weekly_retention: int = Field(default=4, ge=1, le=52)
     database_url: str = "sqlite:///./data/quantpilot.db"
+    quant_node_base_url: str = ""
+    quant_node_api_token: str = ""
+    quant_node_timeout_seconds: float = Field(default=8.0, gt=0, le=60)
+    cloud_cache_directory: str = "runtime/cloud-cache"
+    cloud_cache_max_stale_seconds: int = Field(default=604800, ge=60, le=2592000)
     trading_mode: TradingMode = TradingMode.INTERNAL_PAPER
     enable_moomoo_paper: bool = False
     enable_internal_paper: bool = True
@@ -228,6 +234,8 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_safety(self) -> "Settings":
         enforce_safe_trading_mode(self.trading_mode)
+        if self.app_role not in {"quant_node", "cloud_web"}:
+            raise ValueError("APP_ROLE仅支持quant_node或cloud_web。")
         if self.real_auto_trading:
             raise ValueError("QMR真实自动交易永久关闭；仅允许Paper Trading。")
         if self.moomoo_live_trading_enabled:
