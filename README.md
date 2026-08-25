@@ -32,7 +32,7 @@ Trade Companion 是一个 AI 辅助的美股研究与交易生命周期工作台
 - Product：Trade Companion
 - Release：`v1.0.0-beta.1`
 - Stage：Beta
-- Database Migration Head：`0032`
+- Database Migration Head：`0035`
 - 范围：Paper Trading Only，不连接真实券商下单，不同步真实持仓。
 - Beta 仍需观察长期稳定性；当前策略样本有限，Trade Plan 可能为 0，Sharpe 暂无可靠样本。
 
@@ -434,6 +434,10 @@ scoreboard, non-overlapping Scheduler, audit trace, Dashboard views, and
 Telegram Preview. All runtime flags default to disabled. Broker trading, OpenD
 realtime, Telegram transport and external AI transport remain off. See
 [`docs/WINDOWS_PHASE4_RUNTIME_PAPER_TRADING.md`](docs/WINDOWS_PHASE4_RUNTIME_PAPER_TRADING.md).
+
+### Profit Lock 与财富结构
+
+System Paper Runtime 通过 `ACTIVE_TRADING`、`RESERVE` 和 `LONG_TERM_CORE` 三个资金桶模拟利润隔离。只有 Active Trading 能作为自动模拟交易 Buying Power；Reserve 不会自动回流，SPY Core 的收益不会计入 QMR 策略绩效。详见 [Profit Lock Capital Management](docs/PROFIT_LOCK_CAPITAL_MANAGEMENT.md)。
 
 ## Sprint 41 Part D：Dashboard Route Repair 与 Mac 交接
 

@@ -56,13 +56,18 @@ class PaperTradingService:
                 "partial": 0, "waiting": 0, "rejected": 0,
             }
         account = self.account()
+        from app.capital_management.service import CapitalManagementService
+        capital_service = CapitalManagementService(self.db, self.settings)
+        capital_before = capital_service.process(account)
         entries = self.evaluate_entries(account, max_entries=max_entries)
         exits = self.evaluate_exits(account)
+        capital = capital_service.process(account)
         valuation = self.value_account(account, source="RUN_ONCE")
         self.db.commit()
         return {
             "status": "SUCCESS", **entries, **exits,
             "equity": str(valuation.total_equity),
+            "profit_lock": capital if capital.get("triggered") else capital_before,
         }
 
     def dry_run(self, max_entries: Optional[int] = None) -> Dict[str, object]:

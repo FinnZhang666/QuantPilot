@@ -20,7 +20,8 @@ from app.telegram_runtime.transport import TelegramBotTransport
 
 
 class PaperEventNotificationDispatcher:
-    EVENT_TYPES = ("POSITION_OPENED", "POSITION_CLOSED", "REVIEW_GENERATED")
+    EVENT_TYPES = ("POSITION_OPENED", "POSITION_CLOSED", "REVIEW_GENERATED",
+                   "PROFIT_LOCK_ALLOCATED", "INITIAL_CAPITAL_RECOVERED")
 
     def __init__(self, settings, session_factory, transport: Optional[TelegramBotTransport] = None):
         self.settings = settings
@@ -97,6 +98,8 @@ class PaperEventNotificationDispatcher:
     @classmethod
     def _render(cls, event, position, language: str) -> str:
         details = event.details_json or {}
+        if event.event_type in {"PROFIT_LOCK_ALLOCATED", "INITIAL_CAPITAL_RECOVERED"}:
+            return cls._render_capital_event(event.event_type, details, language)
         symbol = cls._safe(position.symbol if position else details.get("symbol") or "-")
         direction = cls._safe(position.direction if position else details.get("direction") or "-")
         if language == "en-US":
@@ -118,6 +121,22 @@ class PaperEventNotificationDispatcher:
                 lines.append("?????%s" % cls._safe(details.get("result") or "-"))
             lines += ["????????", "?????????????????????????????????????"]
         return "\n".join(lines).replace("*", "").replace("#", "")[:4096]
+
+    @classmethod
+    def _render_capital_event(cls, event_type, details, language):
+        english = language == "en-US"
+        if event_type == "INITIAL_CAPITAL_RECOVERED":
+            lines = ["<b>Initial capital recovered</b>" if english else "<b>初始本金已回收</b>",
+                     ("Reserve principal: " if english else "累计锁定储备：") + cls._number(details.get("reserve_principal")),
+                     ("Initial capital: " if english else "初始本金：") + cls._number(details.get("initial_capital"))]
+        else:
+            lines = ["<b>Profit Lock completed</b>" if english else "<b>利润锁定完成</b>",
+                     ("Locked this round: " if english else "本轮锁定：") + cls._number(details.get("locked_amount")),
+                     ("Reserve: " if english else "储备资金：") + cls._number(details.get("reserve_amount")),
+                     ("SPY core allocation: " if english else "SPY长期配置：") + cls._number(details.get("core_amount")),
+                     ("Active trading cash: " if english else "主动交易资金：") + cls._number(details.get("active_trading_cash"))]
+        lines.append("Internal paper ledger only; no broker transfer." if english else "仅为内部模拟账本调拨，不涉及真实券商提现或下单。")
+        return "\n".join(lines)[:4096]
 
     @classmethod
     def _append_position(cls, lines, position, english=False):

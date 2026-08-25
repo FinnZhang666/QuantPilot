@@ -211,6 +211,14 @@ class Settings(BaseSettings):
     paper_trading_sqlite_lock_backoff_seconds: float = Field(default=0.1, ge=0, le=5)
     paper_trading_poll_seconds: float = Field(default=60, ge=1, le=86400)
     paper_scheduler_enabled: bool = False
+    profit_lock_enabled: bool = True
+    profit_lock_trigger: float = Field(default=0.10, gt=0, le=1)
+    profit_lock_ratio: float = Field(default=0.30, gt=0, le=1)
+    profit_lock_reserve_allocation: float = Field(default=0.70, ge=0, le=1)
+    profit_lock_core_allocation: float = Field(default=0.30, ge=0, le=1)
+    profit_lock_core_symbol: str = "SPY"
+    profit_lock_reserve_mode: str = "CASH"
+    capital_management_version: str = "PLM v1.0"
     review_runtime_enabled: bool = False
     strategy_scoreboard_enabled: bool = False
     data_request_policy_file: str = "config/data_request_policy_v1.yaml"
@@ -226,6 +234,10 @@ class Settings(BaseSettings):
             raise ValueError("Moomoo实盘交易在V1中永久禁用。")
         if self.moomoo_allow_order_submission:
             raise ValueError("Sprint 01禁止提交Moomoo订单。")
+        if abs(self.profit_lock_reserve_allocation + self.profit_lock_core_allocation - 1) > 1e-9:
+            raise ValueError("Profit Lock的Reserve与Core配置之和必须为1。")
+        if self.profit_lock_reserve_mode not in {"CASH", "TREASURY_OR_CASH"}:
+            raise ValueError("PROFIT_LOCK_RESERVE_MODE仅支持CASH或TREASURY_OR_CASH。")
         if self.history_adjustment_type not in {"NONE", "FORWARD", "BACKWARD"}:
             raise ValueError("HISTORY_ADJUSTMENT_TYPE必须是NONE、FORWARD或BACKWARD。")
         if (

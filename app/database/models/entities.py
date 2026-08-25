@@ -2073,6 +2073,65 @@ class SystemPaperAccount(TimestampMixin, Base):
     status: Mapped[str] = mapped_column(String(16), default="ACTIVE")
 
 
+class CapitalManagementState(TimestampMixin, Base):
+    """Portfolio-level bucket state, isolated from strategy performance."""
+
+    __tablename__ = "capital_management_states"
+    __table_args__ = (
+        UniqueConstraint("account_id", name="uq_capital_management_account"),
+        CheckConstraint("reserve_principal >= 0", name="ck_capital_reserve_principal"),
+        CheckConstraint("core_principal >= 0", name="ck_capital_core_principal"),
+        CheckConstraint("core_units >= 0", name="ck_capital_core_units"),
+        CheckConstraint("core_pending_cash >= 0", name="ck_capital_core_pending_cash"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("system_paper_accounts.id"))
+    initial_capital: Mapped[object] = mapped_column(Numeric(24, 8))
+    profit_lock_high_water_mark: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    total_locked_transfer: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    reserve_principal: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    reserve_value: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    reserve_yield: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    core_principal: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    core_units: Mapped[object] = mapped_column(Numeric(24, 12), default=0)
+    core_pending_cash: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    core_last_price: Mapped[Optional[object]] = mapped_column(Numeric(24, 8))
+    core_value: Mapped[object] = mapped_column(Numeric(24, 8), default=0)
+    core_symbol: Mapped[str] = mapped_column(String(32), default="SPY")
+    reserve_mode: Mapped[str] = mapped_column(String(32), default="CASH")
+    status: Mapped[str] = mapped_column(String(24), default="ACCUMULATING")
+    capital_management_version: Mapped[str] = mapped_column(String(32), default="PLM v1.0")
+    last_trigger_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    initial_capital_recovered_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+
+
+class CapitalTransfer(TimestampMixin, Base):
+    """Append-only internal transfer between capital buckets."""
+
+    __tablename__ = "capital_transfers"
+    __table_args__ = (
+        UniqueConstraint("transfer_id", name="uq_capital_transfer_id"),
+        UniqueConstraint("idempotency_key", name="uq_capital_transfer_idempotency"),
+        Index("ix_capital_transfer_account_time", "account_id", "timestamp"),
+        CheckConstraint("amount > 0", name="ck_capital_transfer_amount"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    transfer_id: Mapped[str] = mapped_column(String(64))
+    idempotency_key: Mapped[str] = mapped_column(String(160))
+    account_id: Mapped[int] = mapped_column(ForeignKey("system_paper_accounts.id"))
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    source_bucket: Mapped[str] = mapped_column(String(32))
+    destination_bucket: Mapped[str] = mapped_column(String(32))
+    amount: Mapped[object] = mapped_column(Numeric(24, 8))
+    reason: Mapped[str] = mapped_column(String(32))
+    trigger_profit: Mapped[object] = mapped_column(Numeric(24, 8))
+    strategy_source: Mapped[str] = mapped_column(String(128), default="SYSTEM_PAPER")
+    strategy_version: Mapped[Optional[str]] = mapped_column(String(64))
+    allocation_rule_version: Mapped[str] = mapped_column(String(32), default="PLM v1.0")
+    status: Mapped[str] = mapped_column(String(24), default="ALLOCATED")
+    metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
 class SystemPaperOrder(TimestampMixin, Base):
     __tablename__ = "system_paper_orders"
     __table_args__ = (

@@ -60,6 +60,8 @@ from app.api.qmr_exit import internal_router as internal_qmr_exit_router
 from app.api.qmr_exit import router as qmr_exit_router
 from app.api.paper_runtime import internal_router as internal_paper_runtime_router
 from app.api.paper_runtime import router as paper_runtime_router
+from app.api.capital_management import router as capital_management_router
+from app.api.capital_management import internal_router as internal_capital_management_router
 from app.telegram_runtime.api import internal_router as internal_telegram_runtime_router
 from app.telegram_runtime.api import router as telegram_runtime_router
 from app.api.local_node import router as local_node_router
@@ -190,6 +192,8 @@ app.include_router(internal_strategy_center_router)
 app.include_router(internal_qmr_exit_router)
 app.include_router(paper_runtime_router)
 app.include_router(internal_paper_runtime_router)
+app.include_router(capital_management_router)
+app.include_router(internal_capital_management_router)
 app.include_router(telegram_runtime_router)
 app.include_router(internal_telegram_runtime_router)
 app.include_router(local_node_router)

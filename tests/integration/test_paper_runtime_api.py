@@ -32,6 +32,7 @@ def test_public_paper_read_api_and_telegram_preview(monkeypatch, tmp_path):
             "/api/system-paper/equity", "/api/system-paper/performance",
             "/api/system-paper/scoreboard", "/api/system-paper/runtime",
             "/api/system-paper/scheduler", "/api/system-paper/audit",
+            "/api/capital-management/summary", "/api/capital-management/transfers",
             "/api/telegram-preview/system-paper/account",
         ):
             response = api.get(path)
@@ -43,6 +44,9 @@ def test_public_paper_read_api_and_telegram_preview(monkeypatch, tmp_path):
         assert account["paper_only"] is True and account["status"] == "NOT_INITIALIZED"
         preview = api.get("/api/telegram-preview/system-paper/account").json()
         assert preview["preview_equals_real"] is True
+        capital = api.get("/api/capital-management/summary").json()
+        assert capital["status"] == "NOT_INITIALIZED"
+        assert capital["total_wealth"] == "100000.0"
 
 
 def test_runtime_mutations_require_admin_and_stay_internal(monkeypatch, tmp_path):
@@ -65,9 +69,21 @@ def test_runtime_mutations_require_admin_and_stay_internal(monkeypatch, tmp_path
 
         schema = api.get("/openapi.json").json()
         assert "/internal/system-paper/run-once" not in schema["paths"]
+        assert "/internal/capital-management/process" not in schema["paths"]
         assert "/api/system-paper/runtime/start" not in schema["paths"]
         assert "/api/system-paper/positions/{position_id}" in schema["paths"]
         assert schema["paths"]["/api/system-paper/fills"]["get"]["responses"]["200"]["content"]
+
+
+def test_profit_lock_internal_process_is_admin_only_and_idempotent(monkeypatch, tmp_path):
+    with client(monkeypatch, tmp_path) as api:
+        assert api.post("/internal/capital-management/process").status_code == 401
+        headers = {"X-Dashboard-Token": "phase4-admin"}
+        first = api.post("/internal/capital-management/process", headers=headers)
+        second = api.post("/internal/capital-management/process", headers=headers)
+        assert first.status_code == second.status_code == 200
+        assert first.json()["triggered"] is False and second.json()["triggered"] is False
+        assert api.get("/api/capital-management/transfers").json()["items"] == []
 
 
 def test_empty_position_detail_and_internal_close_errors(monkeypatch, tmp_path):
