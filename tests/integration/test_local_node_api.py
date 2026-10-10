@@ -1,6 +1,10 @@
+from datetime import datetime, timezone
+
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.database.models import MoomooConnectionCheck, RuntimeStatus
 from app.database.session import get_engine
 from app.main import app
 
@@ -45,6 +49,30 @@ def test_quant_node_token_is_read_only(monkeypatch, tmp_path):
         assert api.get("/api/position/QQQ", headers=NODE_HEADERS).status_code == 200
         assert api.get("/api/signals/recent", headers=NODE_HEADERS).status_code == 200
         assert api.get("/api/platform/config", headers=NODE_HEADERS).status_code == 401
+
+
+def test_dashboard_summary_prefers_current_opend_check(monkeypatch, tmp_path):
+    with client(monkeypatch, tmp_path) as api:
+        now = datetime.now(timezone.utc)
+        with Session(get_engine()) as db:
+            db.add(RuntimeStatus(
+                service_name="opend", status="DISCONNECTED",
+                last_error_at=now, last_error_message="stale legacy state",
+            ))
+            db.add(MoomooConnectionCheck(
+                checked_at=now, opend_reachable=True, opend_logged_in=True,
+                status_code="ok", status_message_zh="正常",
+            ))
+            db.commit()
+
+        response = api.get("/api/dashboard/summary", headers=NODE_HEADERS)
+        assert response.status_code == 200
+        opend = next(
+            item for item in response.json()["services"]
+            if item["service_name"] == "opend"
+        )
+        assert opend["status"] == "HEALTHY"
+        assert opend["metadata"]["source"] == "realtime_opend"
 
 
 def test_health_remains_available_for_tailscale_probe(monkeypatch, tmp_path):

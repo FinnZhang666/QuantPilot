@@ -17,6 +17,7 @@ from app.database.models import (
     AIReviewAnalysis,
 )
 from app.database.session import get_db, get_engine
+from app.api.local_node import market_context
 from app.platform.health import health_report
 from app.dashboard.stock_analysis import StockAnalysisService
 
@@ -91,12 +92,34 @@ def dashboard_summary(
         OpportunityReview.review_status == "REVIEWED",
     )) or 0
     service_payload = [_service(row) for row in services]
-    if not any(row["service_name"] == "opend" for row in service_payload):
-        service_payload.append({
+    context = market_context(db)
+    opend_service = next(
+        (row for row in service_payload if row["service_name"] == "opend"),
+        None,
+    )
+    if opend_service is None:
+        opend_service = {
             "service_name": "opend", "status": "DISCONNECTED",
             "last_heartbeat_at": None, "last_success_at": None,
             "last_error_at": None, "last_error_message": None, "metadata": {},
-        })
+        }
+        service_payload.append(opend_service)
+    opend_status = "DISCONNECTED" if context["opend"] == "OFFLINE" else context["opend"]
+    opend_service.update({
+        "status": opend_status,
+        "last_heartbeat_at": context["latest_timestamp"],
+        "last_success_at": (
+            context["latest_timestamp"]
+            if opend_status == "HEALTHY"
+            else opend_service["last_success_at"]
+        ),
+        "metadata": {
+            **(opend_service.get("metadata") or {}),
+            "source": "realtime_opend",
+            "realtime": context["realtime"],
+            "market_data_freshness": context["market_data_freshness"],
+        },
+    })
     return {
         "system_health": health_report(db, settings),
         "services": service_payload,

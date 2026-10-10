@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./data/quantpilot.db"
     quant_node_base_url: str = ""
     quant_node_api_token: str = ""
-    quant_node_timeout_seconds: float = Field(default=8.0, gt=0, le=60)
+    quant_node_timeout_seconds: float = Field(default=30.0, gt=0, le=60)
     cloud_cache_directory: str = "runtime/cloud-cache"
     cloud_cache_max_stale_seconds: int = Field(default=604800, ge=60, le=2592000)
     trading_mode: TradingMode = TradingMode.INTERNAL_PAPER
