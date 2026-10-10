@@ -18,13 +18,16 @@ flowchart LR
 
 所有阈值、权重、异常区间、事件风险折扣和行业基准映射均来自 [`config/qmr_v1.yaml`](../config/qmr_v1.yaml)。默认要求质量分不低于 60、错杀分不低于 65、质量数据覆盖率不低于 65%，且基本面风险不能为 `HIGH`，才输出 `WATCH`。
 
-质量分由盈利能力、成长、现金流与资产负债表、行业质量、ETF 重要性和流动性组成。错杀分由 1/3/5/10/20 日跌幅、历史 z-score/percentile、相对 QQQ/SPY、相对行业 ETF 和事件风险组成。各分项及原始中间值保存于 JSON，便于解释和历史回测。
+质量分由盈利能力、成长、现金流与资产负债表、行业质量、ETF 重要性和流动性组成。错杀分由 1/3/5/10/20 日跌幅、历史 z-score/percentile、相对 QQQ/SPY、相对行业 ETF、事件风险和 point-in-time 估值数据组成。各分项及原始中间值保存于 JSON，便于解释和历史回测。
+
+`WATCH` 还必须满足公允价值硬门槛：当前价至少低于可靠公允价值 20%（配置项 `minimum_fair_value_discount_pct`）。公允价值按 DCF、Owner Earnings、显式 Fair Value、分析师一致目标价的配置顺序选择。没有可用公允价值、数值无效或折价不足时，结果保持 `NO_SIGNAL`，不会仅凭价格大跌认定“低估”。
 
 ## 数据来源与 point-in-time 边界
 
 - 股票范围：`universe` 与 `universe_memberships`，按 `first_seen`/`last_seen` 还原评估时点成员关系。
 - 价格：本地 `market_bars` 的闭合日线，仅查询 `timestamp_utc <= evaluation_time`。
 - 基本面：`fundamental_snapshots`，只读取 `available_at <= evaluation_time` 的最近记录；修订数据必须作为新快照写入，不能覆盖历史可见值。
+- 公允价值：只读取同一 point-in-time 基本面快照 `source_payload_json` 中明确提供的估值，不由 QMR 临时猜测或用当前数据回填历史。
 - 新闻：通过 `NewsProvider` 接口解耦。当前默认 `NoNewsProvider` 不伪造结果，返回 `event_risk=UNKNOWN`、`news_confidence=LOW`。
 - 行业基准：按配置尝试读取本地 ETF 日线；没有数据时保持缺失，不用 0 或未来值填补。
 
@@ -55,6 +58,7 @@ QMR 复用现有 Universe Scheduler，不创建第二套调度器。Universe 按
 ## 当前限制
 
 - 没有可靠新闻源时事件风险为 `UNKNOWN`，不会被当作低风险。
+- 没有可靠公允价值数据时不会产生 `WATCH`，这属于安全降级。
 - 行业质量的横截面盈利趋势与全球同行联动尚未实现；数据结构保留对应扩展点。
 - 不产生 BUY/SELL、买入价、止损、仓位或通知，也不调用 Broker。
 

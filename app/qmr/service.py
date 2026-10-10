@@ -86,6 +86,7 @@ class QmrService:
         if ranks.get(financial_risk, 0) > ranks.get(event.fundamental_risk, 0):
             event = EventAssessment(event.event_risk, financial_risk, event.confidence, event.source)
         valuation_context = self._valuation_context(fundamental)
+        valuation_context["current_price"] = float(prices[-1].close) if prices else None
         m_score, m_components = mispricing_score(
             prices, benchmark_prices, industry_prices, event, self.config, valuation_context)
         sources = ["UNIVERSE", "MARKET_BARS"]
@@ -97,7 +98,10 @@ class QmrService:
         m_components["small_cap_quality_gate"] = {"passed": not small_cap_reasons,
                                                    "reasons": small_cap_reasons}
         missing_quality = [name for name, value in q_components.items() if value["coverage"] < 1]
-        reason_codes = self._reason_codes(q_score, coverage, m_score, len(prices), fundamental, at)
+        reason_codes = self._reason_codes(
+            q_score, coverage, m_score, len(prices), fundamental, at,
+            m_components.get("fair_value") or {},
+        )
         m_components["fundamental_symbol"] = fundamental_symbol
         m_components["instrument_mapping_applied"] = fundamental_symbol != item.symbol
         m_components["reason_codes"] = reason_codes
@@ -126,7 +130,8 @@ class QmrService:
         })
         return payload
 
-    def _reason_codes(self, quality, coverage, mispricing, price_count, fundamental, at):
+    def _reason_codes(self, quality, coverage, mispricing, price_count, fundamental, at,
+                      fair_value):
         reasons = []
         thresholds = self.config["thresholds"]
         if price_count == 0:
@@ -137,6 +142,10 @@ class QmrService:
             reasons.append("QUALITY_BELOW_THRESHOLD")
         if mispricing < thresholds["mispricing_min"]:
             reasons.append("MISPRICING_NOT_EXTREME")
+        if not fair_value.get("available"):
+            reasons.append("FAIR_VALUE_UNAVAILABLE")
+        elif fair_value.get("discount_pct", 0) < thresholds["minimum_fair_value_discount_pct"]:
+            reasons.append("FAIR_VALUE_DISCOUNT_INSUFFICIENT")
         if fundamental is not None:
             age_days = (at - fundamental.available_at).days
             if age_days > self.config.get("freshness", {}).get("fundamentals_days", 120):

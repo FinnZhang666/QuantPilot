@@ -105,6 +105,7 @@ def mispricing_score(prices, benchmark_prices, industry_prices, event, config,
     coverage = available_weight / sum(weights.values())
     valuation = valuation_context or {}
     peer = _valuation_peer_assessment(valuation)
+    fair_value = _fair_value_assessment(valuation, config)
     value_trap = _value_trap_assessment(valuation)
     if peer["score"] is not None:
         blend = float(config.get("valuation_blend_weight", .2))
@@ -114,8 +115,34 @@ def mispricing_score(prices, benchmark_prices, industry_prices, event, config,
                "market_relative_5d": market_relative, "industry_relative_5d": industry_relative,
                "coverage": round(coverage, 4), "available_weight": available_weight,
                "missing_factors": [name for name, value in components.items() if value is None],
-               "peer": peer, "value_trap": value_trap}
+               "peer": peer, "fair_value": fair_value, "value_trap": value_trap}
     return max(0, min(100, score)), details
+
+
+def _fair_value_assessment(context, config):
+    current_price = context.get("current_price")
+    configured = config.get("fair_value", {}).get("accepted_fields", ())
+    chosen_value, method = None, "UNAVAILABLE"
+    for field in configured:
+        raw = context.get(field)
+        try:
+            value = float(raw) if raw is not None else None
+        except (TypeError, ValueError):
+            value = None
+        if value is not None and math.isfinite(value) and value > 0:
+            chosen_value, method = value, field.upper()
+            break
+    try:
+        price = float(current_price) if current_price is not None else None
+    except (TypeError, ValueError):
+        price = None
+    if price is None or not math.isfinite(price) or price <= 0 or chosen_value is None:
+        return {"available": False, "current_price": price, "fair_value": chosen_value,
+                "discount_pct": None, "method": method}
+    discount = (chosen_value - price) / chosen_value * 100
+    return {"available": True, "current_price": round(price, 6),
+            "fair_value": round(chosen_value, 6), "discount_pct": round(discount, 4),
+            "method": method}
 
 
 def _valuation_peer_assessment(context):

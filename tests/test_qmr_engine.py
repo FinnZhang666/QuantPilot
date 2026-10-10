@@ -40,12 +40,47 @@ def test_case_a_quality_extreme_selloff_can_watch(db):
     prices = bars([100 + i * .2 for i in range(100)] + [100, 98, 94, 90, 84, 78])
     benchmark = bars([100 + i * .1 for i in range(106)])
     event = EventAssessment("A", "LOW", "HIGH", "TEST_NEWS")
-    m, mc = mispricing_score(prices, benchmark, benchmark, event, CONFIG)
+    m, mc = mispricing_score(prices, benchmark, benchmark, event, CONFIG, {
+        "current_price": 78,
+        "dcf_fair_value": 110,
+    })
     universe = UniverseInstrument(symbol="TEST", market="US", status="ACTIVE")
     db.add(universe); db.commit()
     row, _ = QmrRepository(db).save(universe, datetime.now(timezone.utc), q, qc, coverage, m, mc,
                                     event, ["TEST"], "HIGH", "qmr-v1", CONFIG["thresholds"])
     assert q >= 60 and m >= 65 and row.candidate_status == "WATCH"
+
+
+def test_fair_value_discount_is_required_for_watch(db):
+    universe = UniverseInstrument(symbol="FAIR", market="US", status="ACTIVE")
+    db.add(universe); db.commit()
+    event = EventAssessment("A", "LOW", "HIGH", "TEST")
+    base = {"scores": {}, "fair_value": {
+        "available": True, "current_price": 95, "fair_value": 100,
+        "discount_pct": 5, "method": "DCF_FAIR_VALUE",
+    }}
+    row, _ = QmrRepository(db).save(
+        universe, datetime.now(timezone.utc), 90, {}, 1, 90, base, event,
+        ["TEST"], "HIGH", "qmr-v1", CONFIG["thresholds"],
+    )
+    assert row.candidate_status == "NO_SIGNAL"
+
+
+def test_fair_value_assessment_rejects_missing_or_invalid_values():
+    event = EventAssessment("A", "LOW", "HIGH", "TEST")
+    prices = bars([100] * 30)
+    _, missing = mispricing_score(prices, prices, prices, event, CONFIG, {
+        "current_price": 80,
+    })
+    _, valid = mispricing_score(prices, prices, prices, event, CONFIG, {
+        "current_price": 75,
+        "fair_value": 100,
+    })
+    assert missing["fair_value"]["available"] is False
+    assert valid["fair_value"] == {
+        "available": True, "current_price": 75.0, "fair_value": 100.0,
+        "discount_pct": 25.0, "method": "FAIR_VALUE",
+    }
 
 
 def test_case_b_bad_company_is_rejected_despite_selloff(db):

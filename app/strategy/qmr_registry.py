@@ -8,6 +8,12 @@ from app.database.models import (
     QmrExitEvaluation,
 )
 from app.qmr_live.tracking import QmrPerformanceTracker
+from app.strategy.strategies.intraday_pyramid import (
+    DEFAULT_PARAMETERS as INTRADAY_PARAMETERS,
+    STRATEGY_CODE as INTRADAY_CODE,
+    STRATEGY_NAME as INTRADAY_NAME,
+    STRATEGY_VERSION as INTRADAY_VERSION,
+)
 
 
 QMR_CODE = "quality_mispricing_recovery"
@@ -18,6 +24,10 @@ QMR_DESCRIPTION = (
     "在优质公司因市场恐慌、行业联动、短期事件或估值压缩出现异常大跌后，"
     "先判断公司与行业长期逻辑是否仍然成立，再等待卖压衰竭、资金回流和趋势修复，"
     "在反转早期产生介入信号。"
+)
+INTRADAY_DESCRIPTION = (
+    "基于5分钟和15分钟闭合K线确认短周期趋势、动量、成交量与VWAP位置，"
+    "采用小仓试单、仅盈利加仓、分阶段提高仓位和固定风险上限的金字塔策略。"
 )
 
 
@@ -45,7 +55,35 @@ class StrategyCenterRepository:
             self.db.commit()
         return row
 
+    def ensure_intraday_pyramid(self):
+        row = self.get(INTRADAY_CODE)
+        config = {
+            "short_name": "Intraday Pyramid",
+            "strategy_type": ["INTRADAY", "TREND_FOLLOWING", "PYRAMID"],
+            "market": "US",
+            "supported_timeframes": ["5m", "15m"],
+            "operational_status": "RESEARCH",
+            "paper_only": True,
+            "parameters": INTRADAY_PARAMETERS,
+        }
+        if row is None:
+            row = StrategyRecord(
+                code=INTRADAY_CODE, name=INTRADAY_NAME, version=INTRADAY_VERSION,
+                description=INTRADAY_DESCRIPTION, is_enabled=False, config_json=config,
+            )
+            self.db.add(row)
+            self.db.commit()
+        elif row.version != INTRADAY_VERSION:
+            row.version = INTRADAY_VERSION
+            row.description = INTRADAY_DESCRIPTION
+            row.config_json = config
+            row.is_enabled = False
+            self.db.commit()
+        return row
+
     def set_enabled(self, row, enabled):
+        if enabled and row.code == INTRADAY_CODE and (row.config_json or {}).get("operational_status") == "RESEARCH":
+            raise ValueError("超短线顺势金字塔策略尚未完成回测，只能保持RESEARCH状态。")
         row.is_enabled = bool(enabled)
         config = dict(row.config_json or {})
         config["operational_status"] = "ENABLED" if enabled else "DISABLED"
@@ -110,11 +148,16 @@ class StrategyCenterService:
     def ensure_qmr(self):
         return self.repository.ensure_qmr()
 
+    def ensure_defaults(self):
+        self.repository.ensure_qmr()
+        self.repository.ensure_intraday_pyramid()
+
     def list(self):
-        self.ensure_qmr()
+        self.ensure_defaults()
         return [self.summary(row) for row in self.repository.list()]
 
     def get(self, code):
+        self.ensure_defaults()
         row = self.repository.get(code)
         if row is None:
             raise KeyError("策略不存在。")
@@ -138,6 +181,7 @@ class StrategyCenterService:
             "parameter_sets": [self._columns(item) for item in self.repository.parameter_sets()]}
 
     def set_enabled(self, code, enabled):
+        self.ensure_defaults()
         row = self.repository.get(code)
         if row is None:
             raise KeyError("策略不存在。")
@@ -146,9 +190,11 @@ class StrategyCenterService:
 
     def summary(self, row):
         if row.code != QMR_CODE:
+            config = row.config_json or {}
             return {"strategy_code": row.code, "strategy_name": row.name,
-                    "strategy_version": row.version, "status": "ENABLED" if row.is_enabled else "DISABLED",
-                    "description": row.description, "config": row.config_json}
+                    "strategy_version": row.version,
+                    "status": "ENABLED" if row.is_enabled else config.get("operational_status", "DISABLED"),
+                    "description": row.description, "config": config}
         candidates = self.repository.latest_candidates()
         scores = self.repository.latest_buy_scores()
         signals = self.repository.live_signals()

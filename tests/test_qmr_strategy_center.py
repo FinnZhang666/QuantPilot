@@ -1,11 +1,14 @@
 from datetime import datetime, timezone
 from decimal import Decimal
 
+import pytest
+
 from app.core.config import Settings
 from app.database.models import QmrLiveSignal, StrategyRecord
 from app.qmr_live.formatter import qmr_signal_message
 from app.qmr_live.service import QmrLiveSignalService
 from app.strategy.qmr_registry import QMR_CODE, QMR_NAME, StrategyCenterService
+from app.strategy.strategies.intraday_pyramid import STRATEGY_CODE as INTRADAY_CODE
 
 
 NOW = datetime(2026, 8, 24, tzinfo=timezone.utc)
@@ -18,6 +21,17 @@ def test_qmr_appears_as_one_formal_strategy(db):
     assert qmr["strategy_version"] == "QMR-v1.1"
     assert "SOXX" in qmr["universe"] and "IWM" in qmr["universe"]
     assert qmr["historical_win_rate_5d"] is None
+
+
+def test_intraday_pyramid_is_registered_as_research_only(db):
+    service = StrategyCenterService(db, Settings(_env_file=None))
+    items = service.list()
+    strategy = next(item for item in items if item["strategy_code"] == INTRADAY_CODE)
+    assert strategy["status"] == "RESEARCH"
+    assert strategy["config"]["paper_only"] is True
+    assert strategy["config"]["supported_timeframes"] == ["5m", "15m"]
+    with pytest.raises(ValueError, match="尚未完成回测"):
+        service.set_enabled(INTRADAY_CODE, True)
 
 
 def test_qmr_detail_contains_six_sprint_pipeline(db):

@@ -212,6 +212,8 @@ python scripts/check_strategy_quality.py
 
 Sprint 05只实现一套“趋势回撤后重新转强”策略。它按需读取Sprint 04 Feature并生成Candidate Signal，不下单、不模拟成交、不确认持仓。Score表示条件满足程度，Confidence表示数据可信度。所有模板均为尚未回测的默认参数。完整说明见`docs/STRATEGY_SIGNALS.md`。
 
+策略中心现已登记独立的 `intraday_pyramid` 超短线顺势金字塔研究策略。它使用 5m/15m 闭合 K 线、小仓试单、只在盈利且趋势确认时加仓，并禁止亏损补仓；当前保持 `RESEARCH`，未接入自动订单。详见 [`docs/INTRADAY_PYRAMID_STRATEGY.md`](docs/INTRADAY_PYRAMID_STRATEGY.md)。QMR `WATCH` 现在额外要求当前价相对可靠公允价值至少达到配置折价门槛，缺少公允价值数据时安全降级为不产生候选。
+
 ## Telegram
 
 在 `.env` 中手工设置 `TELEGRAM_ENABLED=true`、`TELEGRAM_BOT_TOKEN` 与 `TELEGRAM_CHAT_ID`。开启但缺少配置时应用拒绝启动。真实发送测试必须由用户主动运行：

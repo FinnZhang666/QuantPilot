@@ -33,6 +33,8 @@ def enable_strategy(strategy_code: str, db: Session = Depends(get_db),
         return StrategyCenterService(db, settings).set_enabled(strategy_code, True)
     except KeyError as exc:
         raise HTTPException(404, str(exc).strip("'"))
+    except ValueError as exc:
+        raise HTTPException(409, str(exc))
 
 
 @internal_router.post("/{strategy_code}/disable", dependencies=[Depends(require_admin)])

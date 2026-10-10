@@ -120,9 +120,15 @@ class QmrRepository:
             data_confidence=confidence, model_version=model_version,
         )
         self.db.add_all([q, m]); self.db.flush()
+        fair_value = mispricing_components.get("fair_value") or {}
+        fair_value_ok = (
+            fair_value.get("available") and
+            fair_value.get("discount_pct", 0) >= thresholds.get(
+                "minimum_fair_value_discount_pct", 0)
+        )
         if event.fundamental_risk == "HIGH" or quality < thresholds["quality_min"] or coverage < thresholds["minimum_quality_coverage"]:
             status = "REJECT"
-        elif mispricing >= thresholds["mispricing_min"]:
+        elif mispricing >= thresholds["mispricing_min"] and fair_value_ok:
             status = "WATCH"
         else:
             status = "NO_SIGNAL"
