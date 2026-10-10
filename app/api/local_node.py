@@ -6,11 +6,11 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
-from app.dashboard.auth import require_admin
+from app.dashboard.auth import require_node_read
 from app.database.models import CandidateSignal, MoomooConnectionCheck, RealtimeQuote, RealtimeServiceStatus, SystemPaperPosition
 from app.database.session import get_db
 
-router = APIRouter(prefix="/api", tags=["Windows Local Node"], dependencies=[Depends(require_admin)])
+router = APIRouter(prefix="/api", tags=["Windows Local Node"], dependencies=[Depends(require_node_read)])
 
 
 def _value(value):

@@ -15,6 +15,13 @@ def is_admin(request: Request, settings: Settings) -> bool:
     return bool(expected and secrets.compare_digest(supplied_token(request), expected))
 
 
+def is_quant_node_client(request: Request, settings: Settings) -> bool:
+    """Authenticate the cloud gateway without granting dashboard admin rights."""
+    expected = settings.quant_node_api_token
+    supplied = request.headers.get("X-Dashboard-Token") or ""
+    return bool(expected and secrets.compare_digest(supplied, expected))
+
+
 def require_admin(
     request: Request, settings: Settings = Depends(get_settings),
 ) -> None:
@@ -25,6 +32,18 @@ def require_admin(
 def require_read(
     request: Request, settings: Settings = Depends(get_settings),
 ) -> None:
-    if settings.dashboard_readonly_public:
+    if (
+        settings.dashboard_readonly_public
+        or is_admin(request, settings)
+        or is_quant_node_client(request, settings)
+    ):
         return
-    require_admin(request, settings)
+    raise HTTPException(401, "只读访问Token无效或未提供。")
+
+
+def require_node_read(
+    request: Request, settings: Settings = Depends(get_settings),
+) -> None:
+    if is_admin(request, settings) or is_quant_node_client(request, settings):
+        return
+    raise HTTPException(401, "节点访问Token无效或未提供。")
