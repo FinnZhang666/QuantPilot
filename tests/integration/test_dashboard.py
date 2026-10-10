@@ -196,7 +196,7 @@ def test_dashboard_navigation_is_grouped_and_has_no_placeholder_links(monkeypatc
     try:
         login(client)
         html = client.get("/dashboard").text
-        assert html.count('class="nav-group"') >= 7
+        assert html.count('class="nav-group"') >= 6
         assert 'id="sidebar-toggle"' in html
         assert 'id="mobile-menu"' in html
         assert 'href="#"' not in html
@@ -206,9 +206,7 @@ def test_dashboard_navigation_is_grouped_and_has_no_placeholder_links(monkeypatc
             "/dashboard/paper-positions", "/dashboard/trade-reviews",
             "/dashboard/strategy-scoreboard", "/dashboard/companion",
             "/dashboard/ai-reviews", "/dashboard/telegram-preview",
-            "/dashboard/product/feedback", "/dashboard/product/behavior",
-            "/dashboard/product/bot-statistics",
-            "/dashboard/product/user-intelligence", "/dashboard/strategies",
+            "/dashboard/strategies",
             "/dashboard/strategy-lab/parameters", "/dashboard/research",
             "/dashboard/system", "/dashboard/system-monitor",
             "/dashboard/runtime-logs",
@@ -216,6 +214,8 @@ def test_dashboard_navigation_is_grouped_and_has_no_placeholder_links(monkeypatc
             assert 'href="%s"' % target in html
         assert 'href="/dashboard/opportunities"' not in html
         assert 'href="/dashboard/positions"' not in html
+        assert 'data-group="product"' not in html
+        assert 'href="/dashboard/product/feedback"' not in html
     finally:
         client.__exit__(None, None, None)
 
@@ -286,11 +286,12 @@ def test_product_architecture_primary_navigation(monkeypatch, tmp_path):
         script = client.get("/dashboard/static/ui.js").text
         for label in (
             "🏠 工作台", "📈 市场", "📊 策略", "🤖 AI",
-            "📱 产品运营", "🧪 Strategy Lab", "⚙ 更多",
+            "🧪 Strategy Lab", "⚙ 更多",
         ):
             assert label in html + script
-        for label in ("市场监控", "我的持仓", "策略成绩榜", "用户反馈", "系统监控"):
+        for label in ("市场监控", "我的持仓", "策略成绩榜", "系统监控"):
             assert label in html
+        assert "产品运营" not in html
         assert 'data-nav="opportunities"' not in html
         assert 'data-nav="positions"' not in html
     finally:
@@ -350,7 +351,8 @@ def test_part_d_dashboard_ui_contract(monkeypatch, tmp_path):
         script = client.get("/dashboard/static/dashboard.js").text
         ui = client.get("/dashboard/static/ui.js").text
         css = client.get("/dashboard/static/dashboard.css").text
-        assert html.count("nav-group-toggle") == 7
+        assert html.count("nav-group-toggle") == 6
+        assert "产品运营" not in html
         assert "tc-nav-group-" in ui and 'aria-expanded' in ui
         assert "homeFinal" in script and "pageFailure" in script
         assert "retry-page" in script
