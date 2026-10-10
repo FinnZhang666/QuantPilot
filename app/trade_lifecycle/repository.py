@@ -14,7 +14,11 @@ class TradePlanRepository:
     def get_signal(self, signal_id: int) -> Optional[CandidateSignal]:
         return self.db.get(CandidateSignal, signal_id)
 
-    def pending_candidate_signals(self, limit: int = 100) -> List[CandidateSignal]:
+    def pending_candidate_signals(
+        self,
+        limit: int = 100,
+        not_before: Optional[datetime] = None,
+    ) -> List[CandidateSignal]:
         query = select(CandidateSignal).outerjoin(
             TradePlan,
             and_(
@@ -25,7 +29,10 @@ class TradePlanRepository:
             CandidateSignal.signal_type == "CANDIDATE_BUY",
             CandidateSignal.status == "VALID",
             or_(TradePlan.id.is_(None), TradePlan.lifecycle_stage == "DISCOVER"),
-        ).order_by(CandidateSignal.bar_timestamp, CandidateSignal.id).limit(limit)
+        )
+        if not_before is not None:
+            query = query.where(CandidateSignal.bar_timestamp >= not_before)
+        query = query.order_by(CandidateSignal.bar_timestamp, CandidateSignal.id).limit(limit)
         return list(self.db.scalars(query))
 
     def find_by_signal(self, signal_id: int, direction: str) -> Optional[TradePlan]:

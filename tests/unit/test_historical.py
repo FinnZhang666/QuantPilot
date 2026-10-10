@@ -265,6 +265,26 @@ def test_bar_upsert_updates_values(db):
     assert db.scalar(select(MarketBar.close)) == Decimal("101.50000000")
 
 
+def test_incremental_sync_skips_existing_bar_without_overwrite(db):
+    supported_instrument(db)
+    original = market_bar(close=Decimal("101"))
+    changed = market_bar(close=Decimal("999"))
+    start = original.timestamp_utc - timedelta(days=1)
+    end = original.timestamp_utc + timedelta(days=1)
+    HistoricalDataSyncService(db, StaticProvider([original])).sync_symbol(
+        "US.QQQ", BarInterval.DAY_1, start, end
+    )
+
+    job = HistoricalDataSyncService(db, StaticProvider([changed])).sync_symbol(
+        "US.QQQ", BarInterval.DAY_1, start, end, incremental=True
+    )
+
+    assert job.rows_inserted == 0
+    assert job.rows_updated == 0
+    assert job.rows_skipped == 1
+    assert db.scalar(select(MarketBar.close)) == Decimal("101.00000000")
+
+
 def test_incremental_start_uses_latest_bar(db):
     supported_instrument(db)
     bar = market_bar()

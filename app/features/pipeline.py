@@ -59,9 +59,18 @@ class FeatureCalculationService:
                     for definition in definitions
                 ]
                 if all(latest_values):
-                    output_start = min(latest_values)
+                    # SQLite drops timezone metadata from DateTime values.
+                    # Normalize persisted timestamps before comparing them with
+                    # the UTC-aware pandas index produced by ``load_bars``.
+                    latest_values = [
+                        value.replace(tzinfo=timezone.utc)
+                        if value.tzinfo is None else value.astimezone(timezone.utc)
+                        for value in latest_values
+                    ]
+                    latest_output = min(latest_values)
+                    output_start = latest_output + self._interval_step(interval)
                     effective_start = self._warmup_start(
-                        output_start, interval, warmup,
+                        latest_output, interval, warmup,
                     )
             bars = self.repository.load_bars(symbol, interval.value, effective_start, end, realtime)
             job.input_rows = len(bars)
@@ -142,6 +151,17 @@ class FeatureCalculationService:
             BarInterval.DAY_1: timedelta(days=3),
         }[interval]
         return latest - unit * max(bars + 5, 10)
+
+    @staticmethod
+    def _interval_step(interval: BarInterval) -> timedelta:
+        return {
+            BarInterval.MIN_1: timedelta(minutes=1),
+            BarInterval.MIN_5: timedelta(minutes=5),
+            BarInterval.MIN_15: timedelta(minutes=15),
+            BarInterval.MIN_30: timedelta(minutes=30),
+            BarInterval.HOUR_1: timedelta(hours=1),
+            BarInterval.DAY_1: timedelta(days=1),
+        }[interval]
 
     def repair_range(self, symbol: str, interval: BarInterval, start: datetime, end: datetime, feature_names=None):
         return self.calculate_symbol(symbol, interval, feature_names, start, end, FeatureJobType.REPAIR)

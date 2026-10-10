@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.core.config import get_settings
+from app.platform.process import process_exists
 from app.realtime.factory import build_realtime_manager
 from app.realtime.manager import STATUS_TEXT
 
@@ -27,10 +28,11 @@ def main() -> int:
     if PID_PATH.exists():
         try:
             pid = int(PID_PATH.read_text(encoding="utf-8").strip())
-            os.kill(pid, 0)
-            print("实时行情服务可能已运行，PID：%s" % pid)
-            return 1
-        except (ValueError, ProcessLookupError, PermissionError):
+            if process_exists(pid):
+                print("实时行情服务可能已运行，PID：%s" % pid)
+                return 1
+            PID_PATH.unlink(missing_ok=True)
+        except (ValueError, OSError):
             PID_PATH.unlink(missing_ok=True)
     manager = build_realtime_manager(get_settings(), args.symbols)
     stopping = False

@@ -75,7 +75,7 @@ def test_internal_generation_is_admin_only_and_idempotent(monkeypatch, tmp_path)
         with get_session_factory()() as db:
             signal = CandidateSignal(
                 symbol="SOXL", market="US", timeframe="60m",
-                bar_timestamp=datetime(2026, 7, 31, tzinfo=timezone.utc),
+                bar_timestamp=datetime.now(timezone.utc),
                 strategy_name="pullback_restrength", strategy_version="1.0.0",
                 parameters_hash="api-hash", signal_type="CANDIDATE_BUY", score=82,
                 confidence=87, status="VALID", summary_zh="测试",

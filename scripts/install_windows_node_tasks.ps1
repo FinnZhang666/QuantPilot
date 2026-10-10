@@ -5,7 +5,11 @@ param([switch]$DisableRealtime)
 $ErrorActionPreference = "Stop"
 $Repo = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $Python = Join-Path $Repo ".venv\Scripts\python.exe"
-$OpenD = Join-Path $env:APPDATA "moomoo_OpenD\moomoo_OpenD.exe"
+$OpenDCandidates = @(
+    (Join-Path $env:APPDATA "Futu_OpenD\Futu_OpenD.exe"),
+    (Join-Path $env:APPDATA "moomoo_OpenD\moomoo_OpenD.exe")
+)
+$OpenD = $OpenDCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
 $TailscaleIP = (& "$env:ProgramFiles\Tailscale\tailscale.exe" ip -4).Trim()
 if (-not (Test-Path $Python)) { throw "Project Python is missing: $Python" }
 if (-not $TailscaleIP) { throw "Tailscale is not logged in" }
@@ -24,7 +28,7 @@ function Register-NodeTask([string]$Name, [string]$Arguments, [int]$DelaySeconds
     Register-ScheduledTask -TaskName $Name -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Force | Out-Null
 }
 
-if (Test-Path $OpenD) {
+if ($OpenD -and (Test-Path -LiteralPath $OpenD)) {
     $action = New-ScheduledTaskAction -Execute $OpenD -WorkingDirectory (Split-Path $OpenD)
     $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
     $settings = New-ScheduledTaskSettingsSet -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 2) -MultipleInstances IgnoreNew

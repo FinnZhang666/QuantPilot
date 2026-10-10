@@ -115,7 +115,11 @@ class HistoricalDataSyncService:
             job.error_message = result.error_message_zh
         else:
             try:
-                inserted, updated, skipped = self._upsert(instrument, result.bars)
+                inserted, updated, skipped = self._upsert(
+                    instrument,
+                    result.bars,
+                    update_existing=(not incremental or repair),
+                )
             except Exception as exc:
                 job_id = job.id
                 self.db.rollback()
@@ -169,7 +173,10 @@ class HistoricalDataSyncService:
         return job
 
     def _upsert(
-        self, instrument: Instrument, bars: List[MarketBarData]
+        self,
+        instrument: Instrument,
+        bars: List[MarketBarData],
+        update_existing: bool = True,
     ) -> Tuple[int, int, int]:
         valid: List[MarketBarData] = []
         skipped = 0
@@ -236,32 +243,40 @@ class HistoricalDataSyncService:
         ]
         for index in range(0, len(rows), batch_size):
             statement = sqlite_insert(MarketBar).values(rows[index:index + batch_size])
-            statement = statement.on_conflict_do_update(
-                index_elements=[
-                    "symbol",
-                    "interval",
-                    "timestamp_utc",
-                    "adjustment_type",
-                    "data_source",
-                ],
-                set_={
-                    "open": statement.excluded.open,
-                    "high": statement.excluded.high,
-                    "low": statement.excluded.low,
-                    "close": statement.excluded.close,
-                    "volume": statement.excluded.volume,
-                    "turnover": statement.excluded.turnover,
-                    "change_rate": statement.excluded.change_rate,
-                    "last_close": statement.excluded.last_close,
-                    "is_blank": statement.excluded.is_blank,
-                    "market_session": statement.excluded.market_session,
-                    "updated_at": datetime.now(timezone.utc),
-                },
-            )
+            conflict_columns = [
+                "symbol",
+                "interval",
+                "timestamp_utc",
+                "adjustment_type",
+                "data_source",
+            ]
+            if update_existing:
+                statement = statement.on_conflict_do_update(
+                    index_elements=conflict_columns,
+                    set_={
+                        "open": statement.excluded.open,
+                        "high": statement.excluded.high,
+                        "low": statement.excluded.low,
+                        "close": statement.excluded.close,
+                        "volume": statement.excluded.volume,
+                        "turnover": statement.excluded.turnover,
+                        "change_rate": statement.excluded.change_rate,
+                        "last_close": statement.excluded.last_close,
+                        "is_blank": statement.excluded.is_blank,
+                        "market_session": statement.excluded.market_session,
+                        "updated_at": datetime.now(timezone.utc),
+                    },
+                )
+            else:
+                statement = statement.on_conflict_do_nothing(
+                    index_elements=conflict_columns,
+                )
             self.db.execute(statement)
         self.db.commit()
-        updated = len(existing)
-        return len(valid) - updated, updated, skipped
+        updated = len(existing) if update_existing else 0
+        if not update_existing:
+            skipped += len(existing)
+        return len(valid) - len(existing), updated, skipped
 
     def sync_all(
         self,

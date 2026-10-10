@@ -11,9 +11,12 @@ from app.trade_lifecycle.service import TradeLifecycleService
 
 
 def add_signal(db, minute=0, signal_type="CANDIDATE_BUY", status="VALID"):
+    bar_time = datetime.now(timezone.utc).replace(
+        second=0, microsecond=0,
+    ) + timedelta(minutes=minute)
     row = CandidateSignal(
         symbol="SOXL", market="US", timeframe="60m",
-        bar_timestamp=datetime(2026, 7, 31, 14, minute, tzinfo=timezone.utc),
+        bar_timestamp=bar_time,
         strategy_name="pullback_restrength", strategy_version="1.0.0",
         parameters_hash="hash-%s" % minute, signal_type=signal_type,
         score=80 + minute, confidence=85, status=status, summary_zh="测试",
@@ -56,6 +59,15 @@ def test_runtime_promotes_existing_discover_plan(db):
 def test_runtime_ignores_watch_and_invalid_signals(db):
     add_signal(db, signal_type="WATCH")
     add_signal(db, minute=1, status="MISSING_FEATURE")
+    assert TradePlanRuntime(db).run()["scanned"] == 0
+    assert db.scalar(select(func.count()).select_from(TradePlan)) == 0
+
+
+def test_runtime_ignores_stale_candidate(db):
+    source = add_signal(db)
+    source.bar_timestamp = datetime.now(timezone.utc) - timedelta(hours=37)
+    db.commit()
+
     assert TradePlanRuntime(db).run()["scanned"] == 0
     assert db.scalar(select(func.count()).select_from(TradePlan)) == 0
 

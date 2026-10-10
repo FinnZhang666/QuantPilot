@@ -51,7 +51,13 @@ def parse_rows(rows: List[List[str]]) -> List[HoldingRecord]:
                 if value in names:
                     columns[field] = position
                     break
-        if "symbol" in columns:
+        # Provider workbooks often contain metadata rows such as
+        # ``Ticker Symbol: SPY`` before the actual holdings header.  Require
+        # at least one descriptive holdings column so that metadata is not
+        # mistaken for the table header.
+        if "symbol" in columns and any(
+            field in columns for field in ("name", "weight", "sector", "industry")
+        ):
             header_at = index
             break
         columns = {}
@@ -93,27 +99,41 @@ def parse_xlsx(content: bytes) -> List[HoldingRecord]:
             root = ElementTree.fromstring(archive.read("xl/sharedStrings.xml"))
             for item in root.findall(namespace + "si"):
                 shared.append("".join(node.text or "" for node in item.iter(namespace + "t")))
-        sheet_name = next(name for name in archive.namelist() if name.startswith("xl/worksheets/sheet") and name.endswith(".xml"))
-        root = ElementTree.fromstring(archive.read(sheet_name))
-        rows = []
-        for row in root.iter(namespace + "row"):
-            values = []
-            for cell in row.findall(namespace + "c"):
-                ref = cell.attrib.get("r", "A1")
-                col = 0
-                for char in re.match(r"[A-Z]+", ref).group(0):
-                    col = col * 26 + ord(char) - 64
-                while len(values) < col:
-                    values.append("")
-                node = cell.find(namespace + "v")
-                value = node.text if node is not None else ""
-                if cell.attrib.get("t") == "s" and value:
-                    value = shared[int(value)]
-                elif cell.attrib.get("t") == "inlineStr":
-                    value = "".join(n.text or "" for n in cell.iter(namespace + "t"))
-                values[col - 1] = value
-            rows.append(values)
-    return parse_rows(rows)
+        candidates = []
+        sheet_names = sorted(
+            name for name in archive.namelist()
+            if name.startswith("xl/worksheets/sheet") and name.endswith(".xml")
+        )
+        for sheet_name in sheet_names:
+            root = ElementTree.fromstring(archive.read(sheet_name))
+            rows = []
+            for row in root.iter(namespace + "row"):
+                values = []
+                for cell in row.findall(namespace + "c"):
+                    ref = cell.attrib.get("r", "A1")
+                    match = re.match(r"[A-Z]+", ref)
+                    if match is None:
+                        continue
+                    col = 0
+                    for char in match.group(0):
+                        col = col * 26 + ord(char) - 64
+                    while len(values) < col:
+                        values.append("")
+                    node = cell.find(namespace + "v")
+                    value = node.text if node is not None else ""
+                    if cell.attrib.get("t") == "s" and value:
+                        value = shared[int(value)]
+                    elif cell.attrib.get("t") == "inlineStr":
+                        value = "".join(n.text or "" for n in cell.iter(namespace + "t"))
+                    values[col - 1] = value
+                rows.append(values)
+            try:
+                candidates.append(parse_rows(rows))
+            except ValueError:
+                continue
+    if not candidates:
+        raise ValueError("持仓XLSX中未找到有效持仓表。")
+    return max(candidates, key=len)
 
 
 class _TableParser(HTMLParser):

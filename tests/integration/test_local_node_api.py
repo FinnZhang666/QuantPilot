@@ -38,4 +38,8 @@ def test_local_node_empty_read_models(monkeypatch, tmp_path):
 
 def test_health_remains_available_for_tailscale_probe(monkeypatch, tmp_path):
     with client(monkeypatch, tmp_path) as api:
-        assert api.get("/health").status_code == 200
+        response = api.get("/health")
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["opend"] == payload["components"]["opend"] == "OFFLINE"
+        assert payload["runtime"] == "STOPPED"

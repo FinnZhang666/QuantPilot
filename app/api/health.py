@@ -14,6 +14,11 @@ router = APIRouter(tags=["平台健康"])
 def health(settings: Settings = Depends(get_settings), db: Session = Depends(get_db)):
     report = health_report(db, settings)
     context = market_context(db)
+    # The Windows data node writes its authoritative connection state to the
+    # realtime/OpenD tables.  Do not let stale legacy RuntimeStatus rows make
+    # the top-level health fields disagree with the component health below.
+    report["opend"] = context["opend"]
+    report["runtime"] = context["realtime"]
     paper = db.query(SystemPaperAccount).filter(SystemPaperAccount.account_key == "system-paper").first()
     report["components"] = {
         "database": "HEALTHY" if report["database"]["status"] == "OK" else "OFFLINE",

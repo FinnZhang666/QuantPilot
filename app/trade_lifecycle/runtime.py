@@ -1,10 +1,12 @@
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
 from app.trade_lifecycle.repository import TradePlanRepository
 from app.trade_lifecycle.service import TradeLifecycleService
+from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -15,14 +17,25 @@ class TradePlanRuntime:
     def __init__(
         self, db: Session, repository: Optional[TradePlanRepository] = None,
         service: Optional[TradeLifecycleService] = None,
+        now_provider=None,
+        candidate_max_age_hours: Optional[int] = None,
     ):
         self.repository = repository or TradePlanRepository(db)
         self.service = service or TradeLifecycleService(db, repository=self.repository)
+        self.now_provider = now_provider or (lambda: datetime.now(timezone.utc))
+        self.candidate_max_age_hours = (
+            candidate_max_age_hours
+            if candidate_max_age_hours is not None
+            else get_settings().candidate_pool_expiry_hours
+        )
 
     def run(self, limit: int = 100) -> Dict[str, object]:
         if limit < 1 or limit > 1000:
             raise ValueError("limit必须在1到1000之间。")
-        signals = self.repository.pending_candidate_signals(limit)
+        cutoff = self.now_provider() - timedelta(hours=self.candidate_max_age_hours)
+        signals = self.repository.pending_candidate_signals(
+            limit, not_before=cutoff,
+        )
         created = 0
         promoted = 0
         refreshed = 0

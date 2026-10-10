@@ -37,7 +37,7 @@ sources:
     enabled: true
     format: csv
     parser: ishares_holdings
-    url: https://www.ishares.com/us/products/239705/ishares-semiconductor-etf/1467271812596.ajax?fileType=csv&fileName=SOXX_holdings&dataType=fund
+    url: https://www.ishares.com/us/products/239705/ishares-semiconductor-etf/latest-holdings.csv
     role: PRIMARY
     priority: 10
   - fund_symbol: SOXX
@@ -53,7 +53,7 @@ sources:
     enabled: true
     format: csv
     parser: ishares_holdings
-    url: https://www.ishares.com/us/products/239771/ishares-expanded-techsoftware-sector-etf/1467271812596.ajax?fileType=csv&fileName=IGV_holdings&dataType=fund
+    url: https://www.ishares.com/us/products/239771/ishares-expanded-techsoftware-sector-etf/latest-holdings.csv
     role: PRIMARY
     priority: 10
   - fund_symbol: IGV
@@ -69,7 +69,7 @@ sources:
     enabled: true
     format: csv
     parser: ishares_holdings
-    url: https://www.ishares.com/us/products/239710/ishares-russell-2000-etf/1467271812596.ajax?fileType=csv&fileName=IWM_holdings&dataType=fund
+    url: https://www.ishares.com/us/products/239710/ishares-russell-2000-etf/latest-holdings.csv
     role: PRIMARY
     priority: 10
   - fund_symbol: IWM

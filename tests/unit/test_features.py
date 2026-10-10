@@ -303,8 +303,11 @@ def test_closed_realtime_bar_incremental_is_idempotent(db):
     add_bars(db, 5, realtime=True, closed=True)
     service = FeatureCalculationService(FeatureRepository(db))
     service.calculate_realtime_closed("US.QQQ", ["return_1"])
-    service.calculate_realtime_closed("US.QQQ", ["return_1"])
+    second = service.calculate_realtime_closed("US.QQQ", ["return_1"])
     assert db.query(FeatureValueRecord).count() == 5
+    assert second.output_rows == 0
+    assert second.inserted_rows == 0
+    assert second.updated_rows == 0
 
 
 def test_realtime_updater_initializes(db):

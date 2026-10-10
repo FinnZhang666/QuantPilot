@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 import json
-import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.database.session import get_session_factory
+from app.platform.process import process_exists
 from app.realtime.manager import STATUS_TEXT
 from app.realtime.repository import RealtimeRepository
 
@@ -20,9 +20,8 @@ def main() -> int:
         running = False
         if PID_PATH.exists():
             try:
-                os.kill(int(PID_PATH.read_text(encoding="utf-8")), 0)
-                running = True
-            except Exception:
+                running = process_exists(int(PID_PATH.read_text(encoding="utf-8")))
+            except (OSError, ValueError):
                 running = False
         metadata = row.metadata_json or {}
         print("实时行情服务状态")
