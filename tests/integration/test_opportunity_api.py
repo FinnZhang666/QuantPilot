@@ -4,7 +4,7 @@ from decimal import Decimal
 from fastapi.testclient import TestClient
 
 from app.core.config import get_settings
-from app.database.models import Opportunity
+from app.database.models import Opportunity, RuntimeStatus
 from app.database.session import get_engine, get_session_factory
 from app.main import app
 from app.runtime.realtime_runtime import replace_runtime
@@ -43,6 +43,7 @@ def client(monkeypatch, tmp_path):
     monkeypatch.setenv("DATABASE_URL", "sqlite:///" + str(tmp_path / "opportunity-api.db"))
     monkeypatch.setenv("DASHBOARD_READONLY_PUBLIC", "true")
     monkeypatch.setenv("DASHBOARD_ADMIN_TOKEN", "test-admin")
+    monkeypatch.setenv("REALTIME_RUNTIME_ENABLED", "false")
     get_settings.cache_clear()
     get_engine.cache_clear()
     runtime = FakeRuntime()
@@ -91,6 +92,25 @@ def test_runtime_api_start_stop_idempotent(monkeypatch, tmp_path):
         status = api.get("/api/runtime/status")
         assert status.status_code == 200
         assert "telegram_bot_token" not in status.text
+    finally:
+        api.__exit__(None, None, None)
+        replace_runtime(None)
+
+
+def test_runtime_status_uses_independent_worker_heartbeat(monkeypatch, tmp_path):
+    api, _ = client(monkeypatch, tmp_path)
+    try:
+        with get_session_factory()() as db:
+            db.add(RuntimeStatus(
+                service_name="realtime_runtime", status="RUNNING",
+                metadata_json={"processed_count": 7, "error_count": 0},
+            ))
+            db.add(RuntimeStatus(service_name="opend", status="CONNECTED", metadata_json={}))
+            db.commit()
+        payload = api.get("/api/runtime/status").json()["runtime"]
+        assert payload["status"] == "RUNNING"
+        assert payload["opend_connected"] is True
+        assert payload["processed_count"] == 7
     finally:
         api.__exit__(None, None, None)
         replace_runtime(None)

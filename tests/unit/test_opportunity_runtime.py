@@ -238,6 +238,15 @@ def test_runtime_restart_does_not_reprocess_same_bar_in_process(db):
     assert runtime.process_once()["processed"] == 0
 
 
+def test_runtime_start_primes_existing_closed_bar_watermark(db):
+    add_watchlist(db, ["SOXL"])
+    pipeline = FakePipeline()
+    runtime = runtime_fixture(db, pipeline)
+    runtime._prime_closed_bar_watermarks()
+    assert runtime.process_once()["processed"] == 0
+    assert pipeline.calls == []
+
+
 def test_start_stop_idempotent(db):
     pipeline = FakePipeline()
     runtime = runtime_fixture(db, pipeline)

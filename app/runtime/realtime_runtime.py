@@ -8,7 +8,6 @@ from sqlalchemy import desc, select
 from app.core.config import Settings, get_settings
 from app.core.enums import RealtimeServiceState
 from app.database.models import CandidatePoolEntry, RealtimeBar, WatchlistItem, WatchlistTimeframe
-from app.candidate_pool.service import CandidatePoolService
 from app.database.session import get_session_factory
 from app.notifications.telegram import TelegramNotificationProvider
 from app.realtime.factory import get_realtime_manager
@@ -54,6 +53,7 @@ class RealtimeOpportunityRuntime:
             except Exception as exc:
                 self.status = "DEGRADED"
                 self._save_state(error="OpenD连接失败：" + str(exc))
+            self._prime_closed_bar_watermarks()
             self.thread = threading.Thread(
                 target=self._loop, name="moomoo-opportunity-runtime", daemon=False,
             )
@@ -85,22 +85,7 @@ class RealtimeOpportunityRuntime:
         results = []
         db = self.session_factory()
         try:
-            configured = set(self.settings.realtime_timeframe_list())
-            pairs = set(db.execute(select(WatchlistItem.symbol, WatchlistTimeframe.timeframe).join(
-                WatchlistTimeframe, WatchlistTimeframe.watchlist_item_id == WatchlistItem.id,
-            ).where(
-                WatchlistItem.enabled.is_(True), WatchlistTimeframe.enabled.is_(True),
-                WatchlistTimeframe.timeframe.in_(configured),
-            )).all())
-            active_candidates = db.scalars(select(CandidatePoolEntry.symbol).where(
-                CandidatePoolEntry.status.in_(["CANDIDATE", "RESEARCHING", "QUALIFIED"]),
-                CandidatePoolEntry.expires_at > datetime.now(timezone.utc),
-            ).distinct()).all()
-            pairs.update(
-                (symbol, timeframe) for symbol in active_candidates for timeframe in configured
-            )
-            if self.settings.candidate_pool_enabled:
-                CandidatePoolService(db, self.settings).run_daily_if_due()
+            pairs = self._tracked_pairs(db)
             pipeline = self.pipeline_factory(db) if self.pipeline_factory else OpportunityPipeline(db, self.settings)
             for symbol, timeframe in pairs:
                 full_symbol = "US." + symbol
@@ -128,6 +113,38 @@ class RealtimeOpportunityRuntime:
             db.close()
         return {"processed": len(results), "results": results}
 
+    def _prime_closed_bar_watermarks(self) -> None:
+        """Do not replay bars that existed before this worker started."""
+        db = self.session_factory()
+        try:
+            for symbol, timeframe in self._tracked_pairs(db):
+                latest = db.scalar(select(RealtimeBar.timestamp_utc).where(
+                    RealtimeBar.symbol == "US." + symbol,
+                    RealtimeBar.interval == timeframe,
+                    RealtimeBar.is_closed.is_(True),
+                ).order_by(desc(RealtimeBar.timestamp_utc)).limit(1))
+                if latest is not None:
+                    self.last_processed[symbol + "/" + timeframe] = self._aware(latest)
+        finally:
+            db.close()
+
+    def _tracked_pairs(self, db):
+        configured = set(self.settings.realtime_timeframe_list())
+        pairs = set(db.execute(select(WatchlistItem.symbol, WatchlistTimeframe.timeframe).join(
+            WatchlistTimeframe, WatchlistTimeframe.watchlist_item_id == WatchlistItem.id,
+        ).where(
+            WatchlistItem.enabled.is_(True), WatchlistTimeframe.enabled.is_(True),
+            WatchlistTimeframe.timeframe.in_(configured),
+        )).all())
+        active_candidates = db.scalars(select(CandidatePoolEntry.symbol).where(
+            CandidatePoolEntry.status.in_(["CANDIDATE", "RESEARCHING", "QUALIFIED"]),
+            CandidatePoolEntry.expires_at > datetime.now(timezone.utc),
+        ).distinct()).all()
+        pairs.update(
+            (symbol, timeframe) for symbol in active_candidates for timeframe in configured
+        )
+        return pairs
+
     def snapshot(self, idempotent: bool = False) -> Dict[str, object]:
         health = self.realtime_manager.get_status()
         return {
@@ -146,10 +163,11 @@ class RealtimeOpportunityRuntime:
     def _loop(self):
         while not self.stop_event.wait(self.settings.runtime_poll_interval_seconds):
             try:
-                self.process_once()
-                self.trade_plan_scheduler.trigger()
-                self.review_scheduler.trigger()
-                self.ai_review_scheduler.trigger()
+                cycle = self.process_once()
+                if cycle["processed"]:
+                    self.trade_plan_scheduler.trigger()
+                    self.review_scheduler.trigger()
+                    self.ai_review_scheduler.trigger()
             except Exception as exc:
                 self.error_count += 1
                 self.status = "DEGRADED"

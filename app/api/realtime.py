@@ -66,8 +66,36 @@ def realtime_status(db: Session = Depends(get_db)):
 
 
 @router.get("/health")
-def realtime_health():
-    return _health_payload(get_realtime_manager())
+def realtime_health(db: Session = Depends(get_db)):
+    manager = get_realtime_manager()
+    if manager.status != RealtimeServiceState.STOPPED:
+        return _health_payload(manager)
+    row = db.scalar(select(RealtimeServiceStatus).where(
+        RealtimeServiceStatus.service_name == "moomoo_realtime",
+    ))
+    if row is None or row.status == RealtimeServiceState.STOPPED.value:
+        return _health_payload(manager)
+    metadata = row.metadata_json or {}
+    return {
+        "status": row.status, "status_text": STATUS_TEXT.get(row.status, "未知状态"),
+        "opend_connected": row.status == RealtimeServiceState.CONNECTED.value,
+        "market_session": metadata.get("market_session", "UNKNOWN"),
+        "market_session_text": metadata.get("market_session_text", "未知"),
+        "subscribed_symbol_count": len(row.subscribed_symbols_json or []),
+        "subscribed_types": row.subscribed_types_json or [],
+        "queue_size": metadata.get("queue_size", 0),
+        "queue_capacity": metadata.get("queue_capacity", 0),
+        "received_count": metadata.get("received", 0),
+        "persisted_count": metadata.get("persisted", 0),
+        "received_by_type": metadata.get("received_by_type", {}),
+        "duplicate_count": metadata.get("duplicates", 0),
+        "dropped_count": metadata.get("dropped", 0),
+        "error_count": metadata.get("errors", 0),
+        "reconnect_count": row.reconnect_count,
+        "last_message_at": row.last_message_at,
+        "warnings": [metadata.get("warning")] if metadata.get("warning") else [],
+        "source": "persisted_runtime_status",
+    }
 
 
 @router.get("/subscriptions")
@@ -80,14 +108,38 @@ def realtime_subscriptions():
 def latest_quotes(symbols: Optional[str] = None, timezone_name: str = Query("UTC", alias="timezone"), db: Session = Depends(get_db)):
     _validate_timezone(timezone_name)
     requested = [item.strip().upper() for item in symbols.split(",")] if symbols else []
-    query = select(RealtimeQuote)
-    if requested:
-        query = query.where(RealtimeQuote.symbol.in_(requested))
-    rows = db.scalars(query.order_by(RealtimeQuote.symbol, desc(RealtimeQuote.timestamp_utc))).all()
-    latest = {}
+    if not requested:
+        status = db.scalar(select(RealtimeServiceStatus).where(
+            RealtimeServiceStatus.service_name == "moomoo_realtime",
+        ))
+        requested = list(status.subscribed_symbols_json or []) if status else []
+    requested = list(dict.fromkeys(requested))[:20]
+    rows = []
+    for symbol in requested:
+        row = db.scalar(select(RealtimeQuote).where(
+            RealtimeQuote.symbol == symbol,
+        ).order_by(desc(RealtimeQuote.timestamp_utc), desc(RealtimeQuote.id)).limit(1))
+        if row is not None:
+            rows.append(row)
+    result = []
     for row in rows:
-        latest.setdefault(row.symbol, row)
-    return [{"symbol": row.symbol, "timestamp": _time(row.timestamp_utc, timezone_name), "last_price": str(row.last_price), "market_session": row.market_session, "market_session_text": SESSION_TEXT.get(row.market_session, "未知")} for row in latest.values()]
+        previous = float(row.prev_close) if row.prev_close else None
+        last = float(row.last_price)
+        change_pct = ((last / previous) - 1) * 100 if previous else None
+        result.append({
+            "symbol": row.symbol, "timestamp": _time(row.timestamp_utc, timezone_name),
+            "last_price": str(row.last_price),
+            "change_pct": None if change_pct is None else round(change_pct, 4),
+            "open": None if row.open_price is None else str(row.open_price),
+            "high": None if row.high_price is None else str(row.high_price),
+            "low": None if row.low_price is None else str(row.low_price),
+            "volume": row.volume,
+            "bid": None if row.bid_price is None else str(row.bid_price),
+            "ask": None if row.ask_price is None else str(row.ask_price),
+            "market_session": row.market_session,
+            "market_session_text": SESSION_TEXT.get(row.market_session, "未知"),
+        })
+    return result
 
 
 @router.get("/tickers")

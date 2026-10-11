@@ -15,6 +15,7 @@ router = APIRouter(prefix="/api/runtime", tags=["实时Runtime"])
 @router.get("/status", dependencies=[Depends(require_read)])
 def runtime_status(db: Session = Depends(get_db)):
     rows = db.scalars(select(RuntimeStatus).order_by(RuntimeStatus.service_name)).all()
+    by_name = {row.service_name: row for row in rows}
     live = get_runtime().snapshot()
     pid_file = Path("data/opportunity_runtime.pid")
     runtime_pid = None
@@ -24,6 +25,22 @@ def runtime_status(db: Session = Depends(get_db)):
         except (OSError, ValueError):
             runtime_pid = None
     live["pid"] = runtime_pid
+    persisted = by_name.get("realtime_runtime")
+    if live["status"] == "STOPPED" and persisted is not None and persisted.status != "STOPPED":
+        metadata = persisted.metadata_json or {}
+        opend = by_name.get("opend")
+        live.update({
+            "status": persisted.status,
+            "status_text": {
+                "STARTING": "正在启动", "RUNNING": "运行中",
+                "DEGRADED": "服务降级", "FAILED": "严重异常",
+            }.get(persisted.status, persisted.status),
+            "opend_connected": bool(opend and opend.status == "CONNECTED"),
+            "last_strategy_run_at": metadata.get("last_strategy_run_at"),
+            "processed_count": int(metadata.get("processed_count") or 0),
+            "error_count": int(metadata.get("error_count") or 0),
+            "thread_alive": persisted.status in {"STARTING", "RUNNING", "DEGRADED"},
+        })
     return {
         "runtime": live,
         "services": [

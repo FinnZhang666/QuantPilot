@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 from app.core.config import get_settings
+from app.database.models import RuntimeStatus
 from app.database.session import get_engine, get_session_factory
 from app.main import app
 from app.paper_runtime.manager import RuntimeManager, replace_runtime_manager
@@ -12,6 +13,7 @@ def client(monkeypatch, tmp_path, public=True):
     monkeypatch.setenv("DASHBOARD_ADMIN_TOKEN", "phase4-admin")
     monkeypatch.setenv("RUNTIME_MANAGER_ENABLED", "true")
     monkeypatch.setenv("PAPER_TRADING_ENABLED", "true")
+    monkeypatch.setenv("PAPER_TRADING_AUTOSTART", "false")
     monkeypatch.setenv("PAPER_SCHEDULER_ENABLED", "false")
     monkeypatch.setenv("REVIEW_RUNTIME_ENABLED", "true")
     monkeypatch.setenv("STRATEGY_SCOREBOARD_ENABLED", "true")
@@ -103,3 +105,19 @@ def test_private_read_api_stays_authenticated(monkeypatch, tmp_path):
         assert api.get(
             "/api/system-paper/account", headers={"X-Dashboard-Token": "phase4-admin"},
         ).status_code == 200
+
+
+def test_runtime_status_uses_independent_worker_heartbeat(monkeypatch, tmp_path):
+    with client(monkeypatch, tmp_path) as api:
+        with get_session_factory()() as db:
+            row = db.query(RuntimeStatus).filter_by(service_name="paper_runtime_manager").one_or_none()
+            if row is None:
+                row = RuntimeStatus(service_name="paper_runtime_manager")
+                db.add(row)
+            row.status = "RUNNING"
+            row.metadata_json = {"process_id": 4321, "lock_owned": True, "error_count": 0}
+            db.commit()
+        payload = api.get("/api/system-paper/runtime").json()
+        assert payload["status"] == "RUNNING"
+        assert payload["thread_alive"] is True
+        assert payload["process_id"] == 4321

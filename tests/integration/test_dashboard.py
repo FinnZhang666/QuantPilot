@@ -355,6 +355,7 @@ def test_part_d_dashboard_ui_contract(monkeypatch, tmp_path):
         assert "产品运营" not in html
         assert "tc-nav-group-" in ui and 'aria-expanded' in ui
         assert "homeFinal" in script and "pageFailure" in script
+        assert "/realtime/quotes/latest" in script and "实时行情" in script
         assert "retry-page" in script
         assert "My Positions" in script
         assert "user holdings and broker data are not substituted" in script

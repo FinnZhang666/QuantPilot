@@ -17,6 +17,7 @@ from app.database.models import (
     SystemPaperPosition,
     TradePlan,
     TradeReview,
+    RuntimeStatus,
 )
 from app.database.session import get_db
 from app.paper_runtime.manager import get_runtime_manager
@@ -255,8 +256,27 @@ def scoreboard(
 
 
 @router.get("/runtime", response_model=RuntimeResponse)
-def runtime_status():
-    return get_runtime_manager().snapshot()
+def runtime_status(db: Session = Depends(get_db)):
+    snapshot = get_runtime_manager().snapshot()
+    row = db.scalar(select(RuntimeStatus).where(
+        RuntimeStatus.service_name == "paper_runtime_manager",
+    ))
+    if snapshot["status"] == "STOPPED" and row is not None and row.status != "STOPPED":
+        metadata = row.metadata_json or {}
+        snapshot.update({
+            "status": row.status,
+            "thread_alive": row.status in {"STARTING", "RUNNING", "DEGRADED"},
+            "process_id": int(metadata.get("process_id") or 0),
+            "lock_owned": bool(metadata.get("lock_owned")),
+            "current_task": metadata.get("current_task"),
+            "last_run_at": row.last_heartbeat_at,
+            "last_success_at": row.last_success_at,
+            "last_failure_at": row.last_error_at,
+            "last_result": metadata.get("last_result") or {},
+            "last_error": row.last_error_message,
+            "error_count": int(metadata.get("error_count") or 0),
+        })
+    return snapshot
 
 
 @router.get("/scheduler", response_model=SchedulerResponse)

@@ -38,7 +38,7 @@ if ($OpenD -and (Test-Path -LiteralPath $OpenD)) {
 Register-NodeTask "TradeCompanion-API" "-m scripts.run_dashboard_service" 30
 Register-NodeTask "TradeCompanion-Paper" "-m scripts.run_paper_runtime_worker" 90
 Register-NodeTask "TradeCompanion-Telegram" "-m scripts.run_telegram_runtime_worker" 60
-Register-NodeTask "TradeCompanion-Realtime" "-m scripts.start_realtime" 120
+Register-NodeTask "TradeCompanion-Realtime" "-m scripts.run_realtime_runtime_worker" 120
 if ($DisableRealtime) { Disable-ScheduledTask -TaskName "TradeCompanion-Realtime" | Out-Null }
 
 Get-ScheduledTask -TaskName "TradeCompanion-*" | Select-Object TaskName,State

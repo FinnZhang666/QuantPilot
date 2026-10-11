@@ -79,7 +79,7 @@ class Settings(BaseSettings):
     realtime_timeframes: str = "1m"
     opportunity_min_score: int = Field(default=70, ge=0, le=100)
     opportunity_default_expiry_bars: int = Field(default=3, ge=1, le=100)
-    runtime_poll_interval_seconds: float = Field(default=2.0, ge=0.1, le=60)
+    runtime_poll_interval_seconds: float = Field(default=60.0, ge=0.1, le=60)
     dashboard_admin_token: str = ""
     dashboard_readonly_public: bool = False
     market_regime_enabled: bool = True
